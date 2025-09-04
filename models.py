@@ -1,26 +1,28 @@
 from uuid import UUID, uuid4
 
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 
 
 class Base(DeclarativeBase):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    pass
+
+    @declared_attr.directive
+    def __tablename__(cls) -> str:
+        return cls.__name__.lower()
 
 
 class Device(Base):
-    __tablename__ = "device"
 
     name: Mapped[str]
     serial: Mapped[str]
     model: Mapped[str]
 
-    manufacturer: Mapped[str] = mapped_column(nullable=True)
-    firmware: Mapped[str] = mapped_column(nullable=True)
-    hardwate: Mapped[str] = mapped_column(nullable=True)
-
+    def get_columns(self):
+        return ["№", "name", "serial", "model"]
 
 class Rat(Base):
-    __tablename__ = "rat"
 
     name: Mapped[str] = mapped_column(default="Rat")
+
+    def get_columns(cls):
+        return ["№", "name"]
