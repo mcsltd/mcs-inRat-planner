@@ -1,8 +1,8 @@
 import logging
 
-from PySide6.QtWidgets import QMainWindow, QApplication
+from PySide6.QtWidgets import QMainWindow, QApplication, QAbstractItemView
 from PySide6.QtCore import Signal
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 
 from tools.modview import DataTableModel
 
@@ -24,6 +24,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat")
+
+        self.tableViewRat.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableViewDevice.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.fill_table_rat()
         self.fill_table_device()
@@ -51,6 +54,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 conn.commit()
         except Exception as exc:
             logger.error(f"Raise error when add device in db: {exc}")
+        finally:
+            self.fill_table_device()
+
 
     def _insert_rat_into_db(self, name: str):
         try:
@@ -60,18 +66,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 conn.commit()
         except Exception as exc:
                 logger.error(f"Raise error when add rat in db: {exc}")
+        finally:
+            self.fill_table_rat()
 
     def fill_table_rat(self):
+        arraydata = []
         column_names = Rat().get_columns()
-        self.model_rat = DataTableModel(column_names=column_names, parent=self)
+        # get rats from db
+        with database.engine.connect() as conn:
+            stmt = select(Rat.name)
+            for idx, row in enumerate(conn.execute(stmt)):
+                arraydata.append([idx + 1, *row])
+        self.model_rat = DataTableModel(column_names=column_names, data=arraydata, parent=self)
         self.tableViewRat.setModel(self.model_rat)            # QTableView
 
 
     def fill_table_device(self):
+        arraydata = []
         column_names = Device().get_columns()
-        self.model_device = DataTableModel(column_names=column_names, parent=self)
+        # get devices from db
+        with database.engine.connect() as conn:
+            stmt = select(Device.name, Device.serial, Device.model)
+            for idx, row in enumerate(conn.execute(stmt)):
+                arraydata.append([idx + 1, *row])
+        self.model_device = DataTableModel(column_names=column_names, data=arraydata, parent=self)
         self.tableViewDevice.setModel(self.model_device)        # QTableView
-
 
 
 if __name__ == "__main__":
