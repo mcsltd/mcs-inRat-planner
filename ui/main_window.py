@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowVEEODp.ui'
+## Form generated from reading UI file 'main_windowIuywIN.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.4.3
+## Created by: Qt User Interface Compiler version 6.9.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -31,8 +31,8 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName(u"gridLayout")
         self.lineSeparateSchedule = QFrame(self.centralwidget)
         self.lineSeparateSchedule.setObjectName(u"lineSeparateSchedule")
-        self.lineSeparateSchedule.setFrameShape(QFrame.VLine)
-        self.lineSeparateSchedule.setFrameShadow(QFrame.Sunken)
+        self.lineSeparateSchedule.setFrameShape(QFrame.Shape.VLine)
+        self.lineSeparateSchedule.setFrameShadow(QFrame.Shadow.Sunken)
 
         self.gridLayout.addWidget(self.lineSeparateSchedule, 0, 1, 1, 1)
 
@@ -140,5 +140,4 @@ class Ui_MainWindow(object):
         self.pushButtonDeleteRat.setText(QCoreApplication.translate("MainWindow", u"Delete", None))
         self.pushButtonCreateTask.setText(QCoreApplication.translate("MainWindow", u"Create", None))
     # retranslateUi
-
 
