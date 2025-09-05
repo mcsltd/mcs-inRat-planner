@@ -1,4 +1,4 @@
-from PySide6.QtCore import QAbstractTableModel, Qt
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 
 
 class DataTableModel(QAbstractTableModel):
@@ -29,6 +29,29 @@ class DataTableModel(QAbstractTableModel):
             return self.arraydata[index.row()][index.column()]
 
         return None
+
+    def removeRow(self, row, /, parent = ...):
+        self.removeRows(row, 1, parent)
+
+    def removeRows(self, row, count, /, parent = ...):
+        if 0 <= row < len(self.arraydata):
+            self.beginRemoveRows(parent, row, row + count)
+            del self.arraydata[row]
+            self.endRemoveRows()
+
+            self.dataChanged.emit(row, count)
+            return True
+        return False
+
+    # def removeRow(self, row, parent=QModelIndex()):
+    #     if 0 <= row < len(self._data):
+    #         # ВАЖНО: Уведомляем представление о начале удаления
+    #         self.beginRemoveRows(parent, row, row)
+    #         del self._data[row]
+    #         # ВАЖНО: Уведомляем представление о конце удаления
+    #         self.endRemoveRows()
+    #         return True
+    #     return False
 
     # must be implemented if models is editable
     # def setData(self, index, value, /, role = ...):

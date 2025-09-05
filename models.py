@@ -18,11 +18,11 @@ class Device(Base):
     model: Mapped[str]
 
     def get_columns(self):
-        return ["№", "name", "serial", "model"]
+        return ["№", "id", "name", "serial", "model"]
 
 class Rat(Base):
 
     name: Mapped[str] = mapped_column(default="Rat")
 
     def get_columns(cls):
-        return ["№", "name"]
+        return ["№", "id", "name"]
