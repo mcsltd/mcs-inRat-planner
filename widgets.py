@@ -76,13 +76,13 @@ class DlgInputSchedule(Ui_DialogSchedule, QDialog):
 
     def add(self) -> None:
         task = Task(
-            device={self.comboBoxDevices.currentText(): self.comboBoxDevices.currentData()},
-            rat={self.comboBoxRats.currentText(): self.comboBoxRats.currentData()},
+            device=self.comboBoxDevices.currentData(),
+            rat=self.comboBoxRats.currentData(),
             recording_duration=int(self.lineEditRecordingDuration.text()),  # ToDo: add checkup
             repeat_time=int(self.lineEditRecordingRepeatTime.text()),       # ToDo: add checkup
         )
 
-        logger.debug(f"Add new task for device {list(task.device.keys())[0]} and rats {list(task.rat.keys())[0]}, task recording time: {task.recording_duration} sec, repeat time for task: {task.repeat_time} sec")
+        logger.debug(f"Add new task for device {self.comboBoxDevices.currentText()} and rats {self.comboBoxDevices.currentText()}, task recording time: {task.recording_duration} sec, repeat time for task: {task.repeat_time} sec")
         self.signal_insert.emit(task)
 
 

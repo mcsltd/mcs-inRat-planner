@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from PyQt6.QtCore import QModelIndex
@@ -12,7 +13,7 @@ from ui.main_window import Ui_MainWindow
 
 # database
 from database import database
-from models import Device, Rat, Base
+from models import Device, Rat, Base, Schedule
 from widgets import DlgInputDevice, DlgInputRat, DlgInputSchedule, Task
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _insert_task_into_db(self, task: Task):
         logger.debug(f"Insert task into db: {task}")
 
+        with database.engine.connect() as conn:
+            stmt = insert(Schedule).values(
+                sec_recording_duration=task.recording_duration,
+                sec_repeat_time=task.repeat_time,
+                last_recording_time=None,
+                next_recording_time=None,
+                id_device=task.device,
+                id_rat=task.rat,
+            )
+            conn.execute(stmt)
+            conn.commit()
+
+
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
 
@@ -161,11 +175,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableViewDevice.hideColumn(1)
 
     def update_table_schedules(self):
+        arraydata = []
+
+        with database.engine.connect() as conn:
+            stmt = select(
+                Schedule.id,
+                Schedule.sec_recording_duration, Schedule.sec_repeat_time,
+                Schedule.last_recording_time, Schedule.next_recording_time,
+                Schedule.id_device, Schedule.id_rat
+            )
+            for idx, row in enumerate(conn.execute(stmt)):
+                arraydata.append([idx + 1, *row])
+
         self.model_schedule = DataTableModel(
-            column_names=["№", "Description", "Status", "Device", "Rat"],
-            data=[]
+            # columns - ["№", "id", "duration", "repeat time", "last recording time", "next recording time", "device", "rat"]
+            column_names=Schedule().get_columns(),
+            data=arraydata
         )
         self.tableViewSchedule.setModel(self.model_schedule)
+        self.tableViewSchedule.hideColumn(1)
+
+
 
 if __name__ == "__main__":
     logging.basicConfig(
