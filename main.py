@@ -13,7 +13,7 @@ from ui.main_window import Ui_MainWindow
 # database
 from database import database
 from models import Device, Rat, Base
-from widgets import DlgInputDevice, DlgInputRat, DlgInputSchedule
+from widgets import DlgInputDevice, DlgInputRat, DlgInputSchedule, Task
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         devices: dict = dict()
         rats: dict = dict()
 
+        # ToDo: separate on function
         # for devices
         for idx_row in range(self.tableViewDevice.model().rowCount()):
             index = self.tableViewDevice.model().index(idx_row, 0)
@@ -67,6 +68,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             rats.update({data["name"]: data["id"]})
 
         dlg = DlgInputSchedule(devices=devices, rats=rats)
+        dlg.signal_insert.connect(self._insert_task_into_db)
         dlg.exec()
 
     def show_dlg_input_rat(self):
@@ -100,6 +102,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.error(f"Raise error when add rat in db: {exc}")
         finally:
             self.fill_table_rat()
+
+    def _insert_task_into_db(self, task: Task):
+        logger.debug(f"Insert task into db: {task}")
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
@@ -162,5 +167,5 @@ if __name__ == "__main__":
 
     app = QApplication([])
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     app.exec()

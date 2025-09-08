@@ -43,8 +43,18 @@ class DlgInputRat(Ui_DlgRat, QDialog):
         self.signal_insert.emit(name)
         self.close()
 
+from dataclasses import dataclass
+
+@dataclass
+class Task:
+    device: dict
+    rat: dict
+    recording_duration: int
+    repeat_time: int
+
+
 class DlgInputSchedule(Ui_DialogSchedule, QDialog):
-    signal_insert = Signal()
+    signal_insert = Signal(Task)
 
     def __init__(
             self,
@@ -65,6 +75,14 @@ class DlgInputSchedule(Ui_DialogSchedule, QDialog):
             combobox.addItem(key, data[key])
 
     def add(self) -> None:
-        logger.debug("Add new task for {device_name}, {rat_name}, recording time: {recording_time} sec, repeat time: {recording_time} sec")
+        task = Task(
+            device={self.comboBoxDevices.currentText(): self.comboBoxDevices.currentData()},
+            rat={self.comboBoxRats.currentText(): self.comboBoxRats.currentData()},
+            recording_duration=int(self.lineEditRecordingDuration.text()),  # ToDo: add checkup
+            repeat_time=int(self.lineEditRecordingRepeatTime.text()),       # ToDo: add checkup
+        )
+
+        logger.debug(f"Add new task for device {list(task.device.keys())[0]} and rats {list(task.rat.keys())[0]}, task recording time: {task.recording_duration} sec, repeat time for task: {task.repeat_time} sec")
+        self.signal_insert.emit(task)
 
 
