@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogSchedule</class>
+ <widget class="QDialog" name="DialogSchedule">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>411</width>
+    <height>217</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Create schedule</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="0">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelDevices">
+       <property name="text">
+        <string>Devices</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelRecordingRepeatTime">
+       <property name="text">
+        <string>Recording repeat time, sec</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelRats">
+       <property name="text">
+        <string>Rats</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelRecordingDuration">
+       <property name="text">
+        <string>Recording duration, sec</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboBoxDevices"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QComboBox" name="comboBoxRats"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="lineEditRecordingDuration"/>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="lineEditRecordingRepeatTime"/>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="pushButtonCreateTask">
+     <property name="text">
+      <string>Add</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

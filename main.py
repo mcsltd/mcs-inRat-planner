@@ -13,8 +13,7 @@ from ui.main_window import Ui_MainWindow
 # database
 from database import database
 from models import Device, Rat, Base
-from widgets import DlgInputDevice, DlgInputRat
-
+from widgets import DlgInputDevice, DlgInputRat, DlgInputSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +46,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonAddDevice.clicked.connect(self.show_dlg_input_device)
         self.pushButtonDeleteDevice.clicked.connect(self._delete_device_from_db)
 
-        # ToDo: control schedules
-        # self.pushButtonCreateTask.clicked.connect(...)
+        # control schedules
+        self.pushButtonCreateTask.clicked.connect(self.show_dlg_input_task)
         # self.pushButtonDeleteTask.clicked.connect(...)
+
+    def show_dlg_input_task(self) -> None:
+        devices: dict = dict()
+        rats: dict = dict()
+
+        # for devices
+        for idx_row in range(self.tableViewDevice.model().rowCount()):
+            index = self.tableViewDevice.model().index(idx_row, 0)
+            data = self._get_row_as_dict(self.tableViewDevice, index)
+            devices.update({data["name"]: data["id"]})
+
+        # for rats
+        for idx_row in range(self.tableViewRat.model().rowCount()):
+            index = self.tableViewRat.model().index(idx_row, 0)
+            data = self._get_row_as_dict(self.tableViewRat, index)
+            rats.update({data["name"]: data["id"]})
+
+        dlg = DlgInputSchedule(devices=devices, rats=rats)
+        dlg.exec()
 
     def show_dlg_input_rat(self):
         dlg = DlgInputRat()
@@ -83,10 +101,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         finally:
             self.fill_table_rat()
 
-    def _get_row_as_dict(self, table: QTableView, index: QModelIndex):
+    def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
 
-        data = {}
+        data: dict = {}
         for idx_col in range(model.columnCount()):
             key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
