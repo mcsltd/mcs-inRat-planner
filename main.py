@@ -121,6 +121,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             conn.execute(stmt)
             conn.commit()
+        self.update_table_schedules()
 
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
