@@ -43,16 +43,6 @@ class DataTableModel(QAbstractTableModel):
             return True
         return False
 
-    # def removeRow(self, row, parent=QModelIndex()):
-    #     if 0 <= row < len(self._data):
-    #         # ВАЖНО: Уведомляем представление о начале удаления
-    #         self.beginRemoveRows(parent, row, row)
-    #         del self._data[row]
-    #         # ВАЖНО: Уведомляем представление о конце удаления
-    #         self.endRemoveRows()
-    #         return True
-    #     return False
-
     # must be implemented if models is editable
     # def setData(self, index, value, /, role = ...):
     #     ...

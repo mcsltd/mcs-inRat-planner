@@ -89,6 +89,13 @@
     <item row="0" column="0">
      <layout class="QVBoxLayout" name="verticalLayoutSchedule">
       <item>
+       <widget class="QLabel" name="labelSchedules">
+        <property name="text">
+         <string>Schedules</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QTableView" name="tableViewSchedule"/>
       </item>
       <item>
@@ -96,7 +103,14 @@
         <item>
          <widget class="QPushButton" name="pushButtonCreateTask">
           <property name="text">
-           <string>Create</string>
+           <string>Create Task</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonDeleteTask">
+          <property name="text">
+           <string>Delete Task</string>
           </property>
          </widget>
         </item>

@@ -1,7 +1,7 @@
 import logging
 
 from PyQt6.QtCore import QModelIndex
-from PySide6.QtWidgets import QMainWindow, QApplication, QAbstractItemView, QTableView
+from PySide6.QtWidgets import QMainWindow, QApplication, QAbstractItemView, QTableView, QHeaderView
 from PySide6.QtCore import Signal, Qt, QAbstractTableModel
 from sqlalchemy import insert, select, delete
 
@@ -32,13 +32,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableViewRat.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableViewDevice.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
+        # setup stretch column on visible space table widget
+        self.tableViewRat.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableViewDevice.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableViewSchedule.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         # self.tableViewSchedule.setModel()       # QTableView
 
+        # control rat
         self.pushButtonAddRat.clicked.connect(self.show_dlg_input_rat)
         self.pushButtonDeleteRat.clicked.connect(self._delete_rat_from_db)
 
+        # control device
         self.pushButtonAddDevice.clicked.connect(self.show_dlg_input_device)
         self.pushButtonDeleteDevice.clicked.connect(self._delete_device_from_db)
+
+        # ToDo: control schedules
+        # self.pushButtonCreateTask.clicked.connect(...)
+        # self.pushButtonDeleteTask.clicked.connect(...)
 
     def show_dlg_input_rat(self):
         dlg = DlgInputRat()
@@ -90,7 +101,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             conn.execute(stmt)
             conn.commit()
 
-    def _delete_device_from_db(self):
+    def _delete_device_from_db(self) -> None:
         index = self.tableViewDevice.currentIndex()
         data = self._get_row_as_dict(self.tableViewDevice, index)
         self.model_device.removeRow(index.row(), index)
@@ -98,7 +109,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             stmt = delete(Device).where(Device.id==data["id"])
             conn.execute(stmt)
             conn.commit()
-
 
     def fill_table_rat(self):
         arraydata = []
@@ -112,7 +122,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tableViewRat.setModel(self.model_rat)            # QTableView
         self.tableViewRat.hideColumn(1)
-
 
     def fill_table_device(self):
         arraydata = []
