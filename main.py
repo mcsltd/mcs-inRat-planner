@@ -28,8 +28,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # setup tables
         self.fill_table_rat()
         self.fill_table_device()
+        self.update_table_schedules()
         self.tableViewRat.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableViewDevice.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableViewSchedule.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+
 
         # setup stretch column on visible space table widget
         self.tableViewRat.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -54,7 +57,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         devices: dict = dict()
         rats: dict = dict()
 
-        # ToDo: separate on function
+        # ToDo: separate on functions
         # for devices
         for idx_row in range(self.tableViewDevice.model().rowCount()):
             index = self.tableViewDevice.model().index(idx_row, 0)
@@ -142,7 +145,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for idx, row in enumerate(conn.execute(stmt)):
                 arraydata.append([idx + 1, *row])
         self.model_rat = DataTableModel(column_names=column_names, data=arraydata, parent=self)
-
         self.tableViewRat.setModel(self.model_rat)            # QTableView
         self.tableViewRat.hideColumn(1)
 
@@ -158,6 +160,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableViewDevice.setModel(self.model_device)        # QTableView
         self.tableViewDevice.hideColumn(1)
 
+    def update_table_schedules(self):
+        self.model_schedule = DataTableModel(
+            column_names=["№", "Description", "Status", "Device", "Rat"],
+            data=[]
+        )
+        self.tableViewSchedule.setModel(self.model_schedule)
 
 if __name__ == "__main__":
     logging.basicConfig(
