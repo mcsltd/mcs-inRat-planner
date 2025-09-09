@@ -1,3 +1,5 @@
+import datetime
+
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 
 
@@ -26,6 +28,10 @@ class DataTableModel(QAbstractTableModel):
             return None
 
         if role == Qt.ItemDataRole.DisplayRole:
+            if type(self.arraydata[index.row()][index.column()]) is datetime.datetime:
+                self.arraydata[index.row()][index.column()] = self.arraydata[index.row()][index.column()].time().replace(microsecond=0)
+                self.arraydata[index.row()][index.column()] = str(self.arraydata[index.row()][index.column()])
+
             return self.arraydata[index.row()][index.column()]
 
         return None

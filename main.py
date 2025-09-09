@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from PyQt6.QtCore import QModelIndex
@@ -12,7 +13,7 @@ from ui.main_window import Ui_MainWindow
 
 # database
 from database import database
-from models import Device, Rat, Base
+from models import Device, Rat, Base, Schedule
 from widgets import DlgInputDevice, DlgInputRat, DlgInputSchedule, Task
 
 logger = logging.getLogger(__name__)
@@ -33,11 +34,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableViewDevice.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableViewSchedule.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
-
         # setup stretch column on visible space table widget
         self.tableViewRat.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableViewDevice.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableViewSchedule.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        self.tableViewRat.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        self.tableViewDevice.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        self.tableViewSchedule.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 
         # self.tableViewSchedule.setModel()       # QTableView
 
@@ -51,7 +55,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # control schedules
         self.pushButtonCreateTask.clicked.connect(self.show_dlg_input_task)
-        # self.pushButtonDeleteTask.clicked.connect(...)
+        self.pushButtonDeleteTask.clicked.connect(self._delete_schedule_from_db)
 
     def show_dlg_input_task(self) -> None:
         devices: dict = dict()
@@ -109,6 +113,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _insert_task_into_db(self, task: Task):
         logger.debug(f"Insert task into db: {task}")
 
+        with database.engine.connect() as conn:
+            stmt = insert(Schedule).values(
+                sec_recording_duration=task.recording_duration,
+                sec_repeat_time=task.repeat_time,
+                # last_recording_time=None,
+                # next_recording_time=None,
+                id_device=task.device,
+                id_rat=task.rat,
+            )
+            conn.execute(stmt)
+            conn.commit()
+        self.update_table_schedules()
+
+
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
 
@@ -133,6 +151,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.model_device.removeRow(index.row(), index)
         with database.engine.connect() as conn:
             stmt = delete(Device).where(Device.id==data["id"])
+            conn.execute(stmt)
+            conn.commit()
+
+    def _delete_schedule_from_db(self) -> None:
+        index = self.tableViewSchedule.currentIndex()
+        data = self._get_row_as_dict(self.tableViewSchedule, index)
+        self.model_schedule.removeRow(index.row(), index)
+        with database.engine.connect() as conn:
+            stmt = delete(Schedule).where(Schedule.id == data["id"])
             conn.execute(stmt)
             conn.commit()
 
@@ -161,11 +188,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableViewDevice.hideColumn(1)
 
     def update_table_schedules(self):
+        arraydata = []
+
+        with database.engine.connect() as conn:
+            stmt = select(
+                Schedule.id,
+                Schedule.sec_recording_duration, Schedule.sec_repeat_time,
+                Schedule.last_recording_time, Schedule.next_recording_time,
+                Rat.name, Device.name
+            ).join(Device, Device.id == Schedule.id_device).join(Rat, Rat.id == Schedule.id_rat)
+            for idx, row in enumerate(conn.execute(stmt)):
+
+                arraydata.append([idx + 1, *row])
+
         self.model_schedule = DataTableModel(
-            column_names=["№", "Description", "Status", "Device", "Rat"],
-            data=[]
+            # columns - ["№", "id", "duration", "repeat time", "last recording time", "next recording time", "device", "rat"]
+            column_names=Schedule().get_columns(),
+            data=arraydata
         )
         self.tableViewSchedule.setModel(self.model_schedule)
+        self.tableViewSchedule.hideColumn(1)
+
+
 
 if __name__ == "__main__":
     logging.basicConfig(
