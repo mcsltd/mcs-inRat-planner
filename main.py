@@ -52,7 +52,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # control schedules
         self.pushButtonCreateTask.clicked.connect(self.show_dlg_input_task)
-        # self.pushButtonDeleteTask.clicked.connect(...)
+        self.pushButtonDeleteTask.clicked.connect(self._delete_schedule_from_db)
 
     def show_dlg_input_task(self) -> None:
         devices: dict = dict()
@@ -148,6 +148,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.model_device.removeRow(index.row(), index)
         with database.engine.connect() as conn:
             stmt = delete(Device).where(Device.id==data["id"])
+            conn.execute(stmt)
+            conn.commit()
+
+    def _delete_schedule_from_db(self) -> None:
+        index = self.tableViewSchedule.currentIndex()
+        data = self._get_row_as_dict(self.tableViewSchedule, index)
+        self.model_schedule.removeRow(index.row(), index)
+        with database.engine.connect() as conn:
+            stmt = delete(Schedule).where(Schedule.id == data["id"])
             conn.execute(stmt)
             conn.commit()
 
