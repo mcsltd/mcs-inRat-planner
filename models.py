@@ -2,7 +2,7 @@ import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 
 

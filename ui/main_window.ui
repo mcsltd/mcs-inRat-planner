@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>803</width>
-    <height>517</height>
+    <width>1055</width>
+    <height>818</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,40 +15,147 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1">
-     <widget class="Line" name="lineSeparateSchedule">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3">
-     <layout class="QVBoxLayout" name="verticalLayoutDeviceRat">
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QLabel" name="labelDevices">
-        <property name="text">
-         <string>Devices</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTableView" name="tableViewDevice"/>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayoutControlDevice">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QPushButton" name="pushButtonAddDevice">
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonCreateTask">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>125</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Add</string>
+           <string>Create Task</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButtonDeleteDevice">
+         <widget class="QPushButton" name="pushButtonDeleteTask">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>125</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Delete</string>
+           <string>Delete Task</string>
           </property>
          </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayoutSchedule">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayoutControlTask">
+          <item>
+           <widget class="QLabel" name="labelSchedules">
+            <property name="text">
+             <string>Schedules</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTableView" name="tableViewSchedule"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayoutDevice">
+        <item>
+         <widget class="QLabel" name="labelDevices">
+          <property name="text">
+           <string>Devices</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableView" name="tableViewDevice">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>190</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayoutControlDevice">
+          <item>
+           <widget class="QPushButton" name="pushButtonAddDevice">
+            <property name="text">
+             <string>Add</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonDeleteDevice">
+            <property name="text">
+             <string>Delete</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
@@ -62,7 +169,20 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableView" name="tableViewRat"/>
+         <widget class="QTableView" name="tableViewRat">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>190</height>
+           </size>
+          </property>
+         </widget>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayoutControlRat">
@@ -86,38 +206,6 @@
       </item>
      </layout>
     </item>
-    <item row="0" column="0">
-     <layout class="QVBoxLayout" name="verticalLayoutSchedule">
-      <item>
-       <widget class="QLabel" name="labelSchedules">
-        <property name="text">
-         <string>Schedules</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTableView" name="tableViewSchedule"/>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QPushButton" name="pushButtonCreateTask">
-          <property name="text">
-           <string>Create Task</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonDeleteTask">
-          <property name="text">
-           <string>Delete Task</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -125,7 +213,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>803</width>
+     <width>1055</width>
      <height>22</height>
     </rect>
    </property>

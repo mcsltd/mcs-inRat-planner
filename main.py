@@ -195,8 +195,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 Schedule.id,
                 Schedule.sec_recording_duration, Schedule.sec_repeat_time,
                 Schedule.last_recording_time, Schedule.next_recording_time,
-                Schedule.id_device, Schedule.id_rat
-            )
+                Rat.name, Device.name
+            ).join(Device, Device.id == Schedule.id_device).join(Rat, Rat.id == Schedule.id_rat)
             for idx, row in enumerate(conn.execute(stmt)):
                 arraydata.append([idx + 1, *row])
 
