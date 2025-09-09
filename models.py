@@ -38,10 +38,19 @@ class Schedule(Base):
 
     sec_recording_duration: Mapped[int]
     sec_repeat_time: Mapped[int]
-    last_recording_time: Mapped[Optional[datetime.datetime]] = mapped_column(default=None)
-    next_recording_time: Mapped[Optional[datetime.datetime]] = mapped_column(default=None)
 
-    # status: Mapped[str] = mapped_column(default=...)
+
+    last_recording_time: Mapped[Optional[datetime.datetime]] = mapped_column(
+        default=datetime.datetime.now,
+        server_default=func.now()
+    )
+
+    next_recording_time: Mapped[Optional[datetime.datetime]] = mapped_column(
+        default=datetime.datetime.now,
+        server_default=func.now()
+    )
+
+    status: Mapped[str] = mapped_column(default="waiting")
 
     # foreign key device
     id_device: Mapped[UUID] = mapped_column(ForeignKey("device.id"))
@@ -52,4 +61,4 @@ class Schedule(Base):
     # rat: Mapped["Rat"] = relationship(back_populates="schedule")
 
     def get_columns(cls):
-        return ["№", "id", "duration", "repeat time", "last recording time", "next recording time", "device", "rat"]
+        return ["№", "id", "duration, sec", "repeat time, sec", "last recording time", "next recording time", "rat", "device"]

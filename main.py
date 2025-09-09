@@ -117,8 +117,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             stmt = insert(Schedule).values(
                 sec_recording_duration=task.recording_duration,
                 sec_repeat_time=task.repeat_time,
-                last_recording_time=None,
-                next_recording_time=None,
+                # last_recording_time=None,
+                # next_recording_time=None,
                 id_device=task.device,
                 id_rat=task.rat,
             )
@@ -198,6 +198,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 Rat.name, Device.name
             ).join(Device, Device.id == Schedule.id_device).join(Rat, Rat.id == Schedule.id_rat)
             for idx, row in enumerate(conn.execute(stmt)):
+
                 arraydata.append([idx + 1, *row])
 
         self.model_schedule = DataTableModel(
