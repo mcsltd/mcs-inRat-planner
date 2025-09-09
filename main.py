@@ -34,11 +34,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableViewDevice.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableViewSchedule.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
-
         # setup stretch column on visible space table widget
         self.tableViewRat.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableViewDevice.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableViewSchedule.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        self.tableViewRat.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        self.tableViewDevice.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        self.tableViewSchedule.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 
         # self.tableViewSchedule.setModel()       # QTableView
 
