@@ -21,8 +21,14 @@
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <spacer name="verticalSpacer_2">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -46,6 +52,12 @@
             <height>0</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="text">
            <string>Create Task</string>
           </property>
@@ -65,6 +77,12 @@
             <height>0</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="text">
            <string>Delete Task</string>
           </property>
@@ -72,8 +90,14 @@
         </item>
         <item>
          <spacer name="verticalSpacer">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -91,6 +115,12 @@
          <layout class="QHBoxLayout" name="horizontalLayoutControlTask">
           <item>
            <widget class="QLabel" name="labelSchedules">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Schedules</string>
             </property>
@@ -99,7 +129,14 @@
          </layout>
         </item>
         <item>
-         <widget class="QTableView" name="tableViewSchedule"/>
+         <widget class="QTableView" name="tableViewSchedule">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -107,8 +144,14 @@
     </item>
     <item row="1" column="0">
      <widget class="Line" name="line">
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+       <enum>Qt::Orientation::Horizontal</enum>
       </property>
      </widget>
     </item>
@@ -118,6 +161,12 @@
        <layout class="QVBoxLayout" name="verticalLayoutDevice">
         <item>
          <widget class="QLabel" name="labelDevices">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="text">
            <string>Devices</string>
           </property>
@@ -137,12 +186,24 @@
             <height>190</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
          </widget>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayoutControlDevice">
           <item>
            <widget class="QPushButton" name="pushButtonAddDevice">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Add</string>
             </property>
@@ -150,6 +211,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButtonDeleteDevice">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Delete</string>
             </property>
@@ -163,6 +230,12 @@
        <layout class="QVBoxLayout" name="verticalLayoutRat">
         <item>
          <widget class="QLabel" name="labelRat">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="text">
            <string>Rats</string>
           </property>
@@ -182,12 +255,24 @@
             <height>190</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
          </widget>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayoutControlRat">
           <item>
            <widget class="QPushButton" name="pushButtonAddRat">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Add</string>
             </property>
@@ -195,6 +280,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButtonDeleteRat">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Delete</string>
             </property>
