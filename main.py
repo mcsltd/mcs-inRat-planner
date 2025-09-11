@@ -1,14 +1,7 @@
 import logging
 
 
-from PyQt6.QtCore import QModelIndex
-from PyQt6.QtWidgets import QDialog
-from PySide6.QtWidgets import QMainWindow, QApplication, QTableView
-from PySide6.QtCore import Qt
-from sqlalchemy import insert, select, delete
-
-# table model
-from tools.modview import DataTableModel
+from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
 
 # ui
 from ui.v1.main_window import Ui_MainWindow
@@ -34,7 +27,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def createSchedule(self):
         dlg = DlgCreateSchedule()
-        dlg.exec()
+        if dlg.exec() == QDialog.accepted:
+            dlg.exec()
+        schedule = dlg.getSchedule()
+        print(schedule)
 
 
 if __name__ == "__main__":
