@@ -1,9 +1,9 @@
 import datetime
 import logging
 
-from PyQt6.QtCore import QAbstractTableModel
+from PySide6.QtCore import QModelIndex, QAbstractTableModel, Qt
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QAbstractItemView, QHeaderView
-from sqlalchemy import insert
+from sqlalchemy import insert, select, delete
 
 from tools.modview import DataTableModel
 # ui
@@ -38,10 +38,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         self.setupTableView(self.tableViewHistory, self.tableModelHistory)
 
+        self.updateTableSchedule()
 
         self.pushButtonAddSchedule.clicked.connect(self.createSchedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
-        # ToDo: self.pushButtonDeleteSchedule.clicked.connect(...)
+        self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
     def setupTableView(self, tableView: QTableView, tableModel: QAbstractTableModel):
@@ -75,6 +76,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             conn.execute(stmt)
             conn.commit()
         return None
+
+    def updateTableSchedule(self):
+        data = []
+        with database.engine.connect() as conn:
+            stmt = select(
+                Schedule.id,
+                Schedule.patient, Schedule.device_sn,
+                Schedule.sampling_frequency, Schedule.format,
+                Schedule.sec_duration, Schedule.sec_repeat_interval
+            )
+            rows = conn.execute(stmt)
+            for idx, row in enumerate(rows):
+                data.append([idx + 1, *row])
+        self.tableModelSchedule = DataTableModel(
+            column_names=["№", "id", "Имя объекта", "Серийный номер", "Частота", "Формат", "Длительность", "Интервал", ],
+            data=data
+        )
+        self.setupTableView(self.tableViewSchedule, self.tableModelSchedule)
+
+    def deleteScheduleFromDB(self):
+        index = self.tableViewSchedule.currentIndex()
+        data = self._get_row_as_dict(self.tableViewSchedule, index)
+        self.tableModelSchedule.removeRow(index.row(), index)
+        with database.engine.connect() as conn:
+            stmt = delete(Schedule).where(Schedule.id == data["id"])
+            conn.execute(stmt)
+            conn.commit()
+
+    def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
+        model = table.model()
+        data: dict = {}
+        for idx_col in range(model.columnCount()):
+            key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+            data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
+        return data
 
 if __name__ == "__main__":
     logging.basicConfig(
