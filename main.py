@@ -1,13 +1,11 @@
 import logging
 
-
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
 
 # ui
 from ui.v1.main_window import Ui_MainWindow
 
 # database
-from database import database
 from widgets import DlgCreateSchedule
 
 logger = logging.getLogger(__name__)
@@ -25,12 +23,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # ToDo: self.pushButtonDeleteSchedule.clicked.connect(...)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
-    def createSchedule(self):
+    def createSchedule(self) -> None:
         dlg = DlgCreateSchedule()
-        if dlg.exec() == QDialog.accepted:
-            dlg.exec()
-        schedule = dlg.getSchedule()
-        print(schedule)
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            schedule = dlg.getSchedule()
+            logger.debug(f"New schedule: {schedule=}")
 
 
 if __name__ == "__main__":

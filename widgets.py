@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from PySide6.QtCore import QDateTime
@@ -5,6 +6,7 @@ from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox
 
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 
+logger = logging.getLogger(__name__)
 
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
@@ -30,9 +32,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def getSchedule(self) -> Optional[dict]:
 
-        if self.lineEditObj.text() == "":
-            self.lineEditSn.setFocus()
-
         patient = self.lineEditObj.text()
         device_sn = self.lineEditSn.text()
 
@@ -53,8 +52,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             "freq": freq
         }
 
-
-    def convertTimeIntoSeconds(self, combobox: QComboBox, spinbox: QSpinBox) -> int:
+    @classmethod
+    def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
         crnt_unit = combobox.currentText()
         if crnt_unit == "секунд":
             return spinbox.value()
