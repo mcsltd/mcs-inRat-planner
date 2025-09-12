@@ -38,7 +38,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)
         sec_interval = self.convertTimeIntoSeconds(combobox=self.comboBoxIntervalDim, spinbox=self.spinBoxInterval)
 
-        starttime = self.dateTimeEditStartRecord.dateTime()
+        starttime = self.dateTimeEditStartRecord.dateTime().toPython()
         format = self.comboBoxFormat.currentText()
         freq = self.comboBoxFreq.currentText()
 
