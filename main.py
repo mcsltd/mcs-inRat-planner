@@ -1,9 +1,10 @@
 import datetime
 import logging
 
-from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
+from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QAbstractItemView, QHeaderView
 from sqlalchemy import insert
 
+from tools.modview import DataTableModel
 # ui
 from ui.v1.main_window import Ui_MainWindow
 from widgets import DlgCreateSchedule
@@ -21,6 +22,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
+
+        # create view for table Schedule
+        self.tableModelSchedule = DataTableModel(
+            column_names=["№", "Имя объекта", "Серийный номер", "Частота", "Формат", "Длительность", "Интервал",],
+            data=[]
+        )
+        self.tableViewSchedule.setModel(self.tableModelSchedule)
+        self.tableViewSchedule.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableViewSchedule.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableViewSchedule.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+
+        # create view for table History
+        self.tableModelHistory = DataTableModel(
+            column_names=["№", "Начало записи", "Конец записи", "Статус", "Формат", "Частота",],
+            data=[]
+        )
+        self.tableViewHistory.setModel(self.tableModelHistory)
+        self.tableViewHistory.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableViewHistory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableViewHistory.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 
         self.pushButtonAddSchedule.clicked.connect(self.createSchedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
@@ -50,6 +71,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             conn.execute(stmt)
             conn.commit()
+        return None
 
 if __name__ == "__main__":
     logging.basicConfig(
