@@ -1,88 +1,64 @@
 import logging
+from typing import Optional
 
-from PyQt6.QtWidgets import QComboBox
-from PySide6.QtWidgets import QDialog
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QDateTime
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox
 
-from ui.dlg_device import Ui_DlgDevice
-from ui.dlg_rat import Ui_DlgRat
-from ui.dlg_schedule import Ui_DialogSchedule
+from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 
 logger = logging.getLogger(__name__)
 
 
-class DlgInputDevice(Ui_DlgDevice, QDialog):
-    signal_insert = Signal(str, str, str)
+class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.setWindowTitle("Input Device")
-        self.pushButton.clicked.connect(self.add)
 
-    def add(self):
-        name = self.lineEditNameDevice.text()
-        serial = self.lineEditSerialDevice.text()
-        model = self.lineEditModelDevice.text()
-        logger.debug(f"Add new device: {name=} {serial=} {model=}")
-        self.signal_insert.emit(name, serial, model)
-        self.close()
+        # setup QDateTimeEdit
+        self.dateTimeEditStartRecord.setDateTime(QDateTime.currentDateTime().addSecs(60))
+        self.dateTimeEditStartRecord.setCalendarPopup(True)
 
-class DlgInputRat(Ui_DlgRat, QDialog):
-    signal_insert = Signal(str)
+        # set default value for ComboBox
+        self.comboBoxFreq.setCurrentIndex(1)            # default 1000 Hz
+        self.comboBoxIntervalDim.setCurrentIndex(1)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setupUi(self)
-        self.setWindowTitle("Input Rat")
-        self.pushButtonAdd.clicked.connect(self.add)
+        # set default value for QLineEdit
+        self.spinBoxDuration.setValue(30)
+        self.spinBoxInterval.setValue(1)
 
-    def add(self):
-        name = self.lineEditNameRat.text()
-        logger.debug(f"Add new animal: {name=}")
-        self.signal_insert.emit(name)
-        self.close()
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
 
-from dataclasses import dataclass
+    def getSchedule(self) -> Optional[dict]:
 
-@dataclass
-class Task:
-    device: dict
-    rat: dict
-    recording_duration: int
-    repeat_time: int
+        patient = self.lineEditObj.text()
+        device_sn = self.lineEditSn.text()
 
+        sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)
+        sec_interval = self.convertTimeIntoSeconds(combobox=self.comboBoxIntervalDim, spinbox=self.spinBoxInterval)
 
-class DlgInputSchedule(Ui_DialogSchedule, QDialog):
-    signal_insert = Signal(Task)
+        starttime = self.dateTimeEditStartRecord.dateTime()
+        format = self.comboBoxFormat.currentText()
+        freq = self.comboBoxFreq.currentText()
 
-    def __init__(
-            self,
-            devices: dict, rats: dict, # {"EMG-SENS-0000": UUID(...)} & {"Mikki": UUID(...)}
-            *args, **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-        self.setupUi(self)
+        return {
+            "patient_name": patient,
+            "device_sn": device_sn,
+            "duration": sec_duration,
+            "interval": sec_interval,
+            "start_time": starttime,
+            "format": format,
+            "freq": freq
+        }
 
-        # fill combobox for devices and rats
-        self.fillComboBox(combobox=self.comboBoxRats, data=rats)
-        self.fillComboBox(combobox=self.comboBoxDevices, data=devices)
-
-        self.pushButtonCreateTask.clicked.connect(self.add)
-
-    def fillComboBox(self, combobox: QComboBox, data: dict) -> None:
-        for key in data.keys():
-            combobox.addItem(key, data[key])
-
-    def add(self) -> None:
-        task = Task(
-            device=self.comboBoxDevices.currentData(),
-            rat=self.comboBoxRats.currentData(),
-            recording_duration=int(self.lineEditRecordingDuration.text()),  # ToDo: add checkup
-            repeat_time=int(self.lineEditRecordingRepeatTime.text()),       # ToDo: add checkup
-        )
-
-        logger.debug(f"Add new task for device {self.comboBoxDevices.currentText()} and rats {self.comboBoxDevices.currentText()}, task recording time: {task.recording_duration} sec, repeat time for task: {task.repeat_time} sec")
-        self.signal_insert.emit(task)
-
-
+    @classmethod
+    def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
+        crnt_unit = combobox.currentText()
+        if crnt_unit == "секунд":
+            return spinbox.value()
+        elif crnt_unit == "минут":
+            return spinbox.value() * 60
+        elif crnt_unit == "часов":
+            return spinbox.value() * (60 ** 2)
+        raise ValueError("Invalid data type")
