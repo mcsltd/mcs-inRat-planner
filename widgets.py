@@ -29,13 +29,17 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.buttonBox.rejected.connect(self.reject)
 
     def getSchedule(self) -> Optional[dict]:
+
+        if self.lineEditObj.text() == "":
+            self.lineEditSn.setFocus()
+
         patient = self.lineEditObj.text()
         device_sn = self.lineEditSn.text()
 
         sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)
         sec_interval = self.convertTimeIntoSeconds(combobox=self.comboBoxIntervalDim, spinbox=self.spinBoxInterval)
 
-        starttime = self.dateTimeEditStartRecord.date()
+        starttime = self.dateTimeEditStartRecord.dateTime()
         format = self.comboBoxFormat.currentText()
         freq = self.comboBoxFreq.currentText()
 
@@ -44,7 +48,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             "device_sn": device_sn,
             "duration": sec_duration,
             "interval": sec_interval,
-            "starttime": starttime,
+            "start_time": starttime,
             "format": format,
             "freq": freq
         }
