@@ -37,7 +37,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             data=[]
         )
         self.setupTableView(self.tableViewHistory, self.tableModelHistory)
-
         self.updateTableSchedule()
 
         self.pushButtonAddSchedule.clicked.connect(self.createSchedule)
@@ -50,7 +49,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         tableView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
-
+        tableView.hideColumn(1)
 
     def createSchedule(self) -> None:
         dlg = DlgCreateSchedule()
@@ -75,6 +74,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             conn.execute(stmt)
             conn.commit()
+        self.updateTableSchedule()
         return None
 
     def updateTableSchedule(self):
