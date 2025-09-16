@@ -10,11 +10,12 @@ from sqlalchemy import insert, select, delete, update
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
 
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE
 from controller import Controller
 # ui
 from ui.v1.main_window import Ui_MainWindow
 from widgets import DlgCreateSchedule
-from tools.modview import DataTableModel
+from tools.modview import _DataTableModel as DataTableModel, GenericTableWidget
 
 # database
 from database import database
@@ -34,20 +35,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.controller = Controller()
 
         # create scheduler for qt application
-        self.scheduler = QtScheduler()
-        self.scheduler.start()
-        self.scheduler.add_listener(self.checkGoodResultExecuteJob, EVENT_JOB_EXECUTED)
-        self.scheduler.add_listener(self.updateTableHistory, EVENT_JOB_ADDED)
-        self.generateJobsFromDB()
+        # self.scheduler = QtScheduler()
+        # self.scheduler.start()
+        # self.scheduler.add_listener(self.checkGoodResultExecuteJob, EVENT_JOB_EXECUTED)
+        # self.scheduler.add_listener(self.updateTableHistory, EVENT_JOB_ADDED)
+        # self.generateJobsFromDB()
 
         # create view for table Schedule
-        self.tableModelSchedule = DataTableModel(column_names=["№", "Имя объекта", "Серийный номер", "Частота", "Формат", "Длительность", "Интервал",], data=[])
-        self.setupTableView(self.tableViewSchedule, self.tableModelSchedule)
+        self.tableModelSchedule = GenericTableWidget()
+        self.tableModelSchedule.setData(
+            data=[],
+            description=DESCRIPTION_COLUMN_SCHEDULE
+        )
+
+        self.tableModelHistory = GenericTableWidget()
+        self.tableModelHistory.setData(
+            description=DESCRIPTION_COLUMN_HISTORY,
+            data=[]
+        )
+
+        self.verticalLayoutHistory.addWidget(self.tableModelHistory)
+        self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # create view for table History
-        self.tableModelHistory = DataTableModel(column_names=["№", "Начало записи", "Конец записи", "Cтатус", "Формат", "Частота"], data=[])
-        self.setupTableView(self.tableViewHistory, self.tableModelHistory)
-        self.updateTableSchedule()
+        # self.tableModelHistory = DataTableModel(column_names=["№", "Начало записи", "Конец записи", "Cтатус", "Формат", "Частота"], data=[])
+        # self.setupTableView(self.tableViewHistory, self.tableModelHistory)
+        # self.updateTableSchedule()
 
         self.pushButtonAddSchedule.clicked.connect(self.createSchedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
@@ -107,7 +120,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableModelSchedule = DataTableModel(column_names=history_column, data=data)
         self.setupTableView(self.tableViewSchedule, self.tableModelSchedule)
 
-
     def generateJobsFromDB(self):
         # get schedule data from db
         with database.engine.connect() as conn:
@@ -130,33 +142,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 f"Add new job from table Schedule: "
                 f"id={sched['id']}, start_time={sched['next_record_time']}, duration={sched['sec_duration']} sec"
             )
-            self.scheduler.add_job(
-                func=self.controller.start_recording, trigger="date",
-                args=(sched["device_sn"], sched['next_record_time'], sched["sec_duration"]),
-                id=str(sched["id"]), run_date=start_time,
-            )
+            # self.scheduler.add_job(
+            #     func=self.controller.start_recording, trigger="date",
+            #     args=(sched["device_sn"], sched['next_record_time'], sched["sec_duration"]),
+            #     id=str(sched["id"]), run_date=start_time,
+            # )
 
-    def setupTableView(self, tableView: QTableView, tableModel: QAbstractTableModel):
-        tableView.setModel(tableModel)
-        tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        tableView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
-        tableView.hideColumn(1)
 
     def createSchedule(self) -> None:
         dlg = DlgCreateSchedule()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             schedule = dlg.getSchedule()
-            schedule_id = self._addScheduleIntoDB(schedule)
 
+            if schedule is None:
+                return
+
+            schedule_id = self._addScheduleIntoDB(schedule)
             # for example
             # add job in schedule
-            self.scheduler.add_job(
-                func=self.controller.start_recording, args=(schedule["start_time"], schedule["duration"]),
-                trigger="date", id=schedule_id, run_date=schedule["start_time"],
-                next_run_time=schedule["start_time"] + datetime.timedelta(seconds=schedule["duration"] + schedule["interval"])
-            )
+            # self.scheduler.add_job(
+            #     func=self.controller.start_recording, args=(schedule["start_time"], schedule["duration"]),
+            #     trigger="date", id=schedule_id, run_date=schedule["start_time"],
+            #     next_run_time=schedule["start_time"] + datetime.timedelta(seconds=schedule["duration"] + schedule["interval"])
+            # )
 
 
     def _addScheduleIntoDB(self, schedule: dict) -> str:

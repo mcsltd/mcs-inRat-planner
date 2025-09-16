@@ -1,8 +1,10 @@
 import logging
 from typing import Optional
+from xml.dom import NoModificationAllowedErr
 
 from PySide6.QtCore import QDateTime
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox
+from PySide6.QtGui import QPalette, QColor
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QPushButton
 
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 
@@ -15,41 +17,62 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        # setup QDateTimeEdit
-        self.dateTimeEditStartRecord.setDateTime(QDateTime.currentDateTime().addSecs(60))
-        self.dateTimeEditStartRecord.setCalendarPopup(True)
+        # setup datetime edit
+        self.dateTimeEditStartExperiment.setCalendarPopup(True)
+        self.dateTimeEditFinishExperiment.setCalendarPopup(True)
 
-        # set default value for ComboBox
-        self.comboBoxFreq.setCurrentIndex(1)            # default 1000 Hz
-        self.comboBoxIntervalDim.setCurrentIndex(1)
+        self.ComboBoxExperiment.setEditable(True)
 
-        # set default value for QLineEdit
-        self.spinBoxDuration.setValue(30)
-        self.spinBoxInterval.setValue(1)
+        # setup combobox model device
+        self.ComboBoxModelDevice.addItems(["InRat", "EMGsens"])
+        # setup combobox sampling rate
+        self.comboBoxFreq.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
+        # setup combobox saving format
+        self.comboBoxFormat.addItems(
+            ["Comma-separated values (CSV)", "European Data Format (EDF)", "Waveform Database (WFDB)"]
+        )
 
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
+        self.setDefaults()
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
+
+    def setDefaults(self):
+        logger.info("Set default settings for schedule")
+
+        self.comboBoxFormat.setCurrentIndex(1)
+        self.ComboBoxExperiment.setCurrentText("Не выбрано")
+        self.ComboBoxModelDevice.setCurrentIndex(1)
+        self.comboBoxFreq.setCurrentIndex(1)
+
+        self.dateTimeEditStartExperiment.setDateTime(QDateTime.currentDateTime().addSecs(60))
+        self.dateTimeEditFinishExperiment.setDateTime(QDateTime.currentDateTime().addMonths(1))
+
+        self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
+
 
     def getSchedule(self) -> Optional[dict]:
+        experiment = self.ComboBoxExperiment.currentText()
+        patient = self.LineEditObject.text()
+        device_sn = self.LineEditSnDevice.text()
+        device_model = self.ComboBoxModelDevice.currentText()
+        start_datetime_experiment = self.dateTimeEditStartExperiment.dateTime()
+        finish_datetime_experiment = self.dateTimeEditStartExperiment.dateTime()
+        save_format = self.comboBoxFormat.currentText()
+        duration = None
+        interval_repeat = None
+        sampling_rate = self.comboBoxFreq.currentText().split()[0]
 
-        patient = self.lineEditObj.text()
-        device_sn = self.lineEditSn.text()
-
-        sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)
-        sec_interval = self.convertTimeIntoSeconds(combobox=self.comboBoxIntervalDim, spinbox=self.spinBoxInterval)
-
-        starttime = self.dateTimeEditStartRecord.dateTime().toPython()
-        format = self.comboBoxFormat.currentText()
-        freq = self.comboBoxFreq.currentText()
+        # device_sn = self.lineEditSn.text()
+        # sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)
+        # sec_interval = self.convertTimeIntoSeconds(combobox=self.comboBoxIntervalDim, spinbox=self.spinBoxInterval)
 
         return {
-            "patient_name": patient,
-            "device_sn": device_sn,
-            "duration": sec_duration,
-            "interval": sec_interval,
-            "start_time": starttime,
-            "format": format,
-            "freq": freq
+            "experiment": experiment, "object": patient,
+            "device_sn": device_sn, "device_model": device_model,
+            "duration": duration, "interval_repat": interval_repeat, "sampling_rate": sampling_rate, "format": save_format,
+            "start_time": start_datetime_experiment, "finish_time": finish_datetime_experiment,
         }
 
     @classmethod

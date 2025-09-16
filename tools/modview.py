@@ -1,14 +1,15 @@
 import datetime
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
 
 
-class DataTableModel(QAbstractTableModel):
-    def __init__(self, column_names: list[str], data: list[list],  parent=None, *args):
+class _DataTableModel(QAbstractTableModel):
+    def __init__(self, description: list, data: list,  parent=None, *args):
         super().__init__(parent=parent)
 
         self.arraydata: list[list] = data
-        self.columns = column_names
+        self.columns = description
 
     # must be implemented: rowCount(), columnCount(), data(), headerData
 
@@ -49,9 +50,21 @@ class DataTableModel(QAbstractTableModel):
             return True
         return False
 
-    # must be implemented if models is editable
-    # def setData(self, index, value, /, role = ...):
-    #     ...
 
+class GenericTableWidget(QTableView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+        self.data = []
+        self.description = []
 
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+
+    def setData(self, data, description):
+        self.data = data
+        self.description = description
+
+        self.data_model = _DataTableModel(data=data, description=description)
+        self.setModel(self.data_model)
