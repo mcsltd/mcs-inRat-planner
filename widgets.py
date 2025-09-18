@@ -82,8 +82,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             return None
 
         device_model = self.comboBoxModelDevice.currentText()
-        start_datetime = self.dateTimeEditStartExperiment.dateTime()
-        finish_datetime = self.dateTimeEditStartExperiment.dateTime()
+        start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython()
+        finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython()
 
         interval = self.comboBoxInterval.currentText()
         if interval == "[hh:mm]":
