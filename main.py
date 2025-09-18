@@ -12,6 +12,7 @@ from apscheduler.schedulers.qt import QtScheduler
 
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE
 from controller import Controller
+from structure import DataSchedule
 # ui
 from ui.v1.main_window import Ui_MainWindow
 from widgets import DlgCreateSchedule
@@ -46,17 +47,61 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
+        self.updateContentTableSchedule()
+        self.updateContentTableHistory()
+
     # Schedule
     def addSchedule(self) -> None:
         logger.info("Adding a new schedule")
         dlg = DlgCreateSchedule()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
-            schedule = dlg.getSchedule()
+            schedule: DataSchedule = dlg.getSchedule()
+
             if schedule is None:
                 logger.error("An error occurred while creating the schedule")
                 return
+
+            # add schedule into database
+            with database.engine.connect() as conn:
+                stmt = insert(Schedule).values(
+                    experiment=schedule.experiment,
+                    patient=schedule.patient,
+                    device_sn=schedule.device_sn, device_model=schedule.device_model,
+                    duration_sec=schedule.duration, interval_sec=schedule.interval,
+                    last_record_time=None, next_record_time=schedule.start_datetime,
+                    start_datetime=schedule.start_datetime, finish_datetime=schedule.finish_datetime,
+                    file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
+                )
+                conn.execute(stmt)
+                conn.commit()
+
+            # fill table Schedule
+            # self.updateContentTableSchedule()
+
             logger.info("Schedule created successfully")
+
+    def updateContentTableSchedule(self):
+        logger.info("Set data in the Schedule table")
+        table_data = []
+
+        with database.engine.connect() as conn:
+            stmt = select(
+                Schedule.experiment,
+                Schedule.patient,
+                Schedule.device_sn, Schedule.device_model,
+                Schedule.start_datetime, Schedule.finish_datetime,
+                Schedule.file_format, Schedule.sampling_rate
+            )
+            result = conn.execute(stmt)
+            conn.commit()
+
+        for row in result:
+            table_data.append([*row])
+        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
+
+        # update label Schedule
+        self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
     def updateSchedule(self) -> None:
         logger.info("The contents of the Schedule table have been updated")
@@ -71,6 +116,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info("The contents of the History table have been updated")
         pass
 
+    def updateContentTableHistory(self):
+        # update label History
+        self.labelHistory.setText(f"История (всего: 0)")
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
@@ -79,9 +127,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
         return data
-
-
-
 
 
     # def init_scheduler(self):

@@ -15,12 +15,21 @@ class Base(DeclarativeBase):
 
 
 class Schedule(Base):
+    experiment: Mapped[str]
 
     patient: Mapped[str]
+
     device_sn: Mapped[str]
-    sec_duration: Mapped[int]
-    sec_repeat_interval: Mapped[int]
+    device_model: Mapped[str]
+
+    duration_sec: Mapped[int]
+    interval_sec: Mapped[int]
+
     last_record_time: Mapped[Optional[datetime.datetime]]
     next_record_time: Mapped[Optional[datetime.datetime]]
-    format: Mapped[str]
-    sampling_frequency: Mapped[int]
+
+    start_datetime: Mapped[Optional[datetime.datetime]]
+    finish_datetime: Mapped[Optional[datetime.datetime]]
+
+    file_format: Mapped[str]
+    sampling_rate: Mapped[int]
