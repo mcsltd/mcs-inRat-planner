@@ -54,7 +54,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if code == QDialog.DialogCode.Accepted:
             schedule = dlg.getSchedule()
             if schedule is None:
+                logger.error("An error occurred while creating the schedule")
                 return
+            logger.info("Schedule created successfully")
 
     def updateSchedule(self) -> None:
         logger.info("The contents of the Schedule table have been updated")
