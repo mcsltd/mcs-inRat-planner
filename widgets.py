@@ -22,13 +22,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.dateTimeEditFinishExperiment.setCalendarPopup(True)
 
         if experiments is not None:
-            self.ComboBoxExperiment.addItems(experiments)
+            self.comboBoxExperiment.addItems(experiments)
 
         # fill combobox
-        self.ComboBoxExperiment.setCurrentText("Не выбрано")
-        self.ComboBoxExperiment.setEditable(True)
-        self.ComboBoxModelDevice.addItems(["InRat", "EMGsens"])
-        self.comboBoxFreq.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
+        self.comboBoxExperiment.setEditable(True)
+        self.comboBoxModelDevice.addItems(["InRat", "EMGsens"])
+        self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
         self.comboBoxFormat.addItems(["Comma-separated values (CSV)", "European Data Format (EDF)", "Waveform Database (WFDB)"])
         self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
         self.comboBoxDuration.setPlaceholderText("[mm:ss]")
@@ -50,12 +49,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     def setDefaults(self):
         logger.info("Set default settings for schedule")
 
-        self.comboBoxFormat.setCurrentIndex(1)
-        # self.ComboBoxExperiment.setCurrentText("Не выбрано")
-        self.ComboBoxModelDevice.setCurrentIndex(1)
-        self.comboBoxFreq.setCurrentIndex(1)
+        # set text
+        self.comboBoxExperiment.setCurrentText("Не выбрано")
 
-        self.ComboBoxExperiment.setCurrentIndex(-1)
+        # set index
+        self.comboBoxFormat.setCurrentIndex(1)
+        self.comboBoxModelDevice.setCurrentIndex(1)
+        self.comboBoxSamplingRate.setCurrentIndex(1)
         self.comboBoxDuration.setCurrentIndex(-1)
         self.comboBoxInterval.setCurrentIndex(-1)
 
@@ -67,16 +67,16 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
 
     def getSchedule(self) -> Optional[dict]:
-        experiment = self.ComboBoxExperiment.currentText()
+        experiment = self.comboBoxExperiment.currentText()
         patient = self.LineEditObject.text()
         device_sn = self.LineEditSnDevice.text()
-        device_model = self.ComboBoxModelDevice.currentText()
+        device_model = self.comboBoxModelDevice.currentText()
         start_datetime_experiment = self.dateTimeEditStartExperiment.dateTime()
         finish_datetime_experiment = self.dateTimeEditStartExperiment.dateTime()
         save_format = self.comboBoxFormat.currentText()
         duration = None
         interval_repeat = None
-        sampling_rate = self.comboBoxFreq.currentText().split()[0]
+        sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
         # device_sn = self.lineEditSn.text()
         # sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)

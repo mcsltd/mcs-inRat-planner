@@ -41,31 +41,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
-        self.pushButtonAddSchedule.clicked.connect(self.createSchedule)
+        self.pushButtonAddSchedule.clicked.connect(self.addSchedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
-        self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
+        # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
-    def updateTableSchedule(self):
-        logger.info("The contents of the Schedule table have been updated.")
-        pass
-
-    def updateTableHistory(self):
-        logger.info("The contents of the History table have been updated.")
-        pass
-
-    def init_scheduler(self):
-        # create controller device
-        # self.controller = Controller()
-        # create scheduler for qt application
-        # self.scheduler = QtScheduler()
-        # self.scheduler.start()
-        # self.scheduler.add_listener(self.checkGoodResultExecuteJob, EVENT_JOB_EXECUTED)
-        # self.scheduler.add_listener(self.updateTableHistory, EVENT_JOB_ADDED)
-        # self.generateJobsFromDB()
-        pass
-
-    def createSchedule(self) -> None:
+    # Schedule
+    def addSchedule(self) -> None:
+        logger.info("Adding a new schedule")
         dlg = DlgCreateSchedule()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
@@ -73,33 +56,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if schedule is None:
                 return
 
-    def _addScheduleIntoDB(self, schedule: dict) -> str:
-        logger.debug(f"Add in DB new schedule: {schedule=}")
-        with database.engine.connect() as conn:
-            stmt = insert(Schedule).values(
-                patient=schedule["patient_name"],
-                device_sn=schedule["device_sn"],
-                sec_duration=schedule["duration"],
-                sec_repeat_interval=schedule["interval"],
-                last_record_time=None,
-                next_record_time=schedule["start_time"],
-                format=schedule["format"],
-                sampling_frequency=schedule["freq"]
-            )
-            res = conn.execute(stmt)
-            schedule_id: UUID = res.inserted_primary_key
-            conn.commit()
-        self.updateTableSchedule()
-        return str(schedule_id)
+    def updateSchedule(self) -> None:
+        logger.info("The contents of the Schedule table have been updated")
+        pass
 
-    def deleteScheduleFromDB(self):
-        index = self.tableViewSchedule.currentIndex()
-        data = self._get_row_as_dict(self.tableViewSchedule, index)
-        self.tableModelSchedule.removeRow(index.row(), index)
-        with database.engine.connect() as conn:
-            stmt = delete(Schedule).where(Schedule.id == data["id"])
-            conn.execute(stmt)
-            conn.commit()
+    def deleteSchedule(self) -> None:
+        logger.info("Deleting a schedule")
+        pass
+
+    # History
+    def updateTableHistory(self):
+        logger.info("The contents of the History table have been updated")
+        pass
+
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
@@ -108,6 +77,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
         return data
+
+
+
+
+
+    # def init_scheduler(self):
+    #     # create controller device
+    #     # self.controller = Controller()
+    #     # create scheduler for qt application
+    #     # self.scheduler = QtScheduler()
+    #     # self.scheduler.start()
+    #     # self.scheduler.add_listener(self.checkGoodResultExecuteJob, EVENT_JOB_EXECUTED)
+    #     # self.scheduler.add_listener(self.updateTableHistory, EVENT_JOB_ADDED)
+    #     # self.generateJobsFromDB()
+    #     pass
 
 if __name__ == "__main__":
     logging.basicConfig(
