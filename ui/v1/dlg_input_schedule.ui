@@ -9,81 +9,51 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>452</width>
-    <height>458</height>
+    <width>458</width>
+    <height>492</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Создание нового расписания</string>
+   <string>Создание расписания</string>
   </property>
   <property name="autoFillBackground">
    <bool>false</bool>
   </property>
-  <widget class="QDialogButtonBox" name="buttonBox">
+  <property name="inputMethodHints">
+   <set>Qt::ImhUrlCharactersOnly</set>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
+  </property>
+  <widget class="QDialogButtonBox" name="buttonBoxSchedule">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>410</y>
-     <width>341</width>
+     <x>140</x>
+     <y>450</y>
+     <width>301</width>
      <height>32</height>
     </rect>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::LeftToRight</enum>
    </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>
    </property>
    <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::RestoreDefaults</set>
    </property>
-  </widget>
-  <widget class="QGroupBox" name="groupBoxInfoObj">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>20</y>
-     <width>431</width>
-     <height>71</height>
-    </rect>
+   <property name="centerButtons">
+    <bool>true</bool>
    </property>
-   <property name="title">
-    <string>Информация о объекте</string>
-   </property>
-   <widget class="QWidget" name="formLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>30</y>
-      <width>401</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <layout class="QFormLayout" name="formLayoutObj">
-     <item row="0" column="0">
-      <widget class="QLabel" name="labelObj">
-       <property name="text">
-        <string>Имя объекта:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEditObj">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBoxRecords">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>180</y>
-     <width>431</width>
-     <height>121</height>
+     <x>20</x>
+     <y>310</y>
+     <width>421</width>
+     <height>131</height>
     </rect>
    </property>
    <property name="title">
@@ -92,9 +62,9 @@
    <widget class="QWidget" name="formLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>10</x>
       <y>30</y>
-      <width>391</width>
+      <width>401</width>
       <height>81</height>
      </rect>
     </property>
@@ -102,78 +72,32 @@
      <item row="0" column="0">
       <widget class="QLabel" name="labelDuration">
        <property name="text">
-        <string>Длительность:</string>
+        <string>Длительность записи</string>
        </property>
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="labelFreq">
+      <widget class="QLabel" name="labelSamplingRate">
        <property name="text">
-        <string>Частота (Гц):</string>
+        <string>Частота оцифровки</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="comboBoxFreq">
-       <item>
-        <property name="text">
-         <string>500</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>1000</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>2000</string>
-        </property>
-       </item>
-      </widget>
+      <widget class="QComboBox" name="comboBoxSamplingRate"/>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelFormat">
        <property name="text">
-        <string>Формат:</string>
+        <string>Формат</string>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QComboBox" name="comboBoxFormat">
-       <item>
-        <property name="text">
-         <string>CSV</string>
-        </property>
-       </item>
-      </widget>
+      <widget class="QComboBox" name="comboBoxFormat"/>
      </item>
      <item row="0" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QSpinBox" name="spinBoxDuration"/>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBoxDurationDim">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <item>
-          <property name="text">
-           <string>секунд</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>минут</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QComboBox" name="comboBoxDuration"/>
      </item>
     </layout>
    </widget>
@@ -181,10 +105,10 @@
   <widget class="QGroupBox" name="groupBoxSchedule">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>310</y>
-     <width>431</width>
-     <height>91</height>
+     <x>20</x>
+     <y>180</y>
+     <width>421</width>
+     <height>121</height>
     </rect>
    </property>
    <property name="title">
@@ -193,103 +117,117 @@
    <widget class="QWidget" name="formLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>10</x>
       <y>30</y>
-      <width>391</width>
-      <height>61</height>
+      <width>401</width>
+      <height>77</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayoutSchedule">
      <item row="0" column="0">
       <widget class="QLabel" name="labelStarTime">
        <property name="text">
-        <string>Начало записи:</string>
+        <string>Начало </string>
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="labelInterval">
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelIntervalRecord">
        <property name="text">
-        <string>Интервал:</string>
+        <string>Интервал записи</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QDateTimeEdit" name="dateTimeEditStartRecord"/>
+      <widget class="QDateTimeEdit" name="dateTimeEditStartExperiment"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labeFinishTime">
+       <property name="text">
+        <string>Конец </string>
+       </property>
+      </widget>
      </item>
      <item row="1" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayoutInterval">
-       <item>
-        <widget class="QSpinBox" name="spinBoxInterval"/>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBoxIntervalDim">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <item>
-          <property name="text">
-           <string>секунд</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>минут</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>часов</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QDateTimeEdit" name="dateTimeEditFinishExperiment"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="comboBoxInterval"/>
      </item>
     </layout>
    </widget>
   </widget>
-  <widget class="QGroupBox" name="groupBoxDevice">
+  <widget class="QGroupBox" name="groupBoxInformation">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>100</y>
-     <width>431</width>
-     <height>71</height>
+     <x>20</x>
+     <y>30</y>
+     <width>421</width>
+     <height>141</height>
     </rect>
    </property>
    <property name="title">
-    <string>Информация об устройстве</string>
+    <string>Информация</string>
    </property>
-   <widget class="QWidget" name="formLayoutWidget_4">
+   <widget class="QWidget" name="formLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>30</y>
+      <x>10</x>
+      <y>20</y>
       <width>401</width>
-      <height>31</height>
+      <height>104</height>
      </rect>
     </property>
-    <layout class="QFormLayout" name="formLayoutSn">
+    <layout class="QFormLayout" name="formLayoutInformation">
      <item row="0" column="0">
-      <widget class="QLabel" name="labelSn">
+      <widget class="QLabel" name="LabelExperiment">
        <property name="text">
-        <string>Серийный номер:</string>
+        <string>Эксперимент</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEditSn">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+      <widget class="QComboBox" name="comboBoxExperiment">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="editable">
+        <bool>false</bool>
+       </property>
+       <property name="currentText">
+        <string/>
        </property>
       </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="LabelObject">
+       <property name="text">
+        <string>Объект</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="LineEditObject"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="LabelModelDevice">
+       <property name="text">
+        <string>Модель устройства</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="comboBoxModelDevice"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="LabelSnDevice">
+       <property name="text">
+        <string>Серийный номер</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="LineEditSnDevice"/>
      </item>
     </layout>
    </widget>
@@ -298,7 +236,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>buttonBox</sender>
+   <sender>buttonBoxSchedule</sender>
    <signal>accepted()</signal>
    <receiver>DlgCreateNewSchedule</receiver>
    <slot>accept()</slot>
@@ -314,7 +252,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonBox</sender>
+   <sender>buttonBoxSchedule</sender>
    <signal>rejected()</signal>
    <receiver>DlgCreateNewSchedule</receiver>
    <slot>reject()</slot>

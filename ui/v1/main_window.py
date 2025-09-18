@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file '.\ui\main_window_v1.ui'
+# Form implementation generated from reading ui file '.\ui\v1\main_window_test.ui'
 #
 # Created by: PyQt6 UI code generator 6.9.1
 #
@@ -29,14 +29,6 @@ class Ui_MainWindow(object):
         self.labelHistory.setFont(font)
         self.labelHistory.setObjectName("labelHistory")
         self.verticalLayoutHistory.addWidget(self.labelHistory)
-        self.tableViewHistory = QtWidgets.QTableView(parent=self.centralwidget)
-        self.tableViewHistory.setEnabled(True)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(10)
-        self.tableViewHistory.setFont(font)
-        self.tableViewHistory.setObjectName("tableViewHistory")
-        self.verticalLayoutHistory.addWidget(self.tableViewHistory)
         self.gridLayout.addLayout(self.verticalLayoutHistory, 3, 0, 1, 1)
         self.verticalLayoutSchedule = QtWidgets.QVBoxLayout()
         self.verticalLayoutSchedule.setObjectName("verticalLayoutSchedule")
@@ -73,13 +65,6 @@ class Ui_MainWindow(object):
         self.pushButtonDeleteSchedule.setObjectName("pushButtonDeleteSchedule")
         self.horizontalLayout_2.addWidget(self.pushButtonDeleteSchedule)
         self.verticalLayoutSchedule.addLayout(self.horizontalLayout_2)
-        self.tableViewSchedule = QtWidgets.QTableView(parent=self.centralwidget)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(10)
-        self.tableViewSchedule.setFont(font)
-        self.tableViewSchedule.setObjectName("tableViewSchedule")
-        self.verticalLayoutSchedule.addWidget(self.tableViewSchedule)
         self.gridLayout.addLayout(self.verticalLayoutSchedule, 2, 0, 1, 1)
         self.horizontalLayoutShowRecords = QtWidgets.QHBoxLayout()
         self.horizontalLayoutShowRecords.setObjectName("horizontalLayoutShowRecords")

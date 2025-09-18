@@ -2,8 +2,9 @@ import logging
 from typing import Optional
 
 from PySide6.QtCore import QDateTime
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox
 
+from structure import DataSchedule
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 
 logger = logging.getLogger(__name__)
@@ -11,46 +12,99 @@ logger = logging.getLogger(__name__)
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, experiments: Optional[list] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        # setup QDateTimeEdit
-        self.dateTimeEditStartRecord.setDateTime(QDateTime.currentDateTime().addSecs(60))
-        self.dateTimeEditStartRecord.setCalendarPopup(True)
+        # setup datetime edit
+        self.dateTimeEditStartExperiment.setCalendarPopup(True)
+        self.dateTimeEditFinishExperiment.setCalendarPopup(True)
 
-        # set default value for ComboBox
-        self.comboBoxFreq.setCurrentIndex(1)            # default 1000 Hz
-        self.comboBoxIntervalDim.setCurrentIndex(1)
+        if experiments is not None:
+            self.comboBoxExperiment.addItems(experiments)
 
-        # set default value for QLineEdit
-        self.spinBoxDuration.setValue(30)
-        self.spinBoxInterval.setValue(1)
+        # fill combobox
+        self.comboBoxExperiment.setEditable(True)
+        self.comboBoxModelDevice.addItems(["InRat", "EMGsens"])
+        self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
+        self.comboBoxFormat.addItems(["Comma-separated values (CSV)", "European Data Format (EDF)", "Waveform Database (WFDB)"])
+        self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
+        self.comboBoxDuration.setPlaceholderText("[mm:ss]")
+        self.comboBoxInterval.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "12:00", "24:00", "48:00"])
+        self.comboBoxInterval.setPlaceholderText("[hh:mm]")
 
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
+        # rename buttons
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).setText("Ок")
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).setText("Отменить")
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).setText("По умолчанию")
 
-    def getSchedule(self) -> Optional[dict]:
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
+        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
 
-        patient = self.lineEditObj.text()
-        device_sn = self.lineEditSn.text()
+        self.setDefaults()
 
-        sec_duration = self.convertTimeIntoSeconds(combobox=self.comboBoxDurationDim, spinbox=self.spinBoxDuration)
-        sec_interval = self.convertTimeIntoSeconds(combobox=self.comboBoxIntervalDim, spinbox=self.spinBoxInterval)
 
-        starttime = self.dateTimeEditStartRecord.dateTime().toPython()
-        format = self.comboBoxFormat.currentText()
-        freq = self.comboBoxFreq.currentText()
+    def setDefaults(self):
+        logger.info("Set default settings for schedule")
 
-        return {
-            "patient_name": patient,
-            "device_sn": device_sn,
-            "duration": sec_duration,
-            "interval": sec_interval,
-            "start_time": starttime,
-            "format": format,
-            "freq": freq
-        }
+        # set text
+        self.comboBoxExperiment.setCurrentText("Не выбрано")
+
+        # set index
+        self.comboBoxFormat.setCurrentIndex(1)
+        self.comboBoxModelDevice.setCurrentIndex(1)
+        self.comboBoxSamplingRate.setCurrentIndex(1)
+        self.comboBoxDuration.setCurrentIndex(-1)
+        self.comboBoxInterval.setCurrentIndex(-1)
+
+        self.dateTimeEditStartExperiment.setDateTime(QDateTime.currentDateTime().addSecs(60))
+        self.dateTimeEditFinishExperiment.setDateTime(QDateTime.currentDateTime().addDays(1))
+
+        self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
+
+
+    def getSchedule(self) -> Optional[DataSchedule]:
+        experiment = self.comboBoxExperiment.currentText()
+        if experiment == "Не выбрано":
+            # self.comboBoxExperiment.setFocus()
+            return None
+
+        patient = self.LineEditObject.text()
+        if patient == "":
+            # self.LineEditObject.setFocus()
+            return None
+
+        device_sn = self.LineEditSnDevice.text()
+        if device_sn == "":
+            # self.LineEditSnDevice.setFocus()
+            return None
+
+        device_model = self.comboBoxModelDevice.currentText()
+        start_datetime = self.dateTimeEditStartExperiment.dateTime()
+        finish_datetime = self.dateTimeEditStartExperiment.dateTime()
+
+        interval = self.comboBoxInterval.currentText()
+        if interval == "[hh:mm]":
+            self.comboBoxInterval.setFocus()
+
+        duration = self.comboBoxInterval.currentText()
+        if duration == "[mm:ss]":
+            self.comboBoxDuration.setFocus()
+
+        file_format = self.comboBoxFormat.currentText()
+        sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
+
+        schd = DataSchedule(
+            experiment=experiment,
+            patient=patient,
+            device_model=device_model, device_sn=device_sn,
+            start_datetime=start_datetime, finish_datetime=finish_datetime,
+            interval=interval, duration=duration,
+            sampling_rate=sampling_rate, file_format=file_format
+        )
+        return schd
 
     @classmethod
     def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
