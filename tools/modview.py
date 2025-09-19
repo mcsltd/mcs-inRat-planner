@@ -1,6 +1,7 @@
 import datetime
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
 
 
@@ -58,6 +59,10 @@ class GenericTableWidget(QTableView):
 
         self.data = []
         self.description = []
+
+        self.headerFont = QFont()
+        self.headerFont.setBold(True)
+        self.horizontalHeader().setFont(self.headerFont)
 
         self.setShowGrid(True)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)

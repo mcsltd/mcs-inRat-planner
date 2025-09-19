@@ -4,19 +4,16 @@ from uuid import UUID
 
 from PySide6.QtCore import QModelIndex, QAbstractTableModel, Qt
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QAbstractItemView, QHeaderView
-from apscheduler.events import EVENT_JOB_EXECUTED, JobExecutionEvent, EVENT_JOB_ADDED
 from sqlalchemy import insert, select, delete, update
 
 # scheduler
-from apscheduler.schedulers.qt import QtScheduler
-
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE
-from controller import Controller
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
+    EXAMPLE_DATA_HISTORY
 from structure import DataSchedule
 # ui
 from ui.v1.main_window import Ui_MainWindow
 from widgets import DlgCreateSchedule
-from tools.modview import _DataTableModel as DataTableModel, GenericTableWidget
+from tools.modview import GenericTableWidget
 
 # database
 from database import database
@@ -34,9 +31,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
-        self.tableModelSchedule.setData(data=[], description=DESCRIPTION_COLUMN_SCHEDULE)
+        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=EXAMPLE_DATA_SCHEDULE, )
+        self.labelSchedule.setText(f"Расписание (всего: {len(EXAMPLE_DATA_SCHEDULE)})")
+
         self.tableModelHistory = GenericTableWidget()
-        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=[])
+        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=EXAMPLE_DATA_HISTORY)
+        self.labelHistory.setText(f"История (всего записей: {len(EXAMPLE_DATA_HISTORY)})")
 
         # add tables
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
@@ -47,13 +47,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
-        self.updateContentTableSchedule()
-        self.updateContentTableHistory()
+        # self.updateContentTableSchedule()
+        # self.updateContentTableHistory()
 
     # Schedule
     def addSchedule(self) -> None:
         logger.info("Adding a new schedule")
-        dlg = DlgCreateSchedule()
+
+        experiments = set([data[0] for data in EXAMPLE_DATA_SCHEDULE])
+
+        dlg = DlgCreateSchedule(experiments=experiments)
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             schedule: DataSchedule = dlg.getSchedule()
@@ -128,17 +131,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
         return data
 
-
-    # def init_scheduler(self):
-    #     # create controller device
-    #     # self.controller = Controller()
-    #     # create scheduler for qt application
-    #     # self.scheduler = QtScheduler()
-    #     # self.scheduler.start()
-    #     # self.scheduler.add_listener(self.checkGoodResultExecuteJob, EVENT_JOB_EXECUTED)
-    #     # self.scheduler.add_listener(self.updateTableHistory, EVENT_JOB_ADDED)
-    #     # self.generateJobsFromDB()
-    #     pass
 
 if __name__ == "__main__":
     logging.basicConfig(

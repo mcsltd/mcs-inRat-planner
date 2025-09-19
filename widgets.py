@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
-    def __init__(self, experiments: Optional[list] = None, *args, **kwargs):
+    def __init__(self, experiments: Optional[list | set] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
