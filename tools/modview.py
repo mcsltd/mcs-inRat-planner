@@ -1,6 +1,7 @@
 import datetime
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
 
 
@@ -8,7 +9,7 @@ class _DataTableModel(QAbstractTableModel):
     def __init__(self, description: list, data: list,  parent=None, *args):
         super().__init__(parent=parent)
 
-        self.arraydata: list[list] = data
+        self.array_data: list = data
         self.columns = description
 
     # must be implemented: rowCount(), columnCount(), data(), headerData
@@ -19,21 +20,22 @@ class _DataTableModel(QAbstractTableModel):
         return None
 
     def rowCount(self, /, parent = ...):
-        return len(self.arraydata)
+        return len(self.array_data)
 
     def columnCount(self, /, parent = ...):
         return len(self.columns)
 
     def data(self, index, /, role = ...):
-        if len(self.arraydata) == 0:
+        if len(self.array_data) == 0:
             return None
 
         if role == Qt.ItemDataRole.DisplayRole:
-            if type(self.arraydata[index.row()][index.column()]) is datetime.datetime:
-                self.arraydata[index.row()][index.column()] = self.arraydata[index.row()][index.column()].time().replace(microsecond=0)
-                self.arraydata[index.row()][index.column()] = str(self.arraydata[index.row()][index.column()])
+            if type(self.array_data[index.row()][index.column()]) is datetime.datetime:
+                self.array_data[index.row()][index.column()] = str(self.array_data[index.row()][index.column()].time().replace(microsecond=0))
+            return self.array_data[index.row()][index.column()]
 
-            return self.arraydata[index.row()][index.column()]
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
 
         return None
 
@@ -41,9 +43,9 @@ class _DataTableModel(QAbstractTableModel):
         self.removeRows(row, 1, parent)
 
     def removeRows(self, row, count, /, parent = ...):
-        if 0 <= row < len(self.arraydata):
+        if 0 <= row < len(self.array_data):
             self.beginRemoveRows(parent, row, row + count)
-            del self.arraydata[row]
+            del self.array_data[row]
             self.endRemoveRows()
 
             self.dataChanged.emit(row, count)
@@ -58,6 +60,11 @@ class GenericTableWidget(QTableView):
         self.data = []
         self.description = []
 
+        self.headerFont = QFont()
+        self.headerFont.setBold(True)
+        self.horizontalHeader().setFont(self.headerFont)
+
+        self.setShowGrid(True)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)

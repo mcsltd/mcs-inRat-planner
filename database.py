@@ -1,8 +1,9 @@
 from sqlalchemy import Engine, create_engine
 
+from config import DB_PATH, DB_NAME
 from models import Base
 
-URL_DB = "sqlite+pysqlite:///inRat.db"
+URL_DB = F"sqlite+pysqlite:///{DB_PATH}/{DB_NAME}.db"
 
 class Database:
 
