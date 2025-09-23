@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from PySide6.QtCore import QDateTime
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
 from structure import DataSchedule
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
@@ -15,6 +15,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     def __init__(self, experiments: Optional[list | set] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+
+        self.has_unsaved_changes = False
 
         # setup datetime edit
         self.dateTimeEditStartExperiment.setCalendarPopup(True)
@@ -38,18 +40,51 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).setText("Отменить")
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).setText("По умолчанию")
 
-        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
+        # self.LineEditObject.textChanged.connect(self.on_text_changed)
+        # self.LineEditSnDevice.textChanged.connect(self.on_text_changed)
+        # self.comboBoxExperiment.editTextChanged.connect(self.on_text_changed)
+
+        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
 
         self.setDefaults()
 
+    # def on_text_changed(self):
+    #     if (
+    #             self.LineEditSnDevice.text() != "" or
+    #             self.LineEditObject.text() != "" or
+    #             not self.comboBoxExperiment.currentText() in ("Не выбрано", "")
+    #     ):
+    #         self.has_unsaved_changes = True
+    #         logger.debug("Detect unsaved changes...")
+
+    def closeEvent(self, event):
+        logger.info("Close dialog window")
+
+        if self.has_unsaved_changes:
+            reply = QMessageBox.question(
+                self,
+                "Подтверждение выхода",
+                "У вас есть несохраненные изменения. Вы уверены, что хотите выйти?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if reply == QMessageBox.StandardButton.No:
+                event.ignore()
+                return
+
+        event.accept()
 
     def setDefaults(self):
         logger.info("Set default settings for schedule")
+        self.has_unsaved_changes = False
 
         # set text
         self.comboBoxExperiment.setCurrentText("Не выбрано")
+        self.LineEditSnDevice.setText("")
+        self.LineEditObject.setText("")
 
         # set index
         self.comboBoxFormat.setCurrentIndex(1)

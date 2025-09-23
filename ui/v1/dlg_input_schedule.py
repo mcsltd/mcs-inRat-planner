@@ -129,7 +129,7 @@ class Ui_DlgCreateNewSchedule(object):
         self.labelFormat.setText(_translate("DlgCreateNewSchedule", "Формат"))
         self.groupBoxSchedule.setTitle(_translate("DlgCreateNewSchedule", "Расписание"))
         self.labelStarTime.setText(_translate("DlgCreateNewSchedule", "Начало "))
-        self.labelIntervalRecord.setText(_translate("DlgCreateNewSchedule", "Интервал записи"))
+        self.labelIntervalRecord.setText(_translate("DlgCreateNewSchedule", "Периодичность"))
         self.labeFinishTime.setText(_translate("DlgCreateNewSchedule", "Конец "))
         self.groupBoxInformation.setTitle(_translate("DlgCreateNewSchedule", "Информация"))
         self.LabelExperiment.setText(_translate("DlgCreateNewSchedule", "Эксперимент"))

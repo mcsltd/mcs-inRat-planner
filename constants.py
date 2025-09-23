@@ -5,13 +5,13 @@ DESCRIPTION_COLUMN_SCHEDULE = [
     "Объект",
     "SN \nрегистратора",
     "Модель \nрегистратора",
-    "Начало \nэксперимента",
+    "Дата начала\nэксперимента",
     "Статус",
     "Интервал \nповторения записи",
     "Длительность\n записи",
     "Общая \nдлительность",
-    "Всего \nзаписей",
     "Неудачных записей",
+    "Всего \nзаписей",
     "Формат",
     "Частота"
 ]
@@ -19,12 +19,12 @@ DESCRIPTION_COLUMN_SCHEDULE = [
 EXAMPLE_DATA_SCHEDULE = [
     [
         "Эксперимент-X", "Mouse-1", "0001",
-        "InRat", datetime.datetime.now(), "Идёт запись ЭКГ",
-        "1 час", "30 минут", "3 часа", "2", "0", "EDF", "1000 Гц"
+        "InRat", str(datetime.datetime.now().date()), "Идёт запись ЭКГ",
+        "1 час", "30 минут", "3 часа", "0", "2", "EDF", "1000 Гц"
     ],
     [
         "Эксперимент-X", "Mouse-2", "0002",
-        "InRat", datetime.datetime.now() + datetime.timedelta(hours=24), "До начала записи 1 день",
+        "InRat", str((datetime.datetime.now() + datetime.timedelta(hours=24)).date()), "До начала записи 1 день",
         "1 час", "10 минут", "0", "0", "0", "EDF", "500 Гц"
     ]
 ]
@@ -37,12 +37,14 @@ DESCRIPTION_COLUMN_HISTORY = [
     "Объект",
     "Дата записи",
     "Начало записи",
+    "Конец записи",
     "Длительность",
-    "Статус"
+    "Статус",
+    "Формат"
 ]
 
 EXAMPLE_DATA_HISTORY = [
-    ["1", "Эксперимент-X", "Mouse-1", datetime.datetime.now(), datetime.datetime.now(), "30 минут", "Завершено"],
-    ["2", "Эксперимент-X", "Mouse-1", datetime.datetime.now(), datetime.datetime.now(), "30 минут", "Идёт запись"],
-    ["3", "Эксперимент-X", "Mouse-1", datetime.datetime.now(), datetime.datetime.now(), "30 минут", "Завершено"],
+    ["1", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Завершено", "EDF"],
+    ["2", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Идёт запись", "WFDB"],
+    ["3", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Завершено", "WFDB"],
 ]

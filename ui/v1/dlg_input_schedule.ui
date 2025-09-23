@@ -134,7 +134,7 @@
      <item row="2" column="0">
       <widget class="QLabel" name="labelIntervalRecord">
        <property name="text">
-        <string>Интервал записи</string>
+        <string>Периодичность</string>
        </property>
       </widget>
      </item>
