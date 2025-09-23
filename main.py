@@ -71,7 +71,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     experiment=schedule.experiment,
                     patient=schedule.patient,
                     device_sn=schedule.device_sn, device_model=schedule.device_model,
-                    duration_sec=schedule.duration, interval_sec=schedule.interval,
+                    duration_sec=schedule.sec_duration, interval_sec=schedule.sec_interval,
                     last_record_time=None, next_record_time=schedule.start_datetime,
                     start_datetime=schedule.start_datetime, finish_datetime=schedule.finish_datetime,
                     file_format=schedule.file_format, sampling_rate=schedule.sampling_rate

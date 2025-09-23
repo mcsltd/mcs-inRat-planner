@@ -1,4 +1,6 @@
 import datetime
+from typing import Any, Dict
+from enum import Enum
 
 DESCRIPTION_COLUMN_SCHEDULE = [
     "Эксперимент",
@@ -48,3 +50,15 @@ EXAMPLE_DATA_HISTORY = [
     ["2", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Идёт запись", "WFDB"],
     ["3", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Завершено", "WFDB"],
 ]
+
+
+class Formats(Enum):
+    CSV = {"Comma Separate Value (CSV)": "CSV"}
+    EDF = {"European Data Format (EDF)": "EDF"}
+    WFDB = {"Waveform Database (WFDB)": "WFDB"}
+
+
+class Devices(Enum):
+    INRAT = {"InRat": "InRat-"}
+    EMGSENS = {"EMGsens": "EMG-SENS-"}
+

@@ -1,9 +1,11 @@
 import logging
+from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QDateTime
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
+from constants import Formats, Devices
 from structure import DataSchedule
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 
@@ -27,9 +29,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # fill combobox
         self.comboBoxExperiment.setEditable(True)
-        self.comboBoxModelDevice.addItems(["InRat", "EMGsens"])
+        # self.comboBoxModelDevice.addItems([list(d.value.keys())[0] for d in Devices])
+        self.fill_combobox(self.comboBoxModelDevice, Devices)
         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
-        self.comboBoxFormat.addItems(["Comma-separated values (CSV)", "European Data Format (EDF)", "Waveform Database (WFDB)"])
+        # self.comboBoxFormat.addItems([list(f.value.keys())[0] for f in Formats])
+        self.fill_combobox(self.comboBoxFormat, Formats)
         self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
         self.comboBoxDuration.setPlaceholderText("[mm:ss]")
         self.comboBoxInterval.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "12:00", "24:00", "48:00"])
@@ -40,9 +44,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).setText("Отменить")
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).setText("По умолчанию")
 
-        # self.LineEditObject.textChanged.connect(self.on_text_changed)
-        # self.LineEditSnDevice.textChanged.connect(self.on_text_changed)
-        # self.comboBoxExperiment.editTextChanged.connect(self.on_text_changed)
+        # monitoring the has_unsaved_change flag
+        self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
+        self.LineEditObject.textChanged.connect(self.on_form_changed)
+        self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
 
         # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
@@ -50,25 +55,33 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         self.setDefaults()
 
-    # def on_text_changed(self):
-    #     if (
-    #             self.LineEditSnDevice.text() != "" or
-    #             self.LineEditObject.text() != "" or
-    #             not self.comboBoxExperiment.currentText() in ("Не выбрано", "")
-    #     ):
-    #         self.has_unsaved_changes = True
-    #         logger.debug("Detect unsaved changes...")
+    @staticmethod
+    def fill_combobox(combobox: QComboBox, enumeration: Enum) -> None:
+        for field in enumeration:
+            combobox.addItem(list(field.value.keys())[0], userData=field)
+
+
+    def on_form_changed(self) -> None:
+        if self.has_unsaved_changes:
+            return
+
+        if self.comboBoxExperiment.currentText() != "Не выбрано":
+            self.has_unsaved_changes = True
+            logger.debug("Detected unsaved change...")
+
+        if self.LineEditSnDevice.text() != "" or self.LineEditObject.text() != "":
+            self.has_unsaved_changes = True
+            logger.debug("Detected unsaved change...")
+
 
     def closeEvent(self, event):
         logger.info("Close dialog window")
 
         if self.has_unsaved_changes:
             reply = QMessageBox.question(
-                self,
-                "Подтверждение выхода",
+                self,"Подтверждение выхода",
                 "У вас есть несохраненные изменения. Вы уверены, что хотите выйти?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
             )
 
             if reply == QMessageBox.StandardButton.No:
@@ -93,53 +106,48 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxDuration.setCurrentIndex(-1)
         self.comboBoxInterval.setCurrentIndex(-1)
 
-        self.dateTimeEditStartExperiment.setDateTime(QDateTime.currentDateTime().addSecs(60))
-        self.dateTimeEditFinishExperiment.setDateTime(QDateTime.currentDateTime().addDays(1))
-
         self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
-        self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addDays(2).addSecs(60))
 
 
     def getSchedule(self) -> Optional[DataSchedule]:
         experiment = self.comboBoxExperiment.currentText()
-        if experiment == "Не выбрано":
-            # self.comboBoxExperiment.setFocus()
-            return None
 
         patient = self.LineEditObject.text()
-        if patient == "":
-            # self.LineEditObject.setFocus()
-            return None
 
         device_sn = self.LineEditSnDevice.text()
-        if device_sn == "":
-            # self.LineEditSnDevice.setFocus()
-            return None
 
-        device_model = self.comboBoxModelDevice.currentText()
+        device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}{device_sn}"
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython()
         finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython()
 
-        interval = self.comboBoxInterval.currentText()
-        if interval == "[hh:mm]":
-            self.comboBoxInterval.setFocus()
+        sec_interval = self.convert_to_seconds(self.comboBoxInterval.currentText(), time_format="[hh:mm]")
+        sec_duration = self.convert_to_seconds(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
 
-        duration = self.comboBoxInterval.currentText()
-        if duration == "[mm:ss]":
-            self.comboBoxDuration.setFocus()
-
-        file_format = self.comboBoxFormat.currentText()
+        file_format = list(self.comboBoxFormat.currentData().value.values())[0]
         sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
         schd = DataSchedule(
-            experiment=experiment,
-            patient=patient,
+            experiment=experiment, patient=patient,
             device_model=device_model, device_sn=device_sn,
             start_datetime=start_datetime, finish_datetime=finish_datetime,
-            interval=interval, duration=duration,
+            sec_interval=sec_interval, sec_duration=sec_duration,
             sampling_rate=sampling_rate, file_format=file_format
         )
         return schd
+
+    def convert_to_seconds(self, duration: str, time_format: str) -> int:
+        sec_duration = 0
+
+        if time_format == "[mm:ss]":    # duration
+            duration = "0:" + duration
+        if time_format == "[hh:mm]":    # interval
+            duration = duration + "0:"
+
+        time = duration.replace(":", " ").split()[::-1]
+        for i, t in enumerate(time):
+            sec_duration += int(t) * (60 ** i)
+        return sec_duration
 
     @classmethod
     def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
