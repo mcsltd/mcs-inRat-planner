@@ -37,7 +37,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tableModelHistory = GenericTableWidget()
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=EXAMPLE_DATA_HISTORY)
-        self.labelHistory.setText(f"История (всего записей: {len(EXAMPLE_DATA_HISTORY)})")
+        self.labelHistory.setText(f"Записей (всего: {len(EXAMPLE_DATA_HISTORY)})")
 
         # add tables
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)

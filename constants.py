@@ -4,7 +4,8 @@ from enum import Enum
 
 DESCRIPTION_COLUMN_SCHEDULE = [
     "Эксперимент",
-    "Старт",
+    "Дата начала",
+    "Дата окончания",
     "Объект",
     "Устройство",
     "Статус",
@@ -12,17 +13,19 @@ DESCRIPTION_COLUMN_SCHEDULE = [
     "Длительность\nзаписи",
     "Общая\nдлительность",
     "Всего\nзаписей",
-    "Ошибок",
+    "Ошибок\nзаписи",
     "Параметры записи"
 ]
 
 EXAMPLE_DATA_SCHEDULE = [
     [
-        "Эксперимент-X", str(datetime.datetime.now().replace(microsecond=0)), "Mouse-1", "InRat-0001", "Идёт запись ЭКГ",
+        "Эксперимент-X", str(datetime.datetime.now().replace(microsecond=0)),
+        str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=10)), "Mouse-1", "InRat-0001", "Идёт запись ЭКГ",
         "1 час", "30 минут", "3 часа", "0", "2", "EDF; 1000 Гц"
     ],
     [
-        "Эксперимент-X", str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(hours=24)), "Mouse-2", "InRat-0002",
+        "Эксперимент-X", str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(hours=24)),
+        str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=10)), "Mouse-2", "InRat-0002",
         "До начала записи 1 день", "1 час", "10 минут", "0", "0", "0", "EDF; 500 Гц"
     ]
 ]
@@ -31,17 +34,17 @@ EXAMPLE_DATA_SCHEDULE = [
 
 DESCRIPTION_COLUMN_HISTORY = [
     "№",
-    "Старт записи",
+    "Начало записи",
+    "Длительность",
     "Эксперимент",
     "Объект",
-    "Длительность",
     "Формат"
 ]
 
 EXAMPLE_DATA_HISTORY = [
-    ["1", str(datetime.datetime.now().replace(microsecond=0)), "Эксперимент-X", "Mouse-1", "30 минут", "EDF"],
-    ["2", str(datetime.datetime.now().replace(microsecond=0)), "Эксперимент-X", "Mouse-1", "30 минут", "WFDB"],
-    ["3", str(datetime.datetime.now().replace(microsecond=0)), "Эксперимент-X", "Mouse-1", "30 минут", "WFDB"],
+    ["1", str(datetime.datetime.now().replace(microsecond=0)), "30 минут", "Эксперимент-X", "Mouse-1", "EDF"],
+    ["2", str(datetime.datetime.now().replace(microsecond=0)), "30 минут", "Эксперимент-X", "Mouse-1", "WFDB"],
+    ["3", str(datetime.datetime.now().replace(microsecond=0)), "30 минут", "Эксперимент-X", "Mouse-1", "WFDB"],
 ]
 
 

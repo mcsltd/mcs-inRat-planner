@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowLRROLd.ui'
+## Form generated from reading UI file 'main_windowCrIlEb.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -151,7 +151,7 @@ class Ui_MainWindow(object):
         self.pushButtonDeleteSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0423\u0434\u0430\u043b\u0438\u0442\u044c", None))
         self.pushButtonAddExperiment.setText(QCoreApplication.translate("MainWindow", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c\n"
 " \u044d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442", None))
-        self.labelHistory.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0441\u0442\u043e\u0440\u0438\u044f", None))
+        self.labelHistory.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u043f\u0438\u0441\u0435\u0439", None))
         self.pushButtonDownloadRecords.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043a\u0430\u0447\u0430\u0442\u044c", None))
     # retranslateUi
 

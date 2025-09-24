@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_schedulePihMzi.ui'
+## Form generated from reading UI file 'dlg_input_scheduleNqVUuK.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -182,9 +182,9 @@ class Ui_DlgCreateNewSchedule(object):
         self.labelSamplingRate.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438", None))
         self.labelFormat.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0424\u043e\u0440\u043c\u0430\u0442", None))
         self.groupBoxSchedule.setTitle(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435", None))
-        self.labelStarTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041d\u0430\u0447\u0430\u043b\u043e ", None))
+        self.labelStarTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0414\u0430\u0442\u0430 \u043d\u0430\u0447\u0430\u043b\u0430", None))
         self.labelIntervalRecord.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041f\u0435\u0440\u0438\u043e\u0434\u0438\u0447\u043d\u043e\u0441\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u0438", None))
-        self.labeFinishTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041e\u043a\u043e\u043d\u0447\u0430\u043d\u0438\u0435", None))
+        self.labeFinishTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0414\u0430\u0442\u0430 \u043e\u043a\u043e\u043d\u0447\u0430\u043d\u0438\u044f", None))
         self.LabelExperiment.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442", None))
         self.LabelObject.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041e\u0431\u044a\u0435\u043a\u0442", None))
         self.LabelModelDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041c\u043e\u0434\u0435\u043b\u044c \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))

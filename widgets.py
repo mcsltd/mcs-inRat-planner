@@ -29,7 +29,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.comboBoxExperiment.addItems(experiments)
 
         # fill combobox
-        self.comboBoxExperiment.setEditable(True)
+        # self.comboBoxExperiment.setEditable(True)
         self.fill_combobox(self.comboBoxModelDevice, Devices)
         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
         self.fill_combobox(self.comboBoxFormat, Formats)
