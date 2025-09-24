@@ -4,30 +4,29 @@ from enum import Enum
 
 DESCRIPTION_COLUMN_SCHEDULE = [
     "Эксперимент",
+    "Дата начала",
+    "Дата окончания",
     "Объект",
-    "SN \nрегистратора",
-    "Модель \nрегистратора",
-    "Дата начала\nэксперимента",
+    "Устройство",
     "Статус",
-    "Интервал \nповторения записи",
-    "Длительность\n записи",
-    "Общая \nдлительность",
-    "Неудачных записей",
-    "Всего \nзаписей",
-    "Формат",
-    "Частота"
+    "Периодичность\nзаписи",
+    "Длительность\nзаписи",
+    "Общая\nдлительность",
+    "Всего\nзаписей",
+    "Ошибок\nзаписи",
+    "Параметры записи"
 ]
 
 EXAMPLE_DATA_SCHEDULE = [
     [
-        "Эксперимент-X", "Mouse-1", "0001",
-        "InRat", str(datetime.datetime.now().date()), "Идёт запись ЭКГ",
-        "1 час", "30 минут", "3 часа", "0", "2", "EDF", "1000 Гц"
+        "Эксперимент-X", str(datetime.datetime.now().replace(microsecond=0)),
+        str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=10)), "Mouse-1", "InRat-0001", "Идёт запись ЭКГ",
+        "1 час", "30 минут", "3 часа", "0", "2", "EDF; 1000 Гц"
     ],
     [
-        "Эксперимент-X", "Mouse-2", "0002",
-        "InRat", str((datetime.datetime.now() + datetime.timedelta(hours=24)).date()), "До начала записи 1 день",
-        "1 час", "10 минут", "0", "0", "0", "EDF", "500 Гц"
+        "Эксперимент-X", str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(hours=24)),
+        str(datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=10)), "Mouse-2", "InRat-0002",
+        "До начала записи 1 день", "1 час", "10 минут", "0", "0", "0", "EDF; 500 Гц"
     ]
 ]
 
@@ -35,20 +34,17 @@ EXAMPLE_DATA_SCHEDULE = [
 
 DESCRIPTION_COLUMN_HISTORY = [
     "№",
+    "Начало записи",
+    "Длительность",
     "Эксперимент",
     "Объект",
-    "Дата записи",
-    "Начало записи",
-    "Конец записи",
-    "Длительность",
-    "Статус",
     "Формат"
 ]
 
 EXAMPLE_DATA_HISTORY = [
-    ["1", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Завершено", "EDF"],
-    ["2", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Идёт запись", "WFDB"],
-    ["3", "Эксперимент-X", "Mouse-1", str(datetime.datetime.now().date()), datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(minutes=30), "30 минут", "Завершено", "WFDB"],
+    ["1", str(datetime.datetime.now().replace(microsecond=0)), "30 минут", "Эксперимент-X", "Mouse-1", "EDF"],
+    ["2", str(datetime.datetime.now().replace(microsecond=0)), "30 минут", "Эксперимент-X", "Mouse-1", "WFDB"],
+    ["3", str(datetime.datetime.now().replace(microsecond=0)), "30 минут", "Эксперимент-X", "Mouse-1", "WFDB"],
 ]
 
 

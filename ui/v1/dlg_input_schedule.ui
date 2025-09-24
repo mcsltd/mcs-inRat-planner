@@ -3,13 +3,13 @@
  <class>DlgCreateNewSchedule</class>
  <widget class="QDialog" name="DlgCreateNewSchedule">
   <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
+   <enum>Qt::WindowModality::ApplicationModal</enum>
   </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>458</width>
+    <width>464</width>
     <height>492</height>
    </rect>
   </property>
@@ -20,7 +20,7 @@
    <bool>false</bool>
   </property>
   <property name="inputMethodHints">
-   <set>Qt::ImhUrlCharactersOnly</set>
+   <set>Qt::InputMethodHint::ImhUrlCharactersOnly</set>
   </property>
   <property name="sizeGripEnabled">
    <bool>false</bool>
@@ -29,19 +29,19 @@
    <property name="geometry">
     <rect>
      <x>140</x>
-     <y>450</y>
+     <y>430</y>
      <width>301</width>
      <height>32</height>
     </rect>
    </property>
    <property name="layoutDirection">
-    <enum>Qt::LeftToRight</enum>
+    <enum>Qt::LayoutDirection::LeftToRight</enum>
    </property>
    <property name="orientation">
-    <enum>Qt::Horizontal</enum>
+    <enum>Qt::Orientation::Horizontal</enum>
    </property>
    <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::RestoreDefaults</set>
+    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok|QDialogButtonBox::StandardButton::RestoreDefaults</set>
    </property>
    <property name="centerButtons">
     <bool>true</bool>
@@ -51,7 +51,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>310</y>
+     <y>290</y>
      <width>421</width>
      <height>131</height>
     </rect>
@@ -106,7 +106,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>180</y>
+     <y>160</y>
      <width>421</width>
      <height>121</height>
     </rect>
@@ -127,14 +127,14 @@
      <item row="0" column="0">
       <widget class="QLabel" name="labelStarTime">
        <property name="text">
-        <string>Начало </string>
+        <string>Дата начала</string>
        </property>
       </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelIntervalRecord">
        <property name="text">
-        <string>Периодичность</string>
+        <string>Периодичность записи</string>
        </property>
       </widget>
      </item>
@@ -144,7 +144,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="labeFinishTime">
        <property name="text">
-        <string>Конец </string>
+        <string>Дата окончания</string>
        </property>
       </widget>
      </item>
@@ -157,80 +157,67 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QGroupBox" name="groupBoxInformation">
+  <widget class="QWidget" name="formLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>30</x>
      <y>30</y>
-     <width>421</width>
-     <height>141</height>
+     <width>401</width>
+     <height>115</height>
     </rect>
    </property>
-   <property name="title">
-    <string>Информация</string>
-   </property>
-   <widget class="QWidget" name="formLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>20</y>
-      <width>401</width>
-      <height>104</height>
-     </rect>
-    </property>
-    <layout class="QFormLayout" name="formLayoutInformation">
-     <item row="0" column="0">
-      <widget class="QLabel" name="LabelExperiment">
-       <property name="text">
-        <string>Эксперимент</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="comboBoxExperiment">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="editable">
-        <bool>false</bool>
-       </property>
-       <property name="currentText">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="LabelObject">
-       <property name="text">
-        <string>Объект</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="LineEditObject"/>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="LabelModelDevice">
-       <property name="text">
-        <string>Модель устройства</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="comboBoxModelDevice"/>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="LabelSnDevice">
-       <property name="text">
-        <string>Серийный номер</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="LineEditSnDevice"/>
-     </item>
-    </layout>
-   </widget>
+   <layout class="QFormLayout" name="formLayoutInformation">
+    <item row="0" column="0">
+     <widget class="QLabel" name="LabelExperiment">
+      <property name="text">
+       <string>Эксперимент</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="LabelObject">
+      <property name="text">
+       <string>Объект</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="LineEditObject"/>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="LabelModelDevice">
+      <property name="text">
+       <string>Модель устройства</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QComboBox" name="comboBoxModelDevice"/>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLineEdit" name="LineEditSnDevice"/>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="LabelSnDevice">
+      <property name="text">
+       <string>Серийный номер устройства</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QComboBox" name="comboBoxExperiment">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="editable">
+       <bool>false</bool>
+      </property>
+      <property name="currentText">
+       <string/>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>

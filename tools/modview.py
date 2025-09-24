@@ -69,6 +69,18 @@ class GenericTableWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 
+        self.setStyleSheet("""
+            
+            QHeaderView::section {
+                border: none;
+                border-bottom: 2px solid #d0d0d0;
+                border-right: 1px solid #e0e0e0;
+                font-weight: bold;
+                color: #333;
+            }
+            
+        """)
+
     def setData(self, data, description):
         self.data = data
         self.description = description

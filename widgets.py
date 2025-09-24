@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QM
 from constants import Formats, Devices
 from structure import DataSchedule
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from ui.v1.dlg_input_experiment import Ui_DlgInputExperiment
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +29,16 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.comboBoxExperiment.addItems(experiments)
 
         # fill combobox
-        self.comboBoxExperiment.setEditable(True)
-        # self.comboBoxModelDevice.addItems([list(d.value.keys())[0] for d in Devices])
+        # self.comboBoxExperiment.setEditable(True)
         self.fill_combobox(self.comboBoxModelDevice, Devices)
         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
-        # self.comboBoxFormat.addItems([list(f.value.keys())[0] for f in Formats])
         self.fill_combobox(self.comboBoxFormat, Formats)
-        self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
+
         self.comboBoxDuration.setPlaceholderText("[mm:ss]")
-        self.comboBoxInterval.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "12:00", "24:00", "48:00"])
+        self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
+
         self.comboBoxInterval.setPlaceholderText("[hh:mm]")
+        self.comboBoxInterval.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "12:00", "24:00", "48:00"])
 
         # rename buttons
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).setText("Ок")
@@ -159,3 +160,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         elif crnt_unit == "часов":
             return spinbox.value() * (60 ** 2)
         raise ValueError("Invalid data type")
+
+
+class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setupUi(self)
+
+    def getExperiment(self):
+        return self.lineEditExperiment.text()
