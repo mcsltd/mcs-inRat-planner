@@ -12,7 +12,7 @@ from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, E
 from structure import DataSchedule
 # ui
 from ui.v1.main_window import Ui_MainWindow
-from widgets import DlgCreateSchedule
+from widgets import DlgCreateSchedule, DlgCreateExperiment
 from tools.modview import GenericTableWidget
 
 # database
@@ -21,6 +21,7 @@ from models import Schedule
 
 logger = logging.getLogger(__name__)
 
+EXPERIMENTS = ["Эксперимент-X",]
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
@@ -42,6 +43,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
+        self.pushButtonAddExperiment.clicked.connect(self.addExperiment)
         self.pushButtonAddSchedule.clicked.connect(self.addSchedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
         # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
@@ -50,11 +52,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # self.updateContentTableSchedule()
         # self.updateContentTableHistory()
 
+    # Experiment
+    def addExperiment(self):
+        dlg = DlgCreateExperiment()
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            exp = dlg.getExperiment()
+            EXPERIMENTS.append(exp)
+            if exp is None:
+                logger.error("An error occurred while creating the schedule")
+                return
+
     # Schedule
     def addSchedule(self) -> None:
         logger.info("Adding a new schedule")
 
-        experiments = set([data[0] for data in EXAMPLE_DATA_SCHEDULE])
+        experiments = EXPERIMENTS
 
         dlg = DlgCreateSchedule(experiments=experiments)
         code = dlg.exec()
