@@ -25,8 +25,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.dateTimeEditStartExperiment.setCalendarPopup(True)
         self.dateTimeEditFinishExperiment.setCalendarPopup(True)
 
+        self.comboBoxExperiment.setPlaceholderText("Не выбрано")
         if experiments is not None:
             self.comboBoxExperiment.addItems(experiments)
+            self.comboBoxExperiment.setCurrentIndex(-1)
+
 
         # fill combobox
         # self.comboBoxExperiment.setEditable(True)
@@ -96,17 +99,19 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.has_unsaved_changes = False
 
         # set text
-        self.comboBoxExperiment.setCurrentText("Не выбрано")
+        self.comboBoxExperiment.setPlaceholderText("Не выбрано")
         self.LineEditSnDevice.setText("")
         self.LineEditObject.setText("")
 
         # set index
+        self.comboBoxExperiment.setCurrentIndex(-1)
         self.comboBoxFormat.setCurrentIndex(1)
         self.comboBoxModelDevice.setCurrentIndex(1)
         self.comboBoxSamplingRate.setCurrentIndex(1)
         self.comboBoxDuration.setCurrentIndex(-1)
         self.comboBoxInterval.setCurrentIndex(-1)
 
+        # ToDo: start_time < finish_time
         self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
         self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addDays(2).addSecs(60))
 
@@ -116,11 +121,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         patient = self.LineEditObject.text()
 
-        device_sn = self.LineEditSnDevice.text()
+        device_sn = self.LineEditSnDevice.text()    # ToDo: check value (must be "int")
 
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}{device_sn}"
-        start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython()
-        finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython()
+        start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
+        finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
 
         sec_interval = self.convert_to_seconds(self.comboBoxInterval.currentText(), time_format="[hh:mm]")
         sec_duration = self.convert_to_seconds(self.comboBoxDuration.currentText(), time_format="[mm:ss]")

@@ -5,6 +5,13 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
 
 
+
+"""
+TASKS:
+1) add sorting on column
+
+"""
+
 class _DataTableModel(QAbstractTableModel):
     def __init__(self, description: list, data: list,  parent=None, *args):
         super().__init__(parent=parent)
@@ -31,7 +38,7 @@ class _DataTableModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             if type(self.array_data[index.row()][index.column()]) is datetime.datetime:
-                self.array_data[index.row()][index.column()] = str(self.array_data[index.row()][index.column()].time().replace(microsecond=0))
+                self.array_data[index.row()][index.column()] = str(self.array_data[index.row()][index.column()].replace(microsecond=0))
             return self.array_data[index.row()][index.column()]
 
         elif role == Qt.ItemDataRole.TextAlignmentRole:
@@ -70,7 +77,6 @@ class GenericTableWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 
         self.setStyleSheet("""
-            
             QHeaderView::section {
                 border: none;
                 border-bottom: 2px solid #d0d0d0;
@@ -78,7 +84,6 @@ class GenericTableWidget(QTableView):
                 font-weight: bold;
                 color: #333;
             }
-            
         """)
 
     def setData(self, data, description):
