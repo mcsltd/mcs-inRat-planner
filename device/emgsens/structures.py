@@ -1,5 +1,4 @@
 import ctypes
-from enum import IntFlag, auto
 
 
 class BatteryProperties(ctypes.Structure):

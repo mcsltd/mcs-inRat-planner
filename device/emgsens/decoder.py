@@ -3,8 +3,8 @@ import struct
 
 from typing import Tuple
 
-from constants import Pkt, Constants
-from structures import Settings
+from device.emgsens.constants import Pkt, Constants
+from device.emgsens.structures import Settings
 
 
 class Decoder:
