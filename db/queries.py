@@ -66,3 +66,10 @@ def add_object(name, session):
     session.add(obj)
     session.commit()
     return obj.id
+
+@connection
+def add_experiment(name, session):
+    exp = Experiment(name=name)
+    session.add(exp)
+    session.commit()
+    return exp.id

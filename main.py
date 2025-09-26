@@ -16,7 +16,7 @@ from tools.modview import GenericTableWidget
 # database
 from db.database import database
 from db.models import Schedule, Experiment
-from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object
+from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object, add_experiment
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +57,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             exp = dlg.getExperiment()
-            logger.debug(f"Add experiment={exp} into db")
-            with database.engine.connect() as conn:
-                stmt = insert(Experiment).values(name=exp)
-                conn.execute(stmt)
-                conn.commit()
+            logger.info(f"Add Object in DB: id={add_experiment(exp)}")
         return
 
 
