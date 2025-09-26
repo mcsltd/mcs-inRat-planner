@@ -16,7 +16,7 @@ from tools.modview import GenericTableWidget
 # database
 from db.database import database
 from db.models import Schedule, Experiment
-from db.queries import get_experiments, add_schedule, get_schedules
+from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if schedule is None:
                 logger.error("An error occurred while creating the schedule")
                 return
-            add_schedule(schedule)
+
+            logger.info(f"Add Object in DB: id={add_object(name=schedule.patient)}")
+            logger.info(f"Add Device in DB: id={add_device(sn=schedule.device_sn, model=schedule.device_model)}")
+            logger.info(f"Add Schedule in DB: id={add_schedule(schedule)}")
+
             # fill table Schedule
             self.updateContentTableSchedule()
 

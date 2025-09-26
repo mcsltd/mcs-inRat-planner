@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from db.database import connection
-from db.models import Experiment, Schedule
+from db.models import Experiment, Schedule, Object, Device
 from structure import DataSchedule
 
 
@@ -28,7 +28,7 @@ def add_schedule(schedule: DataSchedule, session):
     )
     session.add(schd)
     session.commit()
-    return schd
+    return schd.id
 
 @connection
 def get_schedules(session):
@@ -45,3 +45,24 @@ def get_schedules(session):
     result = session.execute(stmt)
     return result
 
+@connection
+def add_device(model, sn, session):
+    # ToDo:
+    # ble_name = None
+    # if model == "inRat":
+    #     ble_name = "InRat-" + str(sn)
+    # elif model == "EMGsens":
+    #     ble_name = "EMG-SENS-" + str(sn)
+
+    device = Device(ble_name=model, model=model, serial_number=sn)
+    session.add(device)
+    session.commit()
+    return device.id
+
+
+@connection
+def add_object(name, session):
+    obj = Object(name=name)
+    session.add(obj)
+    session.commit()
+    return obj.id
