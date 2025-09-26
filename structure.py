@@ -17,3 +17,4 @@ class DataSchedule:
     sampling_rate: int
     file_format: str
 
+

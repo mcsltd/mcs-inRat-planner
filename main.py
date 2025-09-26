@@ -1,10 +1,8 @@
-import datetime
 import logging
-from uuid import UUID
 
-from PySide6.QtCore import QModelIndex, QAbstractTableModel, Qt
-from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QAbstractItemView, QHeaderView
-from sqlalchemy import insert, select, delete, update
+from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
+from sqlalchemy import insert, select
 
 # scheduler
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
@@ -16,8 +14,9 @@ from widgets import DlgCreateSchedule, DlgCreateExperiment
 from tools.modview import GenericTableWidget
 
 # database
-from database import database
-from models import Schedule
+from db.database import database
+from db.models import Schedule, Experiment
+from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object, add_experiment
 
 logger = logging.getLogger(__name__)
 
@@ -49,27 +48,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
-        # self.updateContentTableSchedule()
+        self.updateContentTableSchedule()
         # self.updateContentTableHistory()
 
     # Experiment
-    def addExperiment(self):
+    def addExperiment(self) -> None:
         dlg = DlgCreateExperiment()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             exp = dlg.getExperiment()
-            EXPERIMENTS.append(exp)
-            if exp is None:
-                logger.error("An error occurred while creating the schedule")
-                return
+            logger.info(f"Add Object in DB: id={add_experiment(exp)}")
+        return
+
 
     # Schedule
     def addSchedule(self) -> None:
         logger.info("Adding a new schedule")
 
-        experiments = EXPERIMENTS
-
-        dlg = DlgCreateSchedule(experiments=experiments)
+        dlg = DlgCreateSchedule(experiments=get_experiments())
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             schedule: DataSchedule = dlg.getSchedule()
@@ -78,22 +74,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.error("An error occurred while creating the schedule")
                 return
 
-            # add schedule into database
-            with database.engine.connect() as conn:
-                stmt = insert(Schedule).values(
-                    experiment=schedule.experiment,
-                    patient=schedule.patient,
-                    device_sn=schedule.device_sn, device_model=schedule.device_model,
-                    duration_sec=schedule.sec_duration, interval_sec=schedule.sec_interval,
-                    last_record_time=None, next_record_time=schedule.start_datetime,
-                    start_datetime=schedule.start_datetime, finish_datetime=schedule.finish_datetime,
-                    file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
-                )
-                conn.execute(stmt)
-                conn.commit()
+            logger.info(f"Add Object in DB: id={add_object(name=schedule.patient)}")
+            logger.info(f"Add Device in DB: id={add_device(sn=schedule.device_sn, model=schedule.device_model)}")
+            logger.info(f"Add Schedule in DB: id={add_schedule(schedule)}")
 
             # fill table Schedule
-            # self.updateContentTableSchedule()
+            self.updateContentTableSchedule()
 
             logger.info("Schedule created successfully")
 
@@ -101,21 +87,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info("Set data in the Schedule table")
         table_data = []
 
-        with database.engine.connect() as conn:
-            stmt = select(
-                Schedule.experiment,
-                Schedule.patient,
-                Schedule.device_sn, Schedule.device_model,
-                Schedule.start_datetime, Schedule.finish_datetime,
-                Schedule.file_format, Schedule.sampling_rate
-            )
-            result = conn.execute(stmt)
-            conn.commit()
+        result = get_schedules()
 
+        # ToDo: rewrite it
         for row in result:
-            table_data.append([*row])
-        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
+            column_1_5 = row[:5]
+            status = ("None",)
+            column_7_8 = row[7:8]
+            column_9_11 = 4 * (0,)
+            params = "; ".join([str(v) for v in row[-2:]]) + " Гц"
+            data = list(column_1_5 + status + column_7_8 + column_9_11)
+            data.append(params)
 
+            table_data.append(data)
+
+        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
