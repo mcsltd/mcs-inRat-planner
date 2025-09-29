@@ -26,10 +26,9 @@ class EmgSens:
             raise ValueError("Device not found.")
 
         self._client: BleakClient = BleakClient(ble_device)
-
         self.is_connected = self._client.is_connected
 
-    async def setup(self, cmd: Command, settings: Settings = b''):
+    async def setup(self, cmd: Command, settings: Settings = b'') -> None:
         if not self.is_connected:
             raise ValueError(f"{self._client} is not connected!")
 
@@ -39,18 +38,17 @@ class EmgSens:
         data += get_control_sum(data=data, key=BLE_KEY)
         await self._client.write_gatt_char(EmgSens.UUID_CHARACTERISTIC_CONTROL, data)
 
-
-    async def connect(self):
+    async def connect(self) -> None:
         await self._client.connect()
         logger.debug(f"{self._client.address} is connected.")
         self.is_connected = self._client.is_connected
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         logger.debug(f"{self._client.address} is disconnected.")
         await self._client.disconnect()
         self.is_connected = self._client.is_connected
 
-    async def get_data(self, data_queue, settings):
+    async def get_data(self, data_queue: asyncio.Queue, settings: Settings) -> None:
         """ Subscribe and get data from ble service """
         async def data_handler(_, raw_data: bytearray):
             counter, e_emg, accel, gyro = decoder.decode_data(raw_data)
@@ -65,3 +63,13 @@ class EmgSens:
         await self.setup(cmd=Command.AcquisitionStart, settings=settings)
         decoder = Decoder(settings)
         await self._client.start_notify(EmgSens.UUID_DATA_SERVICE, data_handler)
+
+    async def get_emg(self, emg_queue: asyncio.Queue, settings: Settings) -> None:
+        """ Subscribe and get emg from ble service """
+        async def emg_handler(_, raw_data: bytearray):
+            counter, emg = decoder.decode_emg(raw_data)
+            logger.info(f"Get emg - counter: {counter}")
+            await emg_queue.put({"counter": counter, "emg": emg})
+        await self.setup(cmd=Command.AcquisitionStart, settings=settings)
+        decoder = Decoder(settings)
+        await self._client.start_notify(EmgSens.UUID_ACQUISITION_SERVICE, emg_handler)
