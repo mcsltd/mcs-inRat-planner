@@ -23,7 +23,7 @@ async def find_device(
 
 
 async def main():
-    print(await find_device())
+    print(await find_device(timeout=10))
 
 
 if __name__ == "__main__":

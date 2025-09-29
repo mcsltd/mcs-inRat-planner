@@ -1,11 +1,14 @@
+import logging
+
 import numpy as np
 import struct
 
 from typing import Tuple
 
-from constants import Pkt, Constants
-from structures import Settings
+from device.emgsens.constants import Pkt, Constants
+from device.emgsens.structures import Settings
 
+logger = logging.getLogger(__name__)
 
 class Decoder:
 
@@ -54,3 +57,27 @@ class Decoder:
         gyro *= Constants.GyroResolution * (2 ** self.settings.FullScaleGyroscope)
 
         return counter, e_emg, accel, gyro
+
+    def decode_emg(self, raw_data: bytearray) -> Tuple[int, np.ndarray]:
+        emg = np.zeros(Pkt.SamplesCountEMG)
+        offset = 2
+        counter = struct.unpack('<H', raw_data[:offset])[0]
+        code = struct.unpack('<I', raw_data[offset:offset + 4])[0]
+        offset += 4
+        prev = 0
+        for cnt in range(Pkt.SamplesCountEMG):
+
+            if (code >> cnt) & 0x1 == 0x0:
+                # logger.debug("delta is used")
+                emg[cnt] = prev + int.from_bytes([raw_data[offset]], byteorder='little', signed=True)
+                offset += 1
+
+            if (code >> cnt) & 0x1 == 0x1:
+                # logger.debug("delta is not used")
+                emg[cnt] = int.from_bytes(raw_data[offset:offset + 2], byteorder='little', signed=True)
+                offset += 2
+
+            prev = emg[cnt]
+
+        emg *= Constants.EmgResolution
+        return counter, emg
