@@ -1,8 +1,12 @@
 import datetime
 from dataclasses import dataclass
+from uuid import UUID
+
 
 @dataclass
 class DataSchedule:
+    experiment_id: str | UUID
+
     experiment: str     # Optional field
     patient: str        # Optional field
 

@@ -65,7 +65,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def addSchedule(self) -> None:
         logger.info("Adding a new schedule")
 
-        dlg = DlgCreateSchedule(experiments=get_experiments())
+        experiments = get_experiments()
+        dlg = DlgCreateSchedule(experiments=experiments)
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             schedule: DataSchedule = dlg.getSchedule()
@@ -74,13 +75,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.error("An error occurred while creating the schedule")
                 return
 
-            logger.info(f"Add Object in DB: id={add_object(name=schedule.patient)}")
-            logger.info(f"Add Device in DB: id={add_device(sn=schedule.device_sn, model=schedule.device_model)}")
-            logger.info(f"Add Schedule in DB: id={add_schedule(schedule)}")
+            # add object in db
+            object_id = add_object(name=schedule.patient)
+            logger.info(f"Add Object in DB: id={object_id}")
+
+            # add device in db
+            device_id = add_device(sn=schedule.device_sn, model=schedule.device_model)
+            logger.info(f"Add Device in DB: id={device_id}")
+
+            # add schedule in db
+            schedule_id = add_schedule(schedule=schedule, experiment_id=schedule.experiment_id, device_id=device_id, object_id=object_id)
+            logger.info(f"Add Schedule in DB: id={schedule_id}")
 
             # fill table Schedule
             self.updateContentTableSchedule()
-
             logger.info("Schedule created successfully")
 
     def updateContentTableSchedule(self):

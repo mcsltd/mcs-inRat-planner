@@ -145,7 +145,7 @@ async def read_time_data(
         AveragingWindowEMG=10,
         FullScaleAccelerometer=ScaleAccel.G_0.value,
         FullScaleGyroscope=ScaleGyro.DPS_125.value,
-        EnabledChannels=Channel.EMG | Channel.eEMG | Channel.X | Channel.Y | Channel.Z  ,
+        EnabledChannels=Channel.EMG,
         EnabledEvents=EventType.DISABLE,
         ActivityThreshold=1,
     )
@@ -169,7 +169,7 @@ async def main():
     event_start = asyncio.Event()
 
     time_start = datetime.datetime.now()
-    time_finish = time_start + datetime.timedelta(seconds=10)
+    time_finish = time_start + datetime.timedelta(seconds=15)
 
     data_storage = QueueDataConsumer()
     read_task = asyncio.create_task(read_time_data(

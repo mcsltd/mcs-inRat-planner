@@ -27,9 +27,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
         if experiments is not None:
-            self.comboBoxExperiment.addItems(experiments)
-            self.comboBoxExperiment.setCurrentIndex(-1)
+            # self.comboBoxExperiment.addItems(experiments)
+            for exp_id, exp in experiments:
+                self.comboBoxExperiment.addItem(exp , userData=exp_id)
 
+            self.comboBoxExperiment.setCurrentIndex(-1)
 
         # fill combobox
         # self.comboBoxExperiment.setEditable(True)
@@ -117,6 +119,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
 
     def getSchedule(self) -> Optional[DataSchedule]:
+        experiment_id = self.comboBoxExperiment.currentData()
         experiment = self.comboBoxExperiment.currentText()
 
         patient = self.LineEditObject.text()
@@ -134,7 +137,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
         schd = DataSchedule(
-            experiment=experiment, patient=patient,
+            experiment_id=experiment_id,
+            experiment=experiment,
+            patient=patient,
             device_model=device_model, device_sn=device_sn,
             start_datetime=start_datetime, finish_datetime=finish_datetime,
             sec_interval=sec_interval, sec_duration=sec_duration,
