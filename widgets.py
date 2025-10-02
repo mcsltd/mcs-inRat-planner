@@ -124,9 +124,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         patient = self.LineEditObject.text()
 
-        device_sn = self.LineEditSnDevice.text()    # ToDo: check value (must be "int")
 
+        device_sn = self.LineEditSnDevice.text()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}{device_sn}"
+
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
         finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
 
@@ -145,6 +146,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             sec_interval=sec_interval, sec_duration=sec_duration,
             sampling_rate=sampling_rate, file_format=file_format
         )
+
         return schd
 
     def convert_to_seconds(self, duration: str, time_format: str) -> int:

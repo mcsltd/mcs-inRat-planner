@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from db.database import connection
-from db.models import Experiment, Schedule, Object, Device
+from db.models import Experiment, Schedule, Object, Device, Record
 from structure import DataSchedule
 
 
@@ -38,22 +38,21 @@ def add_schedule(schedule: DataSchedule, experiment_id, device_id, object_id, se
 def get_schedules(session):
     stmt = select(
         Experiment.name,
-        Schedule.datetime_start,
-        Schedule.datetime_finish,
+        Schedule.datetime_start, Schedule.datetime_finish,
         Object.name,
         Device.ble_name,
         Schedule.sec_interval,
         Schedule.sec_duration,
         Schedule.file_format,
         Schedule.sampling_rate
-        # Schedule.object_name,
-        # Schedule.device_sn,
-        # Schedule.device_model,
-        # Schedule.object_id,
-        # Schedule.device_id,
     ).where(Schedule.device_id==Device.id, Schedule.object_id == Object.id, Experiment.id == Schedule.experiment_id)
     result = session.execute(stmt)
-    return result
+    schedules = result
+    return schedules
+
+@connection
+def select_all_schedules(session):
+    return Schedule.get_all_schedules(session)
 
 @connection
 def add_device(model, sn, session):
@@ -83,3 +82,33 @@ def add_experiment(name, session):
     session.add(exp)
     session.commit()
     return exp.id
+
+@connection
+def add_record(start, finish, sec_duration, file_format, sampling_rate, scheduled_id, status, session):
+    rec = Record(
+        datetime_start=start,
+        datetime_finish=finish,
+        sec_duration=sec_duration,
+        file_format=file_format,
+        sampling_rate=sampling_rate,
+        status=status,
+        schedule_id=scheduled_id
+    )
+    session.add(rec)
+    session.commit()
+    return rec.id
+
+@connection
+def get_records(session):
+    stmt = select(
+        Record.id,
+        Schedule.experiment_id,
+        Record.datetime_start,
+        Record.sec_duration,
+        Schedule.object_id,
+        Record.file_format
+    ).join(Schedule).where(Record.schedule_id == Schedule.id)
+    result = session.execute(stmt)
+    session.commit()
+    return result
+
