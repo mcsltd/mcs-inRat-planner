@@ -58,3 +58,7 @@ class Devices(Enum):
     INRAT = {"InRat": "InRat-"}
     EMGSENS = {"EMGsens": "EMG-SENS-"}
 
+class RecordStatus(Enum):
+    ERROR = "Error" # ошибка записи
+    IN_PROCESS = "Recording"
+    OK = "Ok"

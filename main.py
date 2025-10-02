@@ -1,26 +1,28 @@
+import datetime
 import logging
 
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
-from sqlalchemy import insert, select
 
 # scheduler
+from apscheduler.schedulers.qt import QtScheduler
+
+# table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
-    EXAMPLE_DATA_HISTORY
+    EXAMPLE_DATA_HISTORY, RecordStatus
 from structure import DataSchedule
+
 # ui
 from ui.v1.main_window import Ui_MainWindow
 from widgets import DlgCreateSchedule, DlgCreateExperiment
 from tools.modview import GenericTableWidget
 
 # database
-from db.database import database
-from db.models import Schedule, Experiment
-from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object, add_experiment
+from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object, add_experiment, add_record, \
+    get_records, select_all_schedules
 
 logger = logging.getLogger(__name__)
 
-EXPERIMENTS = ["Эксперимент-X",]
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
@@ -28,6 +30,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
+
+        # init scheduler
+        self.scheduler = QtScheduler()
+        self.scheduler.start()
+        # self.initJobs()
 
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
@@ -49,7 +56,49 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
         self.updateContentTableSchedule()
-        # self.updateContentTableHistory()
+        self.updateContentTableHistory()
+
+    # def initJobs(self):
+    #     logger.debug("Initialize schedules")
+    #
+    #     # read schedules from db
+    #     scheds = select_all_schedules()
+    #     for sc in scheds:
+    #         _  = 1
+            # # set job for scheduling
+            # self.scheduler.add_job(
+            #     self.addRecord,
+            #     trigger="interval",
+            #     seconds=schedule.sec_interval,
+            #     args=(schedule, schedule_id),
+            #     id=str(schedule_id),
+            #     next_run_time=time,
+            # )
+
+    def addRecord(self, schedule: DataSchedule, schedule_id):
+        """ Start recording """
+        logger.debug(f"get schedule: {schedule}")
+
+        # set data about record in table
+        duration = schedule.sec_duration
+        self.tableModelHistory.setData(
+            description=DESCRIPTION_COLUMN_HISTORY,
+            data=[["0", str(datetime.datetime.now()), duration, schedule.experiment, schedule.patient, schedule.file_format]]
+        )
+
+        # set data about record in db
+        add_record(
+            start=datetime.datetime.now(),
+            finish=datetime.datetime.now() + datetime.timedelta(seconds=schedule.sec_duration),
+            sec_duration=duration,
+            sampling_rate=schedule.sampling_rate,
+            file_format=schedule.file_format,
+            scheduled_id=schedule_id,
+            status=RecordStatus.IN_PROCESS.value
+        )
+
+        # start recording data from device
+        ...
 
     # Experiment
     def addExperiment(self) -> None:
@@ -68,6 +117,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         experiments = get_experiments()
         dlg = DlgCreateSchedule(experiments=experiments)
         code = dlg.exec()
+
         if code == QDialog.DialogCode.Accepted:
             schedule: DataSchedule = dlg.getSchedule()
 
@@ -87,9 +137,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             schedule_id = add_schedule(schedule=schedule, experiment_id=schedule.experiment_id, device_id=device_id, object_id=object_id)
             logger.info(f"Add Schedule in DB: id={schedule_id}")
 
+            # ToDo: temprorary check time
+            time = schedule.start_datetime
+            if time <= datetime.datetime.now():
+                time = datetime.datetime.now()
+
+            # set job for scheduling
+            self.scheduler.add_job(
+                self.addRecord,
+                trigger="interval",
+                seconds=schedule.sec_interval,
+                args=(schedule, schedule_id),
+                id=str(schedule_id),
+                next_run_time=time,
+            )
+
             # fill table Schedule
             self.updateContentTableSchedule()
             logger.info("Schedule created successfully")
+
 
     def updateContentTableSchedule(self):
         logger.info("Set data in the Schedule table")
@@ -106,12 +172,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             params = "; ".join([str(v) for v in row[-2:]]) + " Гц"
             data = list(column_1_5 + status + column_7_8 + column_9_11)
             data.append(params)
-
             table_data.append(data)
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
+
+    def updateContentTableHistory(self):
+        logger.debug("Update content in table history.")
+
+        # update label History
+        self.labelHistory.setText(f"История (всего: 0)")
+        records = get_records()
+        # for row in records:
+        #     print(f"{row=}")
+
 
     def updateSchedule(self) -> None:
         logger.info("The contents of the Schedule table have been updated")
@@ -126,9 +201,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info("The contents of the History table have been updated")
         pass
 
-    def updateContentTableHistory(self):
-        # update label History
-        self.labelHistory.setText(f"История (всего: 0)")
+
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
