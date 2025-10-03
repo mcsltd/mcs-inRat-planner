@@ -1,8 +1,10 @@
+from dataclasses import asdict
+
 from sqlalchemy import select
 
 from db.database import connection
 from db.models import Experiment, Schedule, Object, Device, Record
-from structure import ScheduleData
+from structure import ScheduleData, ObjectData, ExperimentData, DeviceData
 
 
 @connection
@@ -16,23 +18,6 @@ def get_experiments(session) -> list:
         )
     ]
     return experiment_names
-
-@connection
-def add_schedule(schedule: ScheduleData, experiment_id, device_id, object_id, session):
-    schd = Schedule(
-        experiment_id=experiment_id,
-        # object_name=schedule.patient,
-
-        device_id=device_id, object_id=object_id,
-        # device_sn=schedule.device_sn, device_model=schedule.device_model,
-
-        sec_duration=schedule.sec_duration, sec_interval=schedule.sec_interval,
-        datetime_start=schedule.datetime_start, datetime_finish=schedule.datetime_finish,
-        file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
-    )
-    session.add(schd)
-    session.commit()
-    return schd.id
 
 @connection
 def get_schedules(session):
@@ -55,33 +40,39 @@ def select_all_schedules(session):
     return Schedule.get_all_schedules(session)
 
 @connection
-def add_device(model, sn, session):
-    # ToDo:
-    # ble_name = None
-    # if model == "inRat":
-    #     ble_name = "InRat-" + str(sn)
-    # elif model == "EMGsens":
-    #     ble_name = "EMG-SENS-" + str(sn)
+def add_schedule(schedule: ScheduleData, session):
+    query = Schedule(
+        experiment_id=schedule.experiment.id,
+        device_id=schedule.device.id, object_id=schedule.object.id,
 
-    device = Device(ble_name=model, model=model, serial_number=sn)
-    session.add(device)
+        sec_duration=schedule.sec_duration, sec_interval=schedule.sec_interval,
+        datetime_start=schedule.datetime_start, datetime_finish=schedule.datetime_finish,
+        file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
+    )
+    session.add(query)
     session.commit()
-    return device.id
-
+    return query.id
 
 @connection
-def add_object(name, session):
-    obj = Object(name=name)
-    session.add(obj)
+def add_device(device: DeviceData, session):
+    query = Device(**asdict(device))
+    session.add(query)
     session.commit()
-    return obj.id
+    return query.id
 
 @connection
-def add_experiment(name, session):
-    exp = Experiment(name=name)
-    session.add(exp)
+def add_object(obj: ObjectData, session):
+    query = Object(**asdict(obj))
+    session.add(query)
     session.commit()
-    return exp.id
+    return query.id
+
+@connection
+def add_experiment(experiment: ExperimentData, session):
+    query = Experiment(**asdict(experiment))
+    session.add(query)
+    session.commit()
+    return query.id
 
 @connection
 def add_record(start, finish, sec_duration, file_format, sampling_rate, scheduled_id, status, session):

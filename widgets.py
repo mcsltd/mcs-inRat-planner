@@ -182,5 +182,6 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-    def getExperiment(self):
-        return self.lineEditExperiment.text()
+    def getExperiment(self) -> ExperimentData:
+        exp_d = ExperimentData(name=self.lineEditExperiment.text())
+        return exp_d

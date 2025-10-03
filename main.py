@@ -127,15 +127,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
 
             # add object in db
-            object_id = add_object(name=schedule.object.name)
+            object_id = add_object(schedule.object)
             logger.info(f"Add Object in DB: id={object_id}")
 
             # add device in db
-            device_id = add_device(sn=schedule.device.serial_number, model=schedule.device.model)
+            device_id = add_device(schedule.device)
             logger.info(f"Add Device in DB: id={device_id}")
 
             # add schedule in db
-            schedule_id = add_schedule(schedule=schedule, experiment_id=schedule.experiment.id, device_id=device_id, object_id=object_id)
+            schedule_id = add_schedule(schedule=schedule)
             logger.info(f"Add Schedule in DB: id={schedule_id}")
 
             # ToDo: temprorary check time
