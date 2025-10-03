@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
 from sqlalchemy import select
+from sqlalchemy.orm import class_mapper
 
 from db.database import connection
 from db.models import Experiment, Schedule, Object, Device, Record
@@ -33,11 +34,31 @@ def get_schedules(session):
     ).where(Schedule.device_id==Device.id, Schedule.object_id == Object.id, Experiment.id == Schedule.experiment_id)
     result = session.execute(stmt)
     schedules = result
+
     return schedules
 
 @connection
-def select_all_schedules(session):
-    return Schedule.get_all_schedules(session)
+def select_all_schedules(session) -> list[ScheduleData]:
+    schedules = []
+
+    for schedule in Schedule.get_all_schedules(session):
+        schedule_dict = schedule.to_dict()
+
+        object_dict = schedule.object.to_dict()
+        device_dict = schedule.device.to_dict()
+        experiment_dict = schedule.experiment.to_dict()
+
+        del schedule_dict["device_id"]
+        schedule_dict["device"] = DeviceData(**device_dict)
+
+        del schedule_dict["object_id"]
+        schedule_dict["object"] = ObjectData(**object_dict)
+
+        del schedule_dict["experiment_id"]
+        schedule_dict["experiment"] = ExperimentData(**experiment_dict)
+
+        schedules.append(ScheduleData(**schedule_dict))
+    return schedules
 
 @connection
 def add_schedule(schedule: ScheduleData, session):

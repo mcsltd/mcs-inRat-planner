@@ -6,6 +6,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 from sqlalchemy.sql.annotation import Annotated
 
 
+
+
 class Base(DeclarativeBase):
     __abstract__ = True
 

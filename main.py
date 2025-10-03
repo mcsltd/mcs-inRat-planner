@@ -138,7 +138,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             schedule_id = add_schedule(schedule=schedule)
             logger.info(f"Add Schedule in DB: id={schedule_id}")
 
-            # ToDo: temprorary check time
+            # ToDo: проверка времени должна быть внутри диалогового окна
             time = schedule.datetime_start
             if time <= datetime.datetime.now():
                 time = datetime.datetime.now()
@@ -162,18 +162,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info("Set data in the Schedule table")
         table_data = []
 
-        result = get_schedules()
+        schedules = select_all_schedules()
 
         # ToDo: rewrite it
-        for row in result:
-            column_1_5 = row[:5]
-            status = ("None",)
-            column_7_8 = row[7:8]
-            column_9_11 = 4 * (0,)
-            params = "; ".join([str(v) for v in row[-2:]]) + " Гц"
-            data = list(column_1_5 + status + column_7_8 + column_9_11)
-            data.append(params)
-            table_data.append(data)
+        for schedule in schedules:
+            experiment_name = schedule.experiment.name
+            start_datetime = schedule.datetime_start
+            finish_datetime = schedule.datetime_finish
+            obj = schedule.object.name
+            device = schedule.device.ble_name
+            status = "Ожидание"
+            interval = schedule.sec_interval
+            duration = schedule.sec_duration
+            all_records_time = 0
+            all_records = 0
+            error_record = 0
+            params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
+
+            table_data.append([
+                experiment_name,
+                start_datetime,
+                finish_datetime,
+                obj,
+                device,
+                status,
+                interval,
+                duration,
+                all_records_time,
+                all_records,
+                error_record,
+                params,
+            ])
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule

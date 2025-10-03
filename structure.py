@@ -35,5 +35,3 @@ class ScheduleData:
     sampling_rate: int
     file_format: str
     id: UUID = uuid.uuid4()
-
-
