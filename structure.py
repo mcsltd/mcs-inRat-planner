@@ -1,24 +1,39 @@
 import datetime
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from uuid import UUID
 
 
 @dataclass
-class DataSchedule:
-    experiment_id: str | UUID
+class DeviceData:
+    ble_name: str
+    serial_number: int
+    model: str
+    id: UUID = uuid.uuid4()
 
-    experiment: str     # Optional field
-    patient: str        # Optional field
+@dataclass
+class ObjectData:
+    name: str
+    id: UUID = uuid.uuid4()
 
-    device_model: str # -> "EMG-SENS-{device_sn}" or "inRat"
-    device_sn: str
+@dataclass
+class ExperimentData:
+    name: str
+    id: UUID = uuid.uuid4()
 
-    start_datetime: datetime.datetime
-    finish_datetime: datetime.datetime
-    sec_interval: int
+
+@dataclass
+class ScheduleData:
+    experiment: ExperimentData | None
+    device: DeviceData | None
+    object: ObjectData | None
+
     sec_duration: int
-
+    sec_interval: int
+    datetime_start: datetime.datetime
+    datetime_finish: datetime.datetime
     sampling_rate: int
     file_format: str
+    id: UUID = uuid.uuid4()
 
 

@@ -10,7 +10,7 @@ from apscheduler.schedulers.qt import QtScheduler
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
     EXAMPLE_DATA_HISTORY, RecordStatus
-from structure import DataSchedule
+from structure import ScheduleData
 
 # ui
 from ui.v1.main_window import Ui_MainWindow
@@ -20,6 +20,7 @@ from tools.modview import GenericTableWidget
 # database
 from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object, add_experiment, add_record, \
     get_records, select_all_schedules
+
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             #     next_run_time=time,
             # )
 
-    def addRecord(self, schedule: DataSchedule, schedule_id):
+    def addRecord(self, schedule: ScheduleData, schedule_id):
         """ Start recording """
         logger.debug(f"get schedule: {schedule}")
 
@@ -119,38 +120,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         code = dlg.exec()
 
         if code == QDialog.DialogCode.Accepted:
-            schedule: DataSchedule = dlg.getSchedule()
+            schedule: ScheduleData = dlg.getSchedule()
 
             if schedule is None:
                 logger.error("An error occurred while creating the schedule")
                 return
 
             # add object in db
-            object_id = add_object(name=schedule.patient)
+            object_id = add_object(name=schedule.object.name)
             logger.info(f"Add Object in DB: id={object_id}")
 
             # add device in db
-            device_id = add_device(sn=schedule.device_sn, model=schedule.device_model)
+            device_id = add_device(sn=schedule.device.serial_number, model=schedule.device.model)
             logger.info(f"Add Device in DB: id={device_id}")
 
             # add schedule in db
-            schedule_id = add_schedule(schedule=schedule, experiment_id=schedule.experiment_id, device_id=device_id, object_id=object_id)
+            schedule_id = add_schedule(schedule=schedule, experiment_id=schedule.experiment.id, device_id=device_id, object_id=object_id)
             logger.info(f"Add Schedule in DB: id={schedule_id}")
 
             # ToDo: temprorary check time
-            time = schedule.start_datetime
+            time = schedule.datetime_start
             if time <= datetime.datetime.now():
                 time = datetime.datetime.now()
 
-            # set job for scheduling
-            self.scheduler.add_job(
-                self.addRecord,
-                trigger="interval",
-                seconds=schedule.sec_interval,
-                args=(schedule, schedule_id),
-                id=str(schedule_id),
-                next_run_time=time,
-            )
+            # # set job for scheduling
+            # self.scheduler.add_job(
+            #     self.addRecord,
+            #     trigger="interval",
+            #     seconds=schedule.sec_interval,
+            #     args=(schedule, schedule_id),
+            #     id=str(schedule_id),
+            #     next_run_time=time,
+            # )
 
             # fill table Schedule
             self.updateContentTableSchedule()

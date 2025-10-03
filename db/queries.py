@@ -2,7 +2,7 @@ from sqlalchemy import select
 
 from db.database import connection
 from db.models import Experiment, Schedule, Object, Device, Record
-from structure import DataSchedule
+from structure import ScheduleData
 
 
 @connection
@@ -18,7 +18,7 @@ def get_experiments(session) -> list:
     return experiment_names
 
 @connection
-def add_schedule(schedule: DataSchedule, experiment_id, device_id, object_id, session):
+def add_schedule(schedule: ScheduleData, experiment_id, device_id, object_id, session):
     schd = Schedule(
         experiment_id=experiment_id,
         # object_name=schedule.patient,
@@ -27,7 +27,7 @@ def add_schedule(schedule: DataSchedule, experiment_id, device_id, object_id, se
         # device_sn=schedule.device_sn, device_model=schedule.device_model,
 
         sec_duration=schedule.sec_duration, sec_interval=schedule.sec_interval,
-        datetime_start=schedule.start_datetime, datetime_finish=schedule.finish_datetime,
+        datetime_start=schedule.datetime_start, datetime_finish=schedule.datetime_finish,
         file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
     )
     session.add(schd)
