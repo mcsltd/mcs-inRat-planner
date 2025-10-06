@@ -130,8 +130,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # device
         device_sn = self.LineEditSnDevice.text()
-        device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}{device_sn}"
-        dev_d: DeviceData = DeviceData(ble_name=f"{device_model}-{device_sn}", model=device_model, serial_number=device_sn)
+        device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        dev_d: DeviceData = DeviceData(ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
         finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
