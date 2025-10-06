@@ -6,7 +6,7 @@ from PySide6.QtCore import QDateTime
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
 from constants import Formats, Devices
-from structure import DataSchedule
+from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from ui.v1.dlg_input_experiment import Ui_DlgInputExperiment
 
@@ -118,36 +118,39 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addDays(2).addSecs(60))
 
 
-    def getSchedule(self) -> Optional[DataSchedule]:
+    def getSchedule(self) -> Optional[ScheduleData]:
+        # experiment
         experiment_id = self.comboBoxExperiment.currentData()
         experiment = self.comboBoxExperiment.currentText()
+        exp_d: ExperimentData = ExperimentData(id=experiment_id, name=experiment)
 
-        patient = self.LineEditObject.text()
+        # object
+        obj = self.LineEditObject.text()
+        obj_d: ObjectData = ObjectData(name=obj)
 
-
+        # device
         device_sn = self.LineEditSnDevice.text()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}{device_sn}"
+        dev_d: DeviceData = DeviceData(ble_name=f"{device_model}-{device_sn}", model=device_model, serial_number=device_sn)
 
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
-        finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
-
+        finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
         sec_interval = self.convert_to_seconds(self.comboBoxInterval.currentText(), time_format="[hh:mm]")
         sec_duration = self.convert_to_seconds(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
-
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
         sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
-        schd = DataSchedule(
-            experiment_id=experiment_id,
-            experiment=experiment,
-            patient=patient,
-            device_model=device_model, device_sn=device_sn,
-            start_datetime=start_datetime, finish_datetime=finish_datetime,
+        # schedule
+        sch_d = ScheduleData(
+            experiment=exp_d,
+            device=dev_d,
+            object=obj_d,
+            datetime_start=start_datetime, datetime_finish=finish_datetime,
             sec_interval=sec_interval, sec_duration=sec_duration,
             sampling_rate=sampling_rate, file_format=file_format
         )
 
-        return schd
+        return sch_d
 
     def convert_to_seconds(self, duration: str, time_format: str) -> int:
         sec_duration = 0
@@ -155,7 +158,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         if time_format == "[mm:ss]":    # duration
             duration = "0:" + duration
         if time_format == "[hh:mm]":    # interval
-            duration = duration + "0:"
+            duration = duration + ":0"
 
         time = duration.replace(":", " ").split()[::-1]
         for i, t in enumerate(time):
@@ -179,5 +182,6 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-    def getExperiment(self):
-        return self.lineEditExperiment.text()
+    def getExperiment(self) -> ExperimentData:
+        exp_d = ExperimentData(name=self.lineEditExperiment.text())
+        return exp_d
