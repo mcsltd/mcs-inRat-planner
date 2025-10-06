@@ -11,6 +11,7 @@ from apscheduler.schedulers.qt import QtScheduler
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
     EXAMPLE_DATA_HISTORY, RecordStatus
+from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
 
 # ui
@@ -24,6 +25,7 @@ from db.queries import get_experiments, add_schedule, add_device, add_object, ad
     get_object_by_schedule_id, get_experiment_by_schedule_id
 
 logger = logging.getLogger(__name__)
+
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -40,25 +42,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
-        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=EXAMPLE_DATA_SCHEDULE, )
-        self.labelSchedule.setText(f"Расписание (всего: {len(EXAMPLE_DATA_SCHEDULE)})")
+        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=[])
+        self.labelSchedule.setText(f"Расписание (всего: 0)")
 
         self.tableModelHistory = GenericTableWidget()
-        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=EXAMPLE_DATA_HISTORY)
-        self.labelHistory.setText(f"Записей (всего: {len(EXAMPLE_DATA_HISTORY)})")
+        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=[])
+
+        self.labelHistory.setText(f"Записей (всего: 0)")
 
         # add tables
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
+        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+
         self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
-        # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
+        # ToDo: self.pushButtonDeleteSchedule.clicked.connect(...)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
         self.update_content_table_history()
         self.update_content_table_schedule()
+
 
     def init_jobs(self):
         """ Метод инициализирующий задачи по записи ЭКГ """
@@ -208,7 +214,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 
         # update label Schedule
-        self.labelHistory.setText(f"Расписание (всего: {len(table_data)})")
+        self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
 
     def update_schedule(self) -> None:
@@ -224,6 +230,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info("The contents of the History table have been updated")
         pass
 
+    def run_monitor(self):
+        """ Запустить монитор сигналов """
+        monitor = SignalMonitor()
+        monitor.exec()
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()

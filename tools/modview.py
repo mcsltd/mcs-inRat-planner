@@ -13,6 +13,8 @@ TASKS:
 """
 
 class _DataTableModel(QAbstractTableModel):
+
+
     def __init__(self, description: list, data: list,  parent=None, *args):
         super().__init__(parent=parent)
 
@@ -61,6 +63,7 @@ class _DataTableModel(QAbstractTableModel):
 
 
 class GenericTableWidget(QTableView):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
