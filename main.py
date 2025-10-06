@@ -20,7 +20,8 @@ from tools.modview import GenericTableWidget
 
 # database
 from db.queries import get_experiments, add_schedule, add_device, add_object, add_experiment, add_record, \
-    select_all_records, select_all_schedules, get_count_records, get_count_error_records
+    select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
+    get_object_by_schedule_id, get_experiment_by_schedule_id
 
 logger = logging.getLogger(__name__)
 
@@ -192,22 +193,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         table_data = []
         records = select_all_records()
-        # ToDo: упросить
         for idx, rec in enumerate(records):
+
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
-            experiment = "не установлено"
-            obj = "не установлено"
+
+            experiment = get_experiment_by_schedule_id(rec.schedule_id)
+            obj = get_object_by_schedule_id(rec.schedule_id)
+
             file_format = rec.file_format
 
-            table_data.append([
-                idx,
-                start_time,
-                duration,
-                experiment,
-                obj,
-                file_format,
-            ])
+            table_data.append([idx + 1, start_time, duration, experiment, obj, file_format,])
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 

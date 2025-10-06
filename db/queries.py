@@ -122,8 +122,22 @@ def get_count_error_records(schedule_id, session):
     result = session.execute(stmt).scalars().all()
     return len(result)
 
-# @connection
-# def get_all_time_records(schedule_id, session):
-#     stmt = select(sym(Record)).where(Record.schedule_id == schedule_id)
-#     result = session.execute(stmt).scalars()
-#     return len(result)
+@connection
+def get_experiment_by_schedule_id(schedule_id, session):
+    stmt = select(Schedule).where(Schedule.id == schedule_id)
+    result = session.execute(stmt)
+    if result.first() is None:
+        return "Название эксперимента не найдено по id"
+        # ToDo: raise Error
+    result = result.scalars().fetchone().experiment.name
+    return result
+
+@connection
+def get_object_by_schedule_id(schedule_id, session):
+    stmt = select(Schedule).where(Schedule.id == schedule_id)
+    result = session.execute(stmt)
+    if result.first() is None:
+        return "Название объекта не найдено по id"
+        # ToDo: raise Error
+    result = result.scalars().fetchone().object.name
+    return result
