@@ -63,14 +63,19 @@ class Device(Base):
 
 class Record(Base):
     datetime_start: Mapped[datetime.datetime]
-    datetime_finish: Mapped[datetime.datetime]
     sec_duration: Mapped[int]
     file_format: Mapped[str]
     sampling_rate: Mapped[str]
     status: Mapped[str]
-
     schedule_id: Mapped[UUID] = mapped_column(ForeignKey("schedule.id"))
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="record")
+
+    @classmethod
+    def get_all_records(cls, session):
+        query = select(cls)
+        result = session.execute(query)
+        records = result.scalars().all()
+        return records
 
 
 class Experiment(Base):

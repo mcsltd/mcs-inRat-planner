@@ -134,7 +134,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         dev_d: DeviceData = DeviceData(ble_name=f"{device_model}-{device_sn}", model=device_model, serial_number=device_sn)
 
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
-        finish_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
+        finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
         sec_interval = self.convert_to_seconds(self.comboBoxInterval.currentText(), time_format="[hh:mm]")
         sec_duration = self.convert_to_seconds(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
@@ -158,7 +158,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         if time_format == "[mm:ss]":    # duration
             duration = "0:" + duration
         if time_format == "[hh:mm]":    # interval
-            duration = duration + "0:"
+            duration = duration + ":0"
 
         time = duration.replace(":", " ").split()[::-1]
         for i, t in enumerate(time):

@@ -1,5 +1,6 @@
 import datetime
 import logging
+from dataclasses import asdict
 
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
@@ -10,7 +11,7 @@ from apscheduler.schedulers.qt import QtScheduler
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
     EXAMPLE_DATA_HISTORY, RecordStatus
-from structure import ScheduleData
+from structure import ScheduleData, RecordData
 
 # ui
 from ui.v1.main_window import Ui_MainWindow
@@ -18,9 +19,8 @@ from widgets import DlgCreateSchedule, DlgCreateExperiment
 from tools.modview import GenericTableWidget
 
 # database
-from db.queries import get_experiments, add_schedule, get_schedules, add_device, add_object, add_experiment, add_record, \
-    get_records, select_all_schedules
-
+from db.queries import get_experiments, add_schedule, add_device, add_object, add_experiment, add_record, \
+    select_all_records, select_all_schedules, get_count_records, get_count_error_records
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # init scheduler
         self.scheduler = QtScheduler()
         self.scheduler.start()
-        # self.initJobs()
+        self.init_jobs()
 
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
@@ -50,59 +50,64 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
-        self.pushButtonAddExperiment.clicked.connect(self.addExperiment)
-        self.pushButtonAddSchedule.clicked.connect(self.addSchedule)
+        self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
+        self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
         # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
-        self.updateContentTableSchedule()
-        self.updateContentTableHistory()
+        self.update_content_table_history()
+        self.update_content_table_schedule()
 
-    # def initJobs(self):
-    #     logger.debug("Initialize schedules")
-    #
-    #     # read schedules from db
-    #     scheds = select_all_schedules()
-    #     for sc in scheds:
-    #         _  = 1
-            # # set job for scheduling
-            # self.scheduler.add_job(
-            #     self.addRecord,
-            #     trigger="interval",
-            #     seconds=schedule.sec_interval,
-            #     args=(schedule, schedule_id),
-            #     id=str(schedule_id),
-            #     next_run_time=time,
-            # )
+    def init_jobs(self):
+        """ Метод инициализирующий задачи по записи ЭКГ """
+        logger.info("Инициализация задач записи ЭКГ...")
 
-    def addRecord(self, schedule: ScheduleData, schedule_id):
-        """ Start recording """
-        logger.debug(f"get schedule: {schedule}")
+        schedules = select_all_schedules()
+        for job in schedules:
 
-        # set data about record in table
-        duration = schedule.sec_duration
-        self.tableModelHistory.setData(
-            description=DESCRIPTION_COLUMN_HISTORY,
-            data=[["0", str(datetime.datetime.now()), duration, schedule.experiment, schedule.patient, schedule.file_format]]
+            if datetime.datetime.now() >= job.datetime_finish:
+                logger.debug(f"Время действия расписания истекло: {job.datetime_finish}")
+                return
+            self.create_job(job, start_time=job.datetime_start)
+
+
+    def create_job(self, schedule, start_time: datetime.datetime):
+        logger.debug(
+            f"Создана задача: {str(schedule.id)};"
+            f" запланированное время старта: {start_time.replace(microsecond=0)};"
+            f" длительность записи: {schedule.sec_duration}"
         )
 
-        # set data about record in db
-        add_record(
-            start=datetime.datetime.now(),
-            finish=datetime.datetime.now() + datetime.timedelta(seconds=schedule.sec_duration),
-            sec_duration=duration,
-            sampling_rate=schedule.sampling_rate,
+        self.scheduler.add_job(
+            self.create_record,
+            args=(schedule, start_time),
+            trigger="interval",
+            seconds=schedule.sec_interval,
+            id=str(schedule.id),
+            next_run_time=start_time,
+        )
+
+    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime):
+        logger.debug(f"Начало записи данных: {start_time}")
+
+        # добавление в базу данных информации о начале записи
+        rec_d = RecordData(
+            schedule_id=schedule.id,
+            datetime_start=start_time,
+            sec_duration=schedule.sec_duration,
+            status=RecordStatus.IN_PROCESS.value,
             file_format=schedule.file_format,
-            scheduled_id=schedule_id,
-            status=RecordStatus.IN_PROCESS.value
+            sampling_rate=schedule.sampling_rate,
         )
+        add_record(rec_d)
 
-        # start recording data from device
-        ...
+        # обновить отображение данных в таблице Records
+        self.update_content_table_history()
+
 
     # Experiment
-    def addExperiment(self) -> None:
+    def add_experiment(self) -> None:
         dlg = DlgCreateExperiment()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
@@ -112,8 +117,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     # Schedule
-    def addSchedule(self) -> None:
-        logger.info("Adding a new schedule")
+    def add_schedule(self) -> None:
+        """ Добавление нового расписания и создание задачи для записи ЭКГ """
 
         experiments = get_experiments()
         dlg = DlgCreateSchedule(experiments=experiments)
@@ -128,43 +133,40 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # add object in db
             object_id = add_object(schedule.object)
-            logger.info(f"Add Object in DB: id={object_id}")
+            logger.info(f"Добавлен объект: id={object_id}")
 
             # add device in db
             device_id = add_device(schedule.device)
-            logger.info(f"Add Device in DB: id={device_id}")
+            logger.info(f"Добавлено устройство: id={device_id}")
 
             # add schedule in db
             schedule_id = add_schedule(schedule=schedule)
-            logger.info(f"Add Schedule in DB: id={schedule_id}")
+            logger.info(f"Добавлено расписание: id={schedule_id}")
 
             # ToDo: проверка времени должна быть внутри диалогового окна
-            time = schedule.datetime_start
-            if time <= datetime.datetime.now():
-                time = datetime.datetime.now()
+            # time = schedule.datetime_start
+            # if time <= datetime.datetime.now():
+            time = datetime.datetime.now().replace(microsecond=0)
 
-            # # set job for scheduling
-            # self.scheduler.add_job(
-            #     self.addRecord,
-            #     trigger="interval",
-            #     seconds=schedule.sec_interval,
-            #     args=(schedule, schedule_id),
-            #     id=str(schedule_id),
-            #     next_run_time=time,
-            # )
+            self.create_job(schedule, start_time=time)
 
             # fill table Schedule
-            self.updateContentTableSchedule()
-            logger.info("Schedule created successfully")
+            self.update_content_table_schedule()
+            logger.info("Расписание было")
 
+    @classmethod
+    def convert_seconds_to_str(cls, seconds) -> str | None:
+        if seconds / 3600 >= 1:
+            return f"{seconds // 3600} ч."
+        if seconds / 60 >= 1:
+            return f"{seconds // 60} мин."
+        return f"{seconds} с."
 
-    def updateContentTableSchedule(self):
-        logger.info("Set data in the Schedule table")
+    def update_content_table_schedule(self):
+        logger.info("Обновление всех данных в таблице \"Расписание\"")
         table_data = []
 
         schedules = select_all_schedules()
-
-        # ToDo: rewrite it
         for schedule in schedules:
             experiment_name = schedule.experiment.name
             start_datetime = schedule.datetime_start
@@ -172,55 +174,59 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             obj = schedule.object.name
             device = schedule.device.ble_name
             status = "Ожидание"
-            interval = schedule.sec_interval
-            duration = schedule.sec_duration
+            interval = self.convert_seconds_to_str(schedule.sec_interval)
+            duration = self.convert_seconds_to_str(schedule.sec_duration)
             all_records_time = 0
-            all_records = 0
-            error_record = 0
+            all_records = get_count_records(schedule.id)
+            error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
 
-            table_data.append([
-                experiment_name,
-                start_datetime,
-                finish_datetime,
-                obj,
-                device,
-                status,
-                interval,
-                duration,
-                all_records_time,
-                all_records,
-                error_record,
-                params,
-            ])
+            table_data.append([experiment_name,start_datetime,finish_datetime,obj,device,status,interval,duration,all_records_time,all_records,error_record,params,])
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
-    def updateContentTableHistory(self):
-        logger.debug("Update content in table history.")
+    def update_content_table_history(self) -> None:
+        logger.info("Обновление всех данных в таблице \"Записи\"")
 
-        # update label History
-        self.labelHistory.setText(f"История (всего: 0)")
-        records = get_records()
-        # for row in records:
-        #     print(f"{row=}")
+        table_data = []
+        records = select_all_records()
+        # ToDo: упросить
+        for idx, rec in enumerate(records):
+            start_time = rec.datetime_start
+            duration = self.convert_seconds_to_str(rec.sec_duration)
+            experiment = "не установлено"
+            obj = "не установлено"
+            file_format = rec.file_format
+
+            table_data.append([
+                idx,
+                start_time,
+                duration,
+                experiment,
+                obj,
+                file_format,
+            ])
+
+        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
+
+        # update label Schedule
+        self.labelHistory.setText(f"Расписание (всего: {len(table_data)})")
 
 
-    def updateSchedule(self) -> None:
+    def update_schedule(self) -> None:
         logger.info("The contents of the Schedule table have been updated")
         pass
 
-    def deleteSchedule(self) -> None:
+    def delete_schedule(self) -> None:
         logger.info("Deleting a schedule")
         pass
 
     # History
-    def updateTableHistory(self):
+    def update_table_history(self):
         logger.info("The contents of the History table have been updated")
         pass
-
 
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:

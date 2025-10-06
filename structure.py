@@ -29,7 +29,6 @@ class ScheduleData:
     experiment: ExperimentData | None
     device: DeviceData | None
     object: ObjectData | None
-
     sec_duration: int
     sec_interval: int
     datetime_start: datetime.datetime
@@ -44,7 +43,7 @@ class RecordData:
     sec_duration: int
     file_format: str
     sampling_rate: int
-    status: RecordStatus
+    status: str
     schedule_id: UUID
     id: UUID = field(default_factory=uuid.uuid4)
 
@@ -52,18 +51,18 @@ class RecordData:
 if __name__ == "__main__":
     rd1 = RecordData(
         datetime_start=datetime.datetime.now(),
-        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS,
+        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
         schedule_id=uuid.uuid4()
     )
 
     rd2 = RecordData(
         datetime_start=datetime.datetime.now(),
-        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS,
+        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
         schedule_id=uuid.uuid4()
     )
 
     rd3 = RecordData(
         datetime_start=datetime.datetime.now(),
-        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS,
+        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
         schedule_id=uuid.uuid4()
     )
