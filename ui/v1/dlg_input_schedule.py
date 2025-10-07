@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_scheduleNqVUuK.ui'
+## Form generated from reading UI file 'dlg_input_scheduleYxzJZX.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -17,31 +17,31 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QComboBox, QDateTimeEdit,
     QDialog, QDialogButtonBox, QFormLayout, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QSizePolicy,
-    QWidget)
+    QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QSizePolicy, QWidget)
 
 class Ui_DlgCreateNewSchedule(object):
     def setupUi(self, DlgCreateNewSchedule):
         if not DlgCreateNewSchedule.objectName():
             DlgCreateNewSchedule.setObjectName(u"DlgCreateNewSchedule")
         DlgCreateNewSchedule.setWindowModality(Qt.WindowModality.ApplicationModal)
-        DlgCreateNewSchedule.resize(464, 492)
+        DlgCreateNewSchedule.resize(486, 492)
         DlgCreateNewSchedule.setAutoFillBackground(False)
         DlgCreateNewSchedule.setInputMethodHints(Qt.InputMethodHint.ImhUrlCharactersOnly)
         DlgCreateNewSchedule.setSizeGripEnabled(False)
         self.buttonBoxSchedule = QDialogButtonBox(DlgCreateNewSchedule)
         self.buttonBoxSchedule.setObjectName(u"buttonBoxSchedule")
-        self.buttonBoxSchedule.setGeometry(QRect(140, 430, 301, 32))
+        self.buttonBoxSchedule.setGeometry(QRect(170, 430, 301, 32))
         self.buttonBoxSchedule.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
         self.buttonBoxSchedule.setOrientation(Qt.Orientation.Horizontal)
         self.buttonBoxSchedule.setStandardButtons(QDialogButtonBox.StandardButton.Cancel|QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.RestoreDefaults)
         self.buttonBoxSchedule.setCenterButtons(True)
         self.groupBoxRecords = QGroupBox(DlgCreateNewSchedule)
         self.groupBoxRecords.setObjectName(u"groupBoxRecords")
-        self.groupBoxRecords.setGeometry(QRect(20, 290, 421, 131))
+        self.groupBoxRecords.setGeometry(QRect(20, 290, 451, 131))
         self.formLayoutWidget_2 = QWidget(self.groupBoxRecords)
         self.formLayoutWidget_2.setObjectName(u"formLayoutWidget_2")
-        self.formLayoutWidget_2.setGeometry(QRect(10, 30, 401, 81))
+        self.formLayoutWidget_2.setGeometry(QRect(10, 30, 431, 81))
         self.formLayoutRecords = QFormLayout(self.formLayoutWidget_2)
         self.formLayoutRecords.setObjectName(u"formLayoutRecords")
         self.formLayoutRecords.setContentsMargins(0, 0, 0, 0)
@@ -77,10 +77,10 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.groupBoxSchedule = QGroupBox(DlgCreateNewSchedule)
         self.groupBoxSchedule.setObjectName(u"groupBoxSchedule")
-        self.groupBoxSchedule.setGeometry(QRect(20, 160, 421, 121))
+        self.groupBoxSchedule.setGeometry(QRect(20, 160, 451, 121))
         self.formLayoutWidget_3 = QWidget(self.groupBoxSchedule)
         self.formLayoutWidget_3.setObjectName(u"formLayoutWidget_3")
-        self.formLayoutWidget_3.setGeometry(QRect(10, 30, 401, 77))
+        self.formLayoutWidget_3.setGeometry(QRect(10, 30, 431, 77))
         self.formLayoutSchedule = QFormLayout(self.formLayoutWidget_3)
         self.formLayoutSchedule.setObjectName(u"formLayoutSchedule")
         self.formLayoutSchedule.setContentsMargins(0, 0, 0, 0)
@@ -116,7 +116,7 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.formLayoutWidget = QWidget(DlgCreateNewSchedule)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
-        self.formLayoutWidget.setGeometry(QRect(30, 30, 401, 115))
+        self.formLayoutWidget.setGeometry(QRect(30, 30, 441, 115))
         self.formLayoutInformation = QFormLayout(self.formLayoutWidget)
         self.formLayoutInformation.setObjectName(u"formLayoutInformation")
         self.formLayoutInformation.setContentsMargins(0, 0, 0, 0)
@@ -164,6 +164,16 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.horizontalLayout.addWidget(self.comboBoxExperiment)
 
+        self.pushButtonAddExperiment = QPushButton(self.formLayoutWidget)
+        self.pushButtonAddExperiment.setObjectName(u"pushButtonAddExperiment")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButtonAddExperiment.sizePolicy().hasHeightForWidth())
+        self.pushButtonAddExperiment.setSizePolicy(sizePolicy)
+
+        self.horizontalLayout.addWidget(self.pushButtonAddExperiment)
+
 
         self.formLayoutInformation.setLayout(0, QFormLayout.ItemRole.FieldRole, self.horizontalLayout)
 
@@ -190,5 +200,6 @@ class Ui_DlgCreateNewSchedule(object):
         self.LabelModelDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041c\u043e\u0434\u0435\u043b\u044c \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
         self.LabelSnDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u0435\u0440\u0438\u0439\u043d\u044b\u0439 \u043d\u043e\u043c\u0435\u0440 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
         self.comboBoxExperiment.setCurrentText("")
+        self.pushButtonAddExperiment.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u043e\u0437\u0434\u0430\u0442\u044c", None))
     # retranslateUi
 
