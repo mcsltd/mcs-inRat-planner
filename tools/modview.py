@@ -81,8 +81,8 @@ class GenericTableWidget(QTableView):
             }
         """)
 
-    def get_selected_index(self) -> list[QModelIndex]:
-        """ Получение индекса строки """
+    def get_selected_index(self) -> None | list[QModelIndex]:
+        """ Получение выбранных индексов """
         indexes = self.selectedIndexes()
         if not indexes:
             return None
@@ -95,13 +95,15 @@ class GenericTableWidget(QTableView):
         if selected_indexes is None:
             return None
 
-        row_data = []
-        for index in selected_indexes:
-            data = self.data_model.data(index, role=Qt.ItemDataRole.DisplayRole)
-            row_data.append(data)
+        index_row = selected_indexes[0].row()
+        row_data = self.data_model.array_data[index_row]
 
-        if not row_data:
-            return None
+        # row_data = []
+        # for index in selected_indexes:
+        #     data = self.data_model.data(index, role=Qt.ItemDataRole.DisplayRole)
+        #     row_data.append(data)
+        # if not row_data:
+        #     return None
 
         return row_data
 

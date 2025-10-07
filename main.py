@@ -22,7 +22,8 @@ from tools.modview import GenericTableWidget
 # database
 from db.queries import get_experiments, add_schedule, add_device, add_object, add_experiment, add_record, \
     select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
-    get_object_by_schedule_id, get_experiment_by_schedule_id
+    get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
+    select_records_by_schedule_id
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_history()
         self.update_content_table_schedule()
 
-
     def init_jobs(self):
         """ Метод инициализирующий задачи по записи ЭКГ """
         logger.info("Инициализация задач записи ЭКГ...")
@@ -113,7 +113,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             file_format=schedule.file_format,
             sampling_rate=schedule.sampling_rate,
         )
-        add_record(rec_d)
+        result = add_record(rec_d)
 
         # ToDo: запуск устройства
 
@@ -159,8 +159,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # ToDo: проверка времени должна быть внутри диалогового окна
             # time = schedule.datetime_start
             # if time <= datetime.datetime.now():
-            time = datetime.datetime.now().replace(microsecond=0)
-
+            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=30)
             self.create_job(schedule, start_time=time)
 
             # fill table Schedule
@@ -228,14 +227,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         pass
 
     def delete_schedule(self) -> None:
+        """ Обработчик кнопки удаления расписаний """
         # получить удаляемую строку из таблицы
         schedule_data = self.tableModelSchedule.get_selected_data()
+        if schedule_data is None:
+            return None
+
+        # остановить и удалить задачи из расписания
+        job = self.scheduler.get_job(job_id=str(schedule_data[0]))
+        if job is not None:
+            logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_data[0])}")
+            self.scheduler.remove_job(job_id=str(schedule_data[0]))
 
         # удалить (пометить) расписание из БД
-        ...
+        result = delete_schedule(schedule_id=schedule_data[0])  # ToDo: не удалять из бд
+        self.update_content_table_schedule()
+        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
+        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
 
         # удалить записи для расписания в history
-        ...
+        result_1 = select_records_by_schedule_id(schedule_id=schedule_data[0])
+        result = delete_records_by_schedule_id(schedule_id=schedule_data[0]) # ToDo: не удалять из бд
+        self.update_content_table_history()
+        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
+
+        return None
 
     # History
     def update_table_history(self):
