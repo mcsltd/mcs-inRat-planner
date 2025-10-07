@@ -11,6 +11,7 @@ from apscheduler.schedulers.qt import QtScheduler
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
     EXAMPLE_DATA_HISTORY, RecordStatus
+from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
 
 # ui
@@ -19,10 +20,9 @@ from widgets import DlgCreateSchedule, DlgCreateExperiment
 from tools.modview import GenericTableWidget
 
 # database
-from db.queries import get_experiments, add_schedule, add_device, add_object, add_experiment, add_record, \
+from db.queries import add_schedule, add_device, add_object, add_record, \
     select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
-    get_object_by_schedule_id, get_experiment_by_schedule_id
-
+    get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id
 logger = logging.getLogger(__name__)
 
 
@@ -40,22 +40,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
-        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=EXAMPLE_DATA_SCHEDULE, )
-        self.labelSchedule.setText(f"Расписание (всего: {len(EXAMPLE_DATA_SCHEDULE)})")
+        self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=[])
+        self.labelSchedule.setText(f"Расписание (всего: 0)")
 
         self.tableModelHistory = GenericTableWidget()
-        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=EXAMPLE_DATA_HISTORY)
-        self.labelHistory.setText(f"Записей (всего: {len(EXAMPLE_DATA_HISTORY)})")
+        self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=[])
+        self.labelHistory.setText(f"Записей (всего: 0)")
 
-        # add tables
+        # добавление таблиц в layout
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
-        self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
+        # соединение сигналов с функциями
+        # tables
+        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+        # self.tableModelSchedule.activated.connect(self.activate_button_control)
+
+        # buttons
+        # self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
-        # ToDo: self.pushButtonDeleteSchedule.clicked.connect(self.deleteScheduleFromDB)
+        self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
+
+        # self.pushButtonDeleteSchedule.setDisabled(True)
+        # self.pushButtonUpdateSchedule.setDisabled(True)
 
         self.update_content_table_history()
         self.update_content_table_schedule()
@@ -71,7 +80,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.debug(f"Время действия расписания истекло: {job.datetime_finish}")
                 return
             self.create_job(job, start_time=job.datetime_start)
-
 
     def create_job(self, schedule, start_time: datetime.datetime):
         logger.debug(
@@ -101,28 +109,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             file_format=schedule.file_format,
             sampling_rate=schedule.sampling_rate,
         )
-        add_record(rec_d)
+        result = add_record(rec_d)
+
+        # ToDo: запуск устройства
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
-
-
-    # Experiment
-    def add_experiment(self) -> None:
-        dlg = DlgCreateExperiment()
-        code = dlg.exec()
-        if code == QDialog.DialogCode.Accepted:
-            exp = dlg.getExperiment()
-            logger.info(f"Add Object in DB: id={add_experiment(exp)}")
-        return
-
 
     # Schedule
     def add_schedule(self) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
 
-        experiments = get_experiments()
-        dlg = DlgCreateSchedule(experiments=experiments)
+        # experiments = get_experiments()
+        dlg = DlgCreateSchedule()
         code = dlg.exec()
 
         if code == QDialog.DialogCode.Accepted:
@@ -147,8 +146,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # ToDo: проверка времени должна быть внутри диалогового окна
             # time = schedule.datetime_start
             # if time <= datetime.datetime.now():
-            time = datetime.datetime.now().replace(microsecond=0)
-
+            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=30)
             self.create_job(schedule, start_time=time)
 
             # fill table Schedule
@@ -169,6 +167,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         schedules = select_all_schedules()
         for schedule in schedules:
+            schedule_id = schedule.id
             experiment_name = schedule.experiment.name
             start_datetime = schedule.datetime_start
             finish_datetime = schedule.datetime_finish
@@ -182,7 +181,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
 
-            table_data.append([experiment_name,start_datetime,finish_datetime,obj,device,status,interval,duration,all_records_time,all_records,error_record,params,])
+            table_data.append([schedule_id, experiment_name,start_datetime,finish_datetime,obj,device,status,interval,duration,all_records_time,all_records,error_record,params,])
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
@@ -194,36 +193,52 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         table_data = []
         records = select_all_records()
         for idx, rec in enumerate(records):
-
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
-
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
             obj = get_object_by_schedule_id(rec.schedule_id)
-
             file_format = rec.file_format
-
             table_data.append([idx + 1, start_time, duration, experiment, obj, file_format,])
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 
         # update label Schedule
-        self.labelHistory.setText(f"Расписание (всего: {len(table_data)})")
-
+        self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
     def update_schedule(self) -> None:
-        logger.info("The contents of the Schedule table have been updated")
-        pass
+        """ Обработчик кнопки изменения расписаний """
+        ...
 
     def delete_schedule(self) -> None:
-        logger.info("Deleting a schedule")
-        pass
+        """ Обработчик кнопки удаления расписаний """
+        # получить удаляемую строку из таблицы
+        schedule_data = self.tableModelSchedule.get_selected_data()
+        if schedule_data is None:
+            return None
 
-    # History
-    def update_table_history(self):
-        logger.info("The contents of the History table have been updated")
-        pass
+        # остановить и удалить задачи из расписания
+        job = self.scheduler.get_job(job_id=str(schedule_data[0]))
+        if job is not None:
+            logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_data[0])}")
+            self.scheduler.remove_job(job_id=str(schedule_data[0]))
 
+        # удалить (пометить) расписание из БД
+        delete_schedule(schedule_id=schedule_data[0])  # ToDo: не удалять из бд
+        self.update_content_table_schedule()
+        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
+        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
+
+        # удалить записи для расписания в history
+        delete_records_by_schedule_id(schedule_id=schedule_data[0]) # ToDo: не удалять из бд
+        self.update_content_table_history()
+        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
+
+        return None
+
+    def run_monitor(self):
+        """ Запустить монитор сигналов """
+        monitor = SignalMonitor()
+        monitor.exec()
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()

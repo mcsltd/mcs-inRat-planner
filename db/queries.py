@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import class_mapper
 
 from constants import RecordStatus
@@ -41,9 +41,9 @@ def get_schedules(session):
 @connection
 def add_schedule(schedule: ScheduleData, session):
     query = Schedule(
+        id = schedule.id,
         experiment_id=schedule.experiment.id,
         device_id=schedule.device.id, object_id=schedule.object.id,
-
         sec_duration=schedule.sec_duration, sec_interval=schedule.sec_interval,
         datetime_start=schedule.datetime_start, datetime_finish=schedule.datetime_finish,
         file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
@@ -122,22 +122,74 @@ def get_count_error_records(schedule_id, session):
     result = session.execute(stmt).scalars().all()
     return len(result)
 
+# @connection
+# def get_experiment_by_schedule_id(schedule_id, session):
+#     stmt = select(Schedule).where(Schedule.id == schedule_id)
+#     result = session.execute(stmt)
+#     if result.first() is None:
+#         return "Название эксперимента не найдено по id"
+#         # ToDo: raise Error
+#     result = result.scalars()
+#     result = result.fetchone().experiment.name
+#     return result
+
+
 @connection
 def get_experiment_by_schedule_id(schedule_id, session):
     stmt = select(Schedule).where(Schedule.id == schedule_id)
     result = session.execute(stmt)
-    if result.first() is None:
+
+    schedule = result.scalars().first()
+
+    if schedule is None:
         return "Название эксперимента не найдено по id"
-        # ToDo: raise Error
-    result = result.scalars().fetchone().experiment.name
-    return result
+        # или raise ValueError(f"Schedule with id {schedule_id} not found")
+
+    # Предполагая, что у Schedule есть связь experiment
+    if schedule.experiment is None:
+        return "Эксперимент не найден для данного расписания"
+
+    return schedule.experiment.name
 
 @connection
 def get_object_by_schedule_id(schedule_id, session):
     stmt = select(Schedule).where(Schedule.id == schedule_id)
     result = session.execute(stmt)
-    if result.first() is None:
+
+    schedule = result.scalars().first()
+    if result is None:
         return "Название объекта не найдено по id"
         # ToDo: raise Error
-    result = result.scalars().fetchone().object.name
+
+    if schedule is None:
+        return "Название объекта не найдено по id"
+        # или raise ValueError(f"Schedule with id {schedule_id} not found")
+
+    # Предполагая, что у Schedule есть связь experiment
+    if schedule.object is None:
+        return "Объект не найден для данного расписания"
+
+    return schedule.object.name
+
+@connection
+def delete_schedule(schedule_id, session):
+    stmt = delete(Schedule).where(Schedule.id == schedule_id)
+    result = session.execute(stmt)
+    session.commit()
+    # result = result.scalars().all()
+    return None
+
+@connection
+def delete_records_by_schedule_id(schedule_id, session):
+    stmt = delete(Record).where(Record.schedule_id == schedule_id)
+    result = session.execute(stmt)
+    session.commit()
+    # result = result.scalars().all()
+    return None
+
+@connection
+def select_records_by_schedule_id(schedule_id, session):
+    stmt = select(Record).where(Record.schedule_id == schedule_id)
+    result = session.execute(stmt).scalars().all()
+    session.commit()
     return result

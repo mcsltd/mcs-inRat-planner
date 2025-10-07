@@ -3,7 +3,7 @@ import uuid
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from constants import RecordStatus
+from constants import RecordStatus, Devices
 
 
 @dataclass

@@ -3,6 +3,7 @@ from typing import Any, Dict
 from enum import Enum
 
 DESCRIPTION_COLUMN_SCHEDULE = [
+    "id",
     "Эксперимент",
     "Дата начала",
     "Дата окончания",
