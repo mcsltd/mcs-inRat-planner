@@ -7,7 +7,6 @@ from sqlalchemy.sql.annotation import Annotated
 
 
 
-
 class Base(DeclarativeBase):
     __abstract__ = True
 

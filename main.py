@@ -46,7 +46,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tableModelHistory = GenericTableWidget()
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=[])
+
         self.labelHistory.setText(f"Записей (всего: 0)")
+
 
         # добавление таблиц в layout
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
@@ -179,6 +181,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         schedules = select_all_schedules()
         for schedule in schedules:
+            schedule_id = schedule.id
             experiment_name = schedule.experiment.name
             start_datetime = schedule.datetime_start
             finish_datetime = schedule.datetime_finish
@@ -192,7 +195,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
 
-            table_data.append([experiment_name,start_datetime,finish_datetime,obj,device,status,interval,duration,all_records_time,all_records,error_record,params,])
+            table_data.append([schedule_id, experiment_name,start_datetime,finish_datetime,obj,device,status,interval,duration,all_records_time,all_records,error_record,params,])
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
@@ -220,7 +223,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # update label Schedule
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
-
     def update_schedule(self) -> None:
         logger.info("The contents of the Schedule table have been updated")
         pass
@@ -231,6 +233,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # удалить (пометить) расписание из БД
         ...
+
         # удалить записи для расписания в history
         ...
 

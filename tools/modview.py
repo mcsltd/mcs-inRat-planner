@@ -111,3 +111,8 @@ class GenericTableWidget(QTableView):
 
         self.data_model = _DataTableModel(data=data, description=description)
         self.setModel(self.data_model)
+
+        if "id" in self.description:
+            index = self.description.index("id")
+            self.hideColumn(index)
+
