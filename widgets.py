@@ -2,11 +2,14 @@ import logging
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QDateTime
+from PySide6.QtCore import QDateTime, Signal
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
 from constants import Formats, Devices
+from db.queries import add_experiment, get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from ui.v1.dlg_input_experiment import Ui_DlgInputExperiment
 
@@ -14,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
+
+    signal_add_experiment = Signal()
 
     def __init__(self, experiments: Optional[list | set] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -26,12 +31,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.dateTimeEditFinishExperiment.setCalendarPopup(True)
 
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
-        if experiments is not None:
-            # self.comboBoxExperiment.addItems(experiments)
-            for exp_id, exp in experiments:
-                self.comboBoxExperiment.addItem(exp , userData=exp_id)
-
-            self.comboBoxExperiment.setCurrentIndex(-1)
+        self.fill_combobox_experiment()
 
         # fill combobox
         # self.comboBoxExperiment.setEditable(True)
@@ -55,11 +55,31 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.LineEditObject.textChanged.connect(self.on_form_changed)
         self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
 
+        # соединение кнопок с методами
         # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
+        self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
 
         self.setDefaults()
+
+    def fill_combobox_experiment(self):
+        exps = get_experiments()
+        if exps is not None:
+            for exp_id, exp in exps:
+                self.comboBoxExperiment.addItem(exp, userData=exp_id)
+            self.comboBoxExperiment.setCurrentIndex(-1)
+
+    def add_experiment(self) -> None:
+        dlg = DlgCreateExperiment()
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            exp = dlg.getExperiment()
+            logger.info(f"Add Object in DB: id={add_experiment(exp)}")
+
+            # add experiment in db
+            self.comboBoxExperiment.addItem(exp.name, exp)
+        return
 
     @staticmethod
     def fill_combobox(combobox: QComboBox, enumeration: Enum) -> None:
@@ -178,6 +198,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
 
 class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
