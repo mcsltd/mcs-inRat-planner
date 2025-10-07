@@ -206,8 +206,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
     def update_schedule(self) -> None:
-        logger.info("The contents of the Schedule table have been updated")
-        pass
+        """ Обработчик кнопки изменения расписаний """
+        ...
 
     def delete_schedule(self) -> None:
         """ Обработчик кнопки удаления расписаний """
