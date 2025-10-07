@@ -5,13 +5,6 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
 
 
-
-"""
-TASKS:
-1) add sorting on column
-
-"""
-
 class _DataTableModel(QAbstractTableModel):
 
 
@@ -22,7 +15,6 @@ class _DataTableModel(QAbstractTableModel):
         self.columns = description
 
     # must be implemented: rowCount(), columnCount(), data(), headerData
-
     def headerData(self, section, orientation, /, role = ...):
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self.columns[section]
@@ -75,7 +67,7 @@ class GenericTableWidget(QTableView):
         self.horizontalHeader().setFont(self.headerFont)
 
         self.setShowGrid(True)
-        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # выбирать только строки
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 
@@ -88,6 +80,30 @@ class GenericTableWidget(QTableView):
                 color: #333;
             }
         """)
+
+    def get_selected_index(self) -> list[QModelIndex]:
+        """ Получение индекса строки """
+        indexes = self.selectedIndexes()
+        if not indexes:
+            return None
+        return indexes
+
+
+    def get_selected_data(self) -> None | list:
+        """ Получение данных в выбранной строке таблицы """
+        selected_indexes = self.get_selected_index()
+        if selected_indexes is None:
+            return None
+
+        row_data = []
+        for index in selected_indexes:
+            data = self.data_model.data(index, role=Qt.ItemDataRole.DisplayRole)
+            row_data.append(data)
+
+        if not row_data:
+            return None
+
+        return row_data
 
     def setData(self, data, description):
         self.data = data

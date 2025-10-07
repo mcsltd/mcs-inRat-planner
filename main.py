@@ -27,7 +27,6 @@ from db.queries import get_experiments, add_schedule, add_device, add_object, ad
 logger = logging.getLogger(__name__)
 
 
-
 class MainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, *args, **kwargs):
@@ -47,20 +46,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tableModelHistory = GenericTableWidget()
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=[])
-
         self.labelHistory.setText(f"Записей (всего: 0)")
 
-        # add tables
+        # добавление таблиц в layout
         self.verticalLayoutHistory.addWidget(self.tableModelHistory)
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
+        # соединение сигналов с функциями
+        # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+        # self.tableModelSchedule.activated.connect(self.activate_button_control)
 
+        # buttons
         self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
-        # ToDo: self.pushButtonDeleteSchedule.clicked.connect(...)
+        self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
         # ToDo: self.pushButtonShowRecords.clicked.connect(...)
+
+        # self.pushButtonDeleteSchedule.setDisabled(True)
+        # self.pushButtonUpdateSchedule.setDisabled(True)
 
         self.update_content_table_history()
         self.update_content_table_schedule()
@@ -77,7 +82,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.debug(f"Время действия расписания истекло: {job.datetime_finish}")
                 return
             self.create_job(job, start_time=job.datetime_start)
-
 
     def create_job(self, schedule, start_time: datetime.datetime):
         logger.debug(
@@ -109,9 +113,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         add_record(rec_d)
 
+        # ToDo: запуск устройства
+
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
-
 
     # Experiment
     def add_experiment(self) -> None:
@@ -121,7 +126,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             exp = dlg.getExperiment()
             logger.info(f"Add Object in DB: id={add_experiment(exp)}")
         return
-
 
     # Schedule
     def add_schedule(self) -> None:
@@ -222,8 +226,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         pass
 
     def delete_schedule(self) -> None:
-        logger.info("Deleting a schedule")
-        pass
+        # получить удаляемую строку из таблицы
+        schedule_data = self.tableModelSchedule.get_selected_data()
+
+        # удалить (пометить) расписание из БД
+        ...
+        # удалить записи для расписания в history
+        ...
 
     # History
     def update_table_history(self):
