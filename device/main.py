@@ -8,8 +8,8 @@ from pyedflib import EdfWriter
 
 from constants import Formats
 from device.emgsens.constants import SamplingRate, ScaleGyro, Channel, ScaleAccel, EventType
-from emgsens.emg_sens import EmgSens
-from ble_scanner import find_device
+from device.emgsens.emg_sens import EmgSens
+from device.ble_scanner import find_device
 from device.emgsens.structures import Settings
 
 logger = logging.getLogger(__name__)
@@ -152,35 +152,44 @@ async def read_time_data(
 
     ble_device, _ = await find_device(timeout=10, template=device_name)
     device = EmgSens(ble_device)
-    await device.connect()
 
-    t = (time_finish - time_start).total_seconds()
-    await device.get_emg(emg_queue=emg_queue, settings=st)
-    await asyncio.sleep(t)
-    event_start.set()   # stop consumer
-    await device.disconnect()
+    try:
+        if await device.connect(timeout=5):
+
+            if await device.start_emg_acquisition(emg_queue=emg_queue, settings=st):
+                t = (time_finish - time_start).total_seconds()
+                await asyncio.sleep(t)
+                event_start.set()  # stop consumer
+
+    except Exception as e:
+        logger.error(f"Application error: {e}")
+    finally:
+        await device.disconnect()
 
 
 
-async def main():
-    device_name = "EMG-SENS-1144"
-
+async def create_task_recording(
+        device_name: str = "EMG-SENS-1144",
+        start_time: datetime.datetime = datetime.datetime.now(),
+        sec_duration: int = 15, freq=1000, file_format="EDF"
+):
+    logger.debug("Start device...")
     emg_queue = asyncio.Queue()
     event_start = asyncio.Event()
 
-    time_start = datetime.datetime.now()
-    time_finish = time_start + datetime.timedelta(seconds=15)
+    time_finish = start_time + datetime.timedelta(seconds=sec_duration)
 
     data_storage = QueueDataConsumer()
     read_task = asyncio.create_task(read_time_data(
-        time_start=time_start, time_finish=time_finish,
+        time_start=start_time, time_finish=time_finish,
         device_name=device_name,
         emg_queue=emg_queue, event_start=event_start))
 
-    data_storage.setup(data_queue=emg_queue, freq=1000, file_format="EDF", event_consume=event_start)
+    data_storage.setup(data_queue=emg_queue, freq=freq, file_format=file_format, event_consume=event_start)
 
     save_task = asyncio.create_task(data_storage.consume())
     await asyncio.gather(read_task, save_task)
+
 
 
 if __name__ == "__main__":
@@ -189,4 +198,4 @@ if __name__ == "__main__":
         format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
     )
 
-    asyncio.run(main())
+    asyncio.run(create_task_recording())
