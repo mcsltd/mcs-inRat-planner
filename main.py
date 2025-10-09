@@ -164,7 +164,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # fill table Schedule
             self.update_content_table_schedule()
-            logger.info("Расписание было добавлено в базу данных и таблицу.                                                             ")
+            logger.info("Расписание было добавлено в базу данных и таблицу")
 
     @classmethod
     def convert_seconds_to_str(cls, seconds) -> str | None:
@@ -254,7 +254,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         monitor.exec()
 
     def accept_signal(self, info: dict):
-        print(info)
+        """ Приём данных о завершении записи сигнала с устройства """
+
+        #
+
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()

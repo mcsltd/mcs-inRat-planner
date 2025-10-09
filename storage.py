@@ -1,22 +1,15 @@
 import asyncio
-import datetime
 import logging
 import numpy as np
 
-from sqlalchemy.util import counter
+from PySide6.QtWidgets import QWidget
 from pyedflib import EdfWriter
 
 from constants import Formats
-from device.emgsens.constants import SamplingRate, ScaleGyro, Channel, ScaleAccel, EventType
-from device.emgsens.emg_sens import EmgSens
-from device.ble_scanner import find_device
-from device.emgsens.structures import Settings
-from storage import StorageData
 
 logger = logging.getLogger(__name__)
 
-
-class QueueDataConsumer:    # заготовка
+class StorageData:    # заготовка
 
     def __init__(self):
         self.freq: int | None = None
@@ -135,67 +128,3 @@ class QueueDataConsumer:    # заготовка
 
     def save_to_csv(self):
         logger.debug("Save data to csv.")
-
-
-async def read_time_data(
-        time_start:datetime.datetime, time_finish:datetime.datetime,
-        device_name: str, emg_queue: asyncio.Queue, event_start: asyncio.Event
-):
-    st = Settings(
-        DataRateEMG=SamplingRate.HZ_1000.value,
-        AveragingWindowEMG=10,
-        FullScaleAccelerometer=ScaleAccel.G_0.value,
-        FullScaleGyroscope=ScaleGyro.DPS_125.value,
-        EnabledChannels=Channel.EMG,
-        EnabledEvents=EventType.DISABLE,
-        ActivityThreshold=1,
-    )
-
-    ble_device, _ = await find_device(timeout=10, template=device_name)
-    device = EmgSens(ble_device)
-
-    try:
-        if await device.connect(timeout=5):
-
-            if await device.start_emg_acquisition(emg_queue=emg_queue, settings=st):
-                t = (time_finish - time_start).total_seconds()
-                await asyncio.sleep(t)
-                event_start.set()  # stop consumer
-
-    except Exception as e:
-        logger.error(f"Application error: {e}")
-    finally:
-        await device.disconnect()
-
-
-async def create_task_recording(
-        device_name: str = "EMG-SENS-1144",
-        start_time: datetime.datetime = datetime.datetime.now(),
-        sec_duration: int = 15, freq=1000, file_format="EDF"
-):
-    logger.debug("Start device...")
-    emg_queue = asyncio.Queue()
-    event_start = asyncio.Event()
-
-    time_finish = start_time + datetime.timedelta(seconds=sec_duration)
-
-    data_storage = StorageData()
-    read_task = asyncio.create_task(read_time_data(
-        time_start=start_time, time_finish=time_finish,
-        device_name=device_name,
-        emg_queue=emg_queue, event_start=event_start))
-
-    data_storage.setup(data_queue=emg_queue, freq=freq, file_format=file_format, event_consume=event_start)
-
-    save_task = asyncio.create_task(data_storage.consume())
-    await asyncio.gather(read_task, save_task)
-
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
-    )
-
-    asyncio.run(create_task_recording())
