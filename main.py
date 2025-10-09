@@ -2,7 +2,7 @@ import datetime
 import logging
 from asyncio import run
 
-from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
 
 # scheduler
@@ -11,7 +11,7 @@ from apscheduler.schedulers.qt import QtScheduler
 from ble_manager import BLEManager
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
-from device.main import create_task_recording
+# from device.main import create_task_recording
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
 
@@ -23,11 +23,14 @@ from tools.modview import GenericTableWidget
 # database
 from db.queries import add_schedule, add_device, add_object, add_record, \
     select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
-    get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id
+    get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
+    update_record_by_id, get_path_by_record_id
+
 logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,7 +60,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # соединение сигналов с функциями
 
-        self.ble_manager.signal_info.connect(self.accept_signal)
+        self.ble_manager.signal_stop_acquisition.connect(self.accept_signal)
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
@@ -115,7 +118,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             file_format=schedule.file_format,
             sampling_rate=schedule.sampling_rate,
         )
-        result = add_record(rec_d)
+        record_id = add_record(rec_d)
 
         # запуск устройства
         # run(create_task_recording(
@@ -125,7 +128,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #     freq=schedule.sampling_rate,
         #     file_format=schedule.file_format
         # ))
-        run(self.ble_manager.start_recording(schedule))
+
+        run(self.ble_manager.start_recording(schedule, record_id))
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
@@ -159,7 +163,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # ToDo: проверка времени должна быть внутри диалогового окна
             # time = schedule.datetime_start
             # if time <= datetime.datetime.now():
-            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=30)
+            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=10)
             self.create_job(schedule, start_time=time)
 
             # fill table Schedule
@@ -211,7 +215,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
             obj = get_object_by_schedule_id(rec.schedule_id)
             file_format = rec.file_format
-            table_data.append([idx + 1, start_time, duration, experiment, obj, file_format,])
+            table_data.append([rec.id, idx + 1, start_time, duration, experiment, obj, file_format,])
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 
@@ -250,13 +254,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def run_monitor(self):
         """ Запустить монитор сигналов """
+
+        data = self.tableModelHistory.get_selected_data()
+        record_id = data[0]
+        path = get_path_by_record_id(record_id=record_id)
+
+        if path is None:
+            raise ValueError(f"Path is {path}")
+
         monitor = SignalMonitor()
+        monitor.load_data(path_to_file=path)
         monitor.exec()
 
-    def accept_signal(self, info: dict):
+    def accept_signal(self, schedule, record_id, path_to_file):
         """ Приём данных о завершении записи сигнала с устройства """
-
-        #
+        update_record_by_id(record_id, path_to_file)
+        logger.debug(f"Update path in record with id {record_id}")
 
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:

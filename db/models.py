@@ -66,6 +66,7 @@ class Record(Base):
     file_format: Mapped[str]
     sampling_rate: Mapped[str]
     status: Mapped[str]
+    path: Mapped[str] = mapped_column(nullable=True, default=None)
     schedule_id: Mapped[UUID] = mapped_column(ForeignKey("schedule.id"))
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="record")
 

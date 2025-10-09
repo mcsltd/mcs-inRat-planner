@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+
 import numpy as np
 
 from PySide6.QtWidgets import QWidget
@@ -29,7 +31,7 @@ class StorageData:    # заготовка
         self.data_buffer = None
         self._event_consume = event_consume
 
-    async def consume(self):
+    async def consume(self, device_name, record_id):
         if self.data_queue is None:
             raise TypeError("Queue is not initialized")
         if self._event_consume is None:
@@ -73,7 +75,9 @@ class StorageData:    # заготовка
                 if not self.data_queue.empty():
                     self.data_queue.task_done()
 
-        self.save()
+        file_name = self.save(record_id, device_name)
+        print(f"{file_name=}")
+        return file_name
 
     def stop(self):
         logger.debug("Stop consumer...")
@@ -86,42 +90,62 @@ class StorageData:    # заготовка
         self.data_buffer = None
         self.file_format = None
 
-    def save(self):
+    def save(self, record_id, device_name) -> str | None:
+        write_dir = f".\\data\\{device_name}\\"
+        path_to_file = None
+
         if self.file_format == list(Formats.CSV.value.values())[0]:
-            self.save_to_csv()
+            write_dir += "CSV\\"
+            path_to_file = self.save_to_csv()
+
         if self.file_format == list(Formats.EDF.value.values())[0]:
-            self.save_to_edf()
+            write_dir += "EDF\\"
+            # create dir for saving files with selected format
+            os.makedirs(write_dir, exist_ok=True)
+            path_to_file = self.save_to_edf(record_id, write_dir)
+
         if self.file_format == list(Formats.WFDB.value.values())[0]:
-            self.save_to_wfdb()
+            write_dir += "WFDB\\"
+            path_to_file = self.save_to_wfdb()
 
-    def save_to_edf(self, units: str = "uV", sig_name: str="EMG"):
+        return path_to_file
+
+    def save_to_edf(self, record_id, write_dir, units: str = "uV", sig_name: str="EMG") -> str | None:
         logger.debug("Save data to edf.")
-        writer = EdfWriter(
-            n_channels=1,
-            file_name="filename.edf",
-        )
+        file_name = write_dir + f"{record_id}.edf"
 
-        self.signal = np.round(self.data_buffer["emg"] * 1e6, decimals=3)
+        try:
+            writer = EdfWriter(
+                n_channels=1,
+                file_name=file_name,
+            )
 
-        margin = 0.15
-        signal_max = np.max(self.signal)
-        signal_min = np.min(self.signal)
-        physical_max = np.round(signal_max * (1 + margin) if signal_max > 0 else signal_max * (1 - margin), decimals=3)
-        physical_min = np.round(signal_min * (1 - margin) if signal_min > 0 else signal_min * (1 + margin), decimals=3)
+            self.signal = np.round(self.data_buffer["emg"] * 1e6, decimals=3)
 
-        channel_info = {
-            'label': sig_name,
-            'dimension': units,
-            'sample_frequency': 1000,
-            'physical_max': physical_max,
-            'physical_min': physical_min,
-            'digital_max': 32767,
-            'digital_min': -32768,
-        }
-        writer.setSignalHeader(0, channel_info)
-        writer.writeSamples(self.signal[np.newaxis])
-        writer.close()
+            margin = 0.15
+            signal_max = np.max(self.signal)
+            signal_min = np.min(self.signal)
+            physical_max = np.round(signal_max * (1 + margin) if signal_max > 0 else signal_max * (1 - margin), decimals=3)
+            physical_min = np.round(signal_min * (1 - margin) if signal_min > 0 else signal_min * (1 + margin), decimals=3)
 
+            channel_info = {
+                'label': sig_name,
+                'dimension': units,
+                'sample_frequency': 1000,
+                'physical_max': physical_max,
+                'physical_min': physical_min,
+                'digital_max': 32767,
+                'digital_min': -32768,
+            }
+            writer.setSignalHeader(0, channel_info)
+            writer.writeSamples(self.signal[np.newaxis])
+            writer.close()
+        except Exception as exp:
+            logger.debug(f"Ошибка создания EDF файла - {file_name}: {exp}")
+            return None
+        else:
+            logger.debug(f"Файл EDF успешно создан - {file_name}")
+            return file_name
 
     def save_to_wfdb(self):
         logger.debug("Save data to wfdb.")

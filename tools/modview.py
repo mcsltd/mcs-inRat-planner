@@ -98,13 +98,6 @@ class GenericTableWidget(QTableView):
         index_row = selected_indexes[0].row()
         row_data = self.data_model.array_data[index_row]
 
-        # row_data = []
-        # for index in selected_indexes:
-        #     data = self.data_model.data(index, role=Qt.ItemDataRole.DisplayRole)
-        #     row_data.append(data)
-        # if not row_data:
-        #     return None
-
         return row_data
 
     def setData(self, data, description):
@@ -117,4 +110,3 @@ class GenericTableWidget(QTableView):
         if "id" in self.description:
             index = self.description.index("id")
             self.hideColumn(index)
-

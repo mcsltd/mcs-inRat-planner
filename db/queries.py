@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.orm import class_mapper
 
 from constants import RecordStatus
@@ -84,7 +84,9 @@ def add_record(record: RecordData, session):
 def select_all_records(session) -> list[RecordData]:
     records = []
     for record in Record.get_all_records(session):
-        records.append(RecordData(**record.to_dict()))
+        record_dict = record.to_dict()
+        del record_dict["path"] # todo - костыль
+        records.append(RecordData(**record_dict))
     return records
 
 @connection
@@ -192,4 +194,18 @@ def select_records_by_schedule_id(schedule_id, session):
     stmt = select(Record).where(Record.schedule_id == schedule_id)
     result = session.execute(stmt).scalars().all()
     session.commit()
+    return result
+
+@connection
+def update_record_by_id(record_id, path_to_file, session):
+    stmt = update(Record).where(Record.id == record_id).values(path=path_to_file)
+    result = session.execute(stmt)
+    session.commit()
+    return result
+
+@connection
+def get_path_by_record_id(record_id, session):
+    stmt = select(Record.path).where(Record.id == record_id)
+    result = session.execute(stmt)
+    result = result.scalars().all()[0]
     return result

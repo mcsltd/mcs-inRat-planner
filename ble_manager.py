@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from logging import Logger
+from uuid import UUID
 
 from PySide6.QtCore import Signal, QObject
 
@@ -28,16 +29,15 @@ DEFAULT_SETTING_EMG = Settings(
 
 class BLEManager(QObject):
 
-    signal_info = Signal(dict)
+    signal_stop_acquisition = Signal(ScheduleData, UUID, str)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data_storage = StorageData()
 
-    async def start_recording(self, schedule: ScheduleData):
+    async def start_recording(self, schedule: ScheduleData, record_id: UUID):
         """ Запуск устройства на запись """
-
 
         emg_queue = asyncio.Queue()
         event_start = asyncio.Event()
@@ -49,18 +49,20 @@ class BLEManager(QObject):
             event_consume=event_start
         )
 
-        task_read = asyncio.create_task(
-            self.data_storage.consume()
-        )
         task_save = asyncio.create_task(
-            self.start_emg_acqusition(ble_name=schedule.device.ble_name, emg_queue=emg_queue, duration=schedule.sec_duration, event=event_start)
+            self.data_storage.consume(record_id=record_id, device_name=schedule.device.ble_name)
+        )
+        task_read = asyncio.create_task(
+            self.start_emg_acqusition(
+                ble_name=schedule.device.ble_name, emg_queue=emg_queue, duration=schedule.sec_duration, event=event_start
+            )
         )
 
         await asyncio.gather(task_read, task_save)
-        print("here")
-        # self.signal_info.emit(
-        #     {"status": RecordStatus.OK, "id": schedule.id, "duration": schedule.sec_duration}
-        # )
+
+        file_name = task_save.result()
+        self.signal_stop_acquisition.emit(schedule, record_id, file_name)
+
 
     async def start_emg_acqusition(self, ble_name, emg_queue, duration, event):
         ble_device, _ = await find_device(
@@ -80,6 +82,7 @@ class BLEManager(QObject):
 
         except Exception as e:
             logger.error(f"Application error: {e}")
+            event.set()
         finally:
             await device.disconnect()
             event.set()
