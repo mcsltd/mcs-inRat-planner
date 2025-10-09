@@ -167,7 +167,6 @@ async def read_time_data(
         await device.disconnect()
 
 
-
 async def create_task_recording(
         device_name: str = "EMG-SENS-1144",
         start_time: datetime.datetime = datetime.datetime.now(),

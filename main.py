@@ -1,6 +1,6 @@
 import datetime
 import logging
-from dataclasses import asdict
+from asyncio import run
 
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
@@ -8,15 +8,16 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
 
+from ble_manager import BLEManager
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, EXAMPLE_DATA_SCHEDULE, \
-    EXAMPLE_DATA_HISTORY, RecordStatus
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
+from device.main import create_task_recording
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
 
 # ui
 from ui.v1.main_window import Ui_MainWindow
-from widgets import DlgCreateSchedule, DlgCreateExperiment
+from widgets import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
@@ -32,6 +33,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
+
+        # init ble manager
+        self.ble_manager = BLEManager()
 
         # init scheduler
         self.scheduler = QtScheduler()
@@ -52,20 +56,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # соединение сигналов с функциями
+
+        self.ble_manager.signal_info.connect(self.accept_signal)
+
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
-        # self.tableModelSchedule.activated.connect(self.activate_button_control)
 
         # buttons
-        # self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
-        # ToDo: self.pushButtonShowRecords.clicked.connect(...)
 
         # self.pushButtonDeleteSchedule.setDisabled(True)
         # self.pushButtonUpdateSchedule.setDisabled(True)
 
+        # загрузить в таблицы данные
         self.update_content_table_history()
         self.update_content_table_schedule()
 
@@ -77,17 +82,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         for job in schedules:
 
             if datetime.datetime.now() >= job.datetime_finish:
-                logger.debug(f"Время действия расписания истекло: {job.datetime_finish}")
+                logger.debug(f"Время действия расписания истекло: {job.datetime_finish} для {job.id}")
                 return
+
             self.create_job(job, start_time=job.datetime_start)
 
     def create_job(self, schedule, start_time: datetime.datetime):
+        """ Создание задачи для расписания"""
         logger.debug(
             f"Создана задача: {str(schedule.id)};"
             f" запланированное время старта: {start_time.replace(microsecond=0)};"
             f" длительность записи: {schedule.sec_duration}"
         )
-
         self.scheduler.add_job(
             self.create_record,
             args=(schedule, start_time),
@@ -98,7 +104,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
 
     def create_record(self, schedule: ScheduleData, start_time: datetime.datetime):
-        logger.debug(f"Начало записи данных: {start_time}")
+        logger.debug(f"Начало записи данных: {start_time} по расписанию {schedule.id}")
 
         # добавление в базу данных информации о начале записи
         rec_d = RecordData(
@@ -111,7 +117,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         result = add_record(rec_d)
 
-        # ToDo: запуск устройства
+        # запуск устройства
+        # run(create_task_recording(
+        #     device_name=schedule.device.ble_name,
+        #     start_time=start_time,
+        #     sec_duration=schedule.sec_duration,
+        #     freq=schedule.sampling_rate,
+        #     file_format=schedule.file_format
+        # ))
+        run(self.ble_manager.start_recording(schedule))
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
@@ -119,7 +133,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # Schedule
     def add_schedule(self) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
-
         # experiments = get_experiments()
         dlg = DlgCreateSchedule()
         code = dlg.exec()
@@ -151,7 +164,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # fill table Schedule
             self.update_content_table_schedule()
-            logger.info("Расписание было")
+            logger.info("Расписание было добавлено в базу данных и таблицу.                                                             ")
 
     @classmethod
     def convert_seconds_to_str(cls, seconds) -> str | None:
@@ -239,6 +252,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Запустить монитор сигналов """
         monitor = SignalMonitor()
         monitor.exec()
+
+    def accept_signal(self, info: dict):
+        print(info)
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()

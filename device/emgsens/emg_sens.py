@@ -1,10 +1,8 @@
-import hashlib
 import asyncio
 import logging
 import time
 from enum import Enum
 
-from typing import Optional
 from bleak import BleakClient, BLEDevice
 
 from device.crypt import get_control_sum

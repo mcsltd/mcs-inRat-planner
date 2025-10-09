@@ -75,10 +75,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             exp = dlg.getExperiment()
-            logger.info(f"Add Object in DB: id={add_experiment(exp)}")
+            experiment_id = add_experiment(exp)
+            logger.info(f"Add Experiment in DB: id={experiment_id}")
 
             # add experiment in db
-            self.comboBoxExperiment.addItem(exp.name, exp)
+            self.comboBoxExperiment.addItem(exp.name, exp.id)
         return
 
     @staticmethod
@@ -143,6 +144,14 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         experiment_id = self.comboBoxExperiment.currentData()
         experiment = self.comboBoxExperiment.currentText()
         exp_d: ExperimentData = ExperimentData(id=experiment_id, name=experiment)
+
+        if experiment_id is None:
+            reply = QMessageBox.question(
+                self, "Пустое поле `Эксперимент`",
+                "Ошибка создания расписания",
+                QMessageBox.StandardButton.Ok
+            )
+            return None
 
         # object
         obj = self.LineEditObject.text()
