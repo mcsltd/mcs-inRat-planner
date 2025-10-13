@@ -30,6 +30,7 @@ DEFAULT_SETTING_EMG = Settings(
 class BLEManager(QObject):
 
     signal_stop_acquisition = Signal(ScheduleData, UUID, str)
+    signal_error_recording = Signal(ScheduleData, UUID, str)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,16 +53,22 @@ class BLEManager(QObject):
         task_save = asyncio.create_task(
             self.data_storage.consume(record_id=record_id, device_name=schedule.device.ble_name)
         )
+
         task_read = asyncio.create_task(
             self.start_emg_acqusition(
                 ble_name=schedule.device.ble_name, emg_queue=emg_queue, duration=schedule.sec_duration, event=event_start
             )
         )
-
         await asyncio.gather(task_read, task_save)
 
         file_name = task_save.result()
-        self.signal_stop_acquisition.emit(schedule, record_id, file_name)
+        status = task_read.result()
+
+        if status == RecordStatus.ERROR.value:
+            self.signal_error_recording.emit(schedule, record_id, status)
+
+        elif status == RecordStatus.OK.value:
+            self.signal_stop_acquisition.emit(schedule, record_id, file_name)
 
 
     async def start_emg_acqusition(self, ble_name, emg_queue, duration, event):
@@ -71,6 +78,7 @@ class BLEManager(QObject):
         )
 
         device = EmgSens(ble_device)
+
         try:
             if await device.connect(timeout=10):
                 if await device.start_emg_acquisition(
@@ -79,10 +87,15 @@ class BLEManager(QObject):
                 ):
                     t = duration
                     await asyncio.sleep(t)
+            status = RecordStatus.OK.value
 
         except Exception as e:
             logger.error(f"Application error: {e}")
             event.set()
+            status = RecordStatus.ERROR.value
+
         finally:
             await device.disconnect()
             event.set()
+
+        return status

@@ -1,5 +1,7 @@
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QWidget, QDialog
+from PySide6.QtCore import Qt
+
 from pyqtgraph import PlotWidget, mkPen
 import pyedflib
 import numpy as np
@@ -35,6 +37,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        self.setWindowModality(Qt.WindowModality.NonModal)
 
         self.display = Display(self)
         self.verticalLayoutMonitor.addWidget(self.display)
@@ -49,7 +52,6 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
 
     def load_data(self, path_to_file: str):
         """Загрузка сохраненных данных из EDF файла и отображение на графике"""
-        print(f"{path_to_file=}")
 
         if not os.path.exists(path_to_file):
             self._show_error(f"Файл не найден: {path_to_file}")

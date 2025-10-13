@@ -1,9 +1,11 @@
 import datetime
 import logging
+
+
 from asyncio import run
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog
+from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QMessageBox
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
@@ -59,8 +61,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # соединение сигналов с функциями
-
         self.ble_manager.signal_stop_acquisition.connect(self.accept_signal)
+        self.ble_manager.signal_error_recording.connect(self.handler_error_recording)
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
@@ -70,8 +72,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
 
-        # self.pushButtonDeleteSchedule.setDisabled(True)
-        # self.pushButtonUpdateSchedule.setDisabled(True)
+        self.pushButtonDownloadRecords.setDisabled(True)
+        self.pushButtonUpdateSchedule.setDisabled(True)
 
         # загрузить в таблицы данные
         self.update_content_table_history()
@@ -120,19 +122,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         record_id = add_record(rec_d)
 
-        # запуск устройства
-        # run(create_task_recording(
-        #     device_name=schedule.device.ble_name,
-        #     start_time=start_time,
-        #     sec_duration=schedule.sec_duration,
-        #     freq=schedule.sampling_rate,
-        #     file_format=schedule.file_format
-        # ))
-
-        run(self.ble_manager.start_recording(schedule, record_id))
-
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
+        run(self.ble_manager.start_recording(schedule, record_id))
+
 
     # Schedule
     def add_schedule(self) -> None:
@@ -152,6 +145,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             object_id = add_object(schedule.object)
             logger.info(f"Добавлен объект: id={object_id}")
 
+            # обработка для повторного добавления устройства
             # add device in db
             device_id = add_device(schedule.device)
             logger.info(f"Добавлено устройство: id={device_id}")
@@ -184,6 +178,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         schedules = select_all_schedules()
         for schedule in schedules:
+
             schedule_id = schedule.id
             experiment_name = schedule.experiment.name
             start_datetime = schedule.datetime_start
@@ -254,7 +249,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def run_monitor(self):
         """ Запустить монитор сигналов """
-
         data = self.tableModelHistory.get_selected_data()
         record_id = data[0]
         path = get_path_by_record_id(record_id=record_id)
@@ -268,7 +262,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def accept_signal(self, schedule, record_id, path_to_file):
         """ Приём данных о завершении записи сигнала с устройства """
-        update_record_by_id(record_id, path_to_file)
+        update_record_by_id(record_id, path_to_file, status=RecordStatus.OK.value)
         logger.debug(f"Update path in record with id {record_id}")
 
 
@@ -279,6 +273,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
         return data
+
+    def handler_error_recording(self, schedule: ScheduleData, record_id, status):
+        """ Обработка ошибки записи сигнала """
+        update_record_by_id(record_id=record_id, status=status)
+        reply = QMessageBox.warning(
+            self, "Ошибка записи",
+            f"Возникла ошибка записи с устройства {schedule.device.ble_name}",
+            QMessageBox.StandardButton.Ok
+        )
+
 
 
 if __name__ == "__main__":

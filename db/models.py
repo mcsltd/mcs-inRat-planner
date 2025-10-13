@@ -34,12 +34,16 @@ class Schedule(Base):
     file_format: Mapped[str]
     sampling_rate: Mapped[int]
     # один-к-одному
-    object: Mapped["Object"] = relationship("Object", back_populates="schedule", uselist=False, lazy="joined")
-    device: Mapped["Device"] = relationship("Device", back_populates="schedule", uselist=False, lazy="joined")
+    object: Mapped["Object"] = relationship(
+        "Object", back_populates="schedule", uselist=False, lazy="joined")
+    device: Mapped["Device"] = relationship(
+        "Device", back_populates="schedule", uselist=False, lazy="joined")
     # многие-к-одному
-    experiment: Mapped["Experiment"] = relationship("Experiment", back_populates="schedule")
+    experiment: Mapped["Experiment"] = relationship(
+        "Experiment", back_populates="schedule")
     # один-ко-многим
-    record: Mapped[list["Record"]] = relationship("Record", back_populates="schedule", cascade="all, delete-orphan")
+    record: Mapped[list["Record"]] = relationship(
+        "Record", back_populates="schedule", cascade="all, delete-orphan")
 
     @classmethod
     def get_all_schedules(cls, session):

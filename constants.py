@@ -31,7 +31,6 @@ EXAMPLE_DATA_SCHEDULE = [
     ]
 ]
 
-# old: ["№", "Имя объекта", "Серийный номер", "Частота", "Формат", "Длительность", "Интервал",]
 
 DESCRIPTION_COLUMN_HISTORY = [
     "id",

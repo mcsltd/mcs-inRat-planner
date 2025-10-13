@@ -190,6 +190,23 @@ def delete_records_by_schedule_id(schedule_id, session):
     return None
 
 @connection
+def delete_device_by_id(device_id, session):
+    stmt = delete(Device).where(Device.id == device_id)
+    result = session.execute(stmt)
+    session.commit()
+    # result = result.scalars().all()
+    return None
+
+@connection
+def delete_object_by_id(object_id, session):
+    stmt = delete(Object).where(Object.id == object_id)
+    result = session.execute(stmt)
+    session.commit()
+    # result = result.scalars().all()
+    return None
+
+
+@connection
 def select_records_by_schedule_id(schedule_id, session):
     stmt = select(Record).where(Record.schedule_id == schedule_id)
     result = session.execute(stmt).scalars().all()
@@ -197,8 +214,8 @@ def select_records_by_schedule_id(schedule_id, session):
     return result
 
 @connection
-def update_record_by_id(record_id, path_to_file, session):
-    stmt = update(Record).where(Record.id == record_id).values(path=path_to_file)
+def update_record_by_id(record_id, path_to_file, status, session):
+    stmt = update(Record).where(Record.id == record_id).values(path=path_to_file, status=status)
     result = session.execute(stmt)
     session.commit()
     return result
@@ -209,3 +226,4 @@ def get_path_by_record_id(record_id, session):
     result = session.execute(stmt)
     result = result.scalars().all()[0]
     return result
+
