@@ -80,6 +80,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
             # add experiment in db
             self.comboBoxExperiment.addItem(exp.name, exp.id)
+            self.comboBoxExperiment.setCurrentIndex(0)
         return
 
     @staticmethod
