@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>827</width>
-    <height>607</height>
+    <width>823</width>
+    <height>592</height>
    </rect>
   </property>
   <property name="font">
@@ -33,7 +33,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Записей</string>
+           <string>Архив записей</string>
           </property>
          </widget>
         </item>
@@ -159,18 +159,31 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>827</width>
+     <width>823</width>
      <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
     <property name="title">
-     <string>Настройки</string>
+     <string>Меню</string>
     </property>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
    </widget>
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionExit">
+   <property name="text">
+    <string>Выход</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Настройки</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
