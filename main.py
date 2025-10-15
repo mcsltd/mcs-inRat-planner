@@ -16,6 +16,7 @@ from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, R
 # from device.main import create_task_recording
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
+from ui.v1.dlg_main_config import Ui_DlgMainConfig
 
 # ui
 from ui.v1.main_window import Ui_MainWindow
@@ -71,6 +72,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
+        self.actionSettings.triggered.connect(self.configuration_clicked)
+        self.actionExit.triggered.connect(self.close)
 
         self.pushButtonDownloadRecords.setDisabled(True)
         self.pushButtonUpdateSchedule.setDisabled(True)
@@ -283,6 +286,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QMessageBox.StandardButton.Ok
         )
 
+    def configuration_clicked(self):
+        dlg = DlgConfiguration()
+        ok = dlg.exec()
+
+
+class DlgConfiguration(QDialog, Ui_DlgMainConfig):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        self.pushButtonOk.clicked.connect(self.close)
+        self.pushButtonCancel.clicked.connect(self.close)
 
 
 if __name__ == "__main__":
