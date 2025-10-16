@@ -3,16 +3,20 @@ import logging
 
 
 from asyncio import run
+from dataclasses import asdict
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QMessageBox
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
+from sqlalchemy.orm import Session
 
 from ble_manager import BLEManager
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
+from db.database import connection
+from db.models import Schedule, Object, Device, Record
 # from device.main import create_task_recording
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
@@ -24,8 +28,7 @@ from widgets import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
-from db.queries import add_schedule, add_device, add_object, add_record, \
-    select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
+from db.queries import select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
     update_record_by_id, get_path_by_record_id
 
@@ -82,7 +85,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_history()
         self.update_content_table_schedule()
 
-    def init_jobs(self):
+    @connection
+    def init_jobs(self, session):
         """ Метод инициализирующий задачи по записи ЭКГ """
         logger.info("Инициализация задач записи ЭКГ...")
 
@@ -95,7 +99,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             self.create_job(job, start_time=job.datetime_start)
 
-    def create_job(self, schedule, start_time: datetime.datetime):
+    def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Создание задачи для расписания"""
         logger.debug(
             f"Создана задача: {str(schedule.id)};"
@@ -111,7 +115,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             next_run_time=start_time,
         )
 
-    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime):
+    @connection
+    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime, session: Session):
         logger.debug(f"Начало записи данных: {start_time} по расписанию {schedule.id}")
 
         # добавление в базу данных информации о начале записи
@@ -123,7 +128,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             file_format=schedule.file_format,
             sampling_rate=schedule.sampling_rate,
         )
-        record_id = add_record(rec_d)
+        record_id = Record.from_dataclass(rec_d).create(session)
+        logger.debug(f"Добавлена запись: {record_id}")
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
@@ -131,7 +137,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     # Schedule
-    def add_schedule(self) -> None:
+    @connection
+    def add_schedule(self, session) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
         # experiments = get_experiments()
         dlg = DlgCreateSchedule()
@@ -145,16 +152,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
 
             # add object in db
-            object_id = add_object(schedule.object)
-            logger.info(f"Добавлен объект: id={object_id}")
+            obj_id = Object.from_dataclasses(schedule.object).create(session)
+            logger.info(f"Добавлен объект: id={obj_id}")
 
-            # обработка для повторного добавления устройства
-            # add device in db
-            device_id = add_device(schedule.device)
+            device_id = Device.from_dataclasses(schedule.device).create(session)
             logger.info(f"Добавлено устройство: id={device_id}")
 
             # add schedule in db
-            schedule_id = add_schedule(schedule=schedule)
+            schedule_id = Schedule.from_dataclasses(schedule).create(session)
             logger.info(f"Добавлено расписание: id={schedule_id}")
 
             # ToDo: проверка времени должна быть внутри диалогового окна
@@ -174,6 +179,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if seconds / 60 >= 1:
             return f"{seconds // 60} мин."
         return f"{seconds} с."
+
 
     def update_content_table_schedule(self):
         logger.info("Обновление всех данных в таблице \"Расписание\"")

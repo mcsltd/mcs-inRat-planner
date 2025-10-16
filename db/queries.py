@@ -52,26 +52,26 @@ def add_schedule(schedule: ScheduleData, session):
     session.commit()
     return query.id
 
-@connection
-def add_device(device: DeviceData, session):
-    query = Device(**asdict(device))
-    session.add(query)
-    session.commit()
-    return query.id
+# @connection
+# def add_device(device: DeviceData, session):
+#     query = Device(**asdict(device))
+#     session.add(query)
+#     session.commit()
+#     return query.id
 
-@connection
-def add_object(obj: ObjectData, session):
-    query = Object(**asdict(obj))
-    session.add(query)
-    session.commit()
-    return query.id
+# @connection
+# def add_object(obj: ObjectData, session):
+#     query = Object(**asdict(obj))
+#     session.add(query)
+#     session.commit()
+#     return query.id
 
-@connection
-def add_experiment(experiment: ExperimentData, session):
-    query = Experiment(**asdict(experiment))
-    session.add(query)
-    session.commit()
-    return query.id
+# @connection
+# def add_experiment(experiment: ExperimentData, session):
+#     query = Experiment(**asdict(experiment))
+#     session.add(query)
+#     session.commit()
+#     return query.id
 
 @connection
 def add_record(record: RecordData, session):

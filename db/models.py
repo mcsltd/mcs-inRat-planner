@@ -1,26 +1,48 @@
 import datetime
+from typing import AnyStr, Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import ForeignKey, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr, relationship, class_mapper
-from sqlalchemy.sql.annotation import Annotated
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr, relationship, class_mapper, Session
 
+from structure import ScheduleData, DeviceData, ObjectData, RecordData, ExperimentData
 
 
 class Base(DeclarativeBase):
     __abstract__ = True
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    is_deleted: Mapped[bool] = mapped_column(default=False)
 
     def to_dict(self) -> dict:
         """ Конвертация объекта SQLA в словарь """
         columns = class_mapper(self.__class__).columns
         return {column.key: getattr(self, column.key) for column in columns}
 
+    def create(self, session: Session):
+        try:
+            session.add(self)
+            session.commit()
+            return self.id
+        except SQLAlchemyError as ex:
+            return None
+
+    @classmethod
+    def fetch_all(cls, session):
+        stmt = select(cls)
+        result = session.execute(stmt)
+        return result.scalars().all()
+
     @declared_attr.directive
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
+    @classmethod
+    def find(cls, where_conditions: list[Any],  session: Session):
+        stmt = select(cls).where(*where_conditions)
+        result = session.execute(stmt)
+        return result.scalars().first()
 
 class Schedule(Base):
 
@@ -52,10 +74,31 @@ class Schedule(Base):
         schedules = result.scalars().all()
         return schedules
 
+    @classmethod
+    def from_dataclasses(cls, schedule: ScheduleData) -> "Schedule":
+        return cls(
+            id=schedule.id,
+            object_id=schedule.object.id,
+            device_id=schedule.device.id,
+            experiment_id=schedule.experiment.id,
+            sec_duration=schedule.sec_duration,
+            sec_interval=schedule.sec_interval,
+            datetime_start=schedule.datetime_start,
+            datetime_finish=schedule.datetime_finish,
+            file_format=schedule.file_format,
+            sampling_rate=schedule.sampling_rate
+        )
+
 class Object(Base):
     name: Mapped[str]
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="object")
 
+    @classmethod
+    def from_dataclasses(cls, obj: ObjectData) -> "Object":
+        return cls(
+            id=obj.id,
+            name=obj.name,
+        )
 
 class Device(Base):
     ble_name: Mapped[str] = mapped_column(unique=True)
@@ -63,6 +106,14 @@ class Device(Base):
     model: Mapped[str]
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="device")
 
+    @classmethod
+    def from_dataclasses(cls, device: DeviceData) -> "Device":
+        return cls(
+            id=device.id,
+            ble_name=device.ble_name,
+            serial_number=device.serial_number,
+            model=device.model,
+        )
 
 class Record(Base):
     datetime_start: Mapped[datetime.datetime]
@@ -81,8 +132,26 @@ class Record(Base):
         records = result.scalars().all()
         return records
 
+    @classmethod
+    def from_dataclass(cls, record: RecordData) -> "Record":
+        return cls(
+            id=record.id,
+            datetime_start=record.datetime_start,
+            sec_duration=record.sec_duration,
+            file_format=record.file_format,
+            sampling_rate=record.sampling_rate,
+            status=record.status,
+            schedule_id=record.schedule_id
+        )
 
 class Experiment(Base):
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
 
     schedule: Mapped[list["Schedule"]] = relationship("Schedule", back_populates="experiment")
+
+    @classmethod
+    def from_dataclass(cls, experiment: ExperimentData) -> "Experiment":
+        return cls(
+            id=experiment.id,
+            name=experiment.name
+        )

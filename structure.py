@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from uuid import UUID
 
 from constants import RecordStatus, Devices
@@ -37,6 +37,7 @@ class ScheduleData:
     file_format: str
     id: UUID = field(default_factory=uuid.uuid4)
 
+
 @dataclass
 class RecordData:
     datetime_start: datetime.datetime
@@ -48,6 +49,7 @@ class RecordData:
     id: UUID = field(default_factory=uuid.uuid4)
 
 
+
 if __name__ == "__main__":
     rd1 = RecordData(
         datetime_start=datetime.datetime.now(),
@@ -55,14 +57,14 @@ if __name__ == "__main__":
         schedule_id=uuid.uuid4()
     )
 
-    rd2 = RecordData(
-        datetime_start=datetime.datetime.now(),
-        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
-        schedule_id=uuid.uuid4()
-    )
-
-    rd3 = RecordData(
-        datetime_start=datetime.datetime.now(),
-        sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
-        schedule_id=uuid.uuid4()
-    )
+    # rd2 = RecordData(
+    #     datetime_start=datetime.datetime.now(),
+    #     sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
+    #     schedule_id=uuid.uuid4()
+    # )
+    #
+    # rd3 = RecordData(
+    #     datetime_start=datetime.datetime.now(),
+    #     sec_duration=10, file_format="csv", sampling_rate=1000, status=RecordStatus.IN_PROCESS.value,
+    #     schedule_id=uuid.uuid4()
+    # )
