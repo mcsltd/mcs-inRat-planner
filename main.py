@@ -254,19 +254,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # удалить (пометить) расписание из БД
         schedule = Schedule.find([Schedule.id==schedule_data[0]], session)
         schedule.soft_delete(session)
-        # delete_schedule(schedule_id=schedule_data[0])  # ToDo: не удалять из бд
 
         self.update_content_table_schedule()
         logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
         logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
 
         # удалить записи для расписания в history
-        # delete_records_by_schedule_id(schedule_id=schedule_data[0]) # ToDo: не удалять из бд
         soft_delete_records(schedule_data[0], session)
 
         self.update_content_table_history()
         logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
 
+        # Device.find([Schedule.id==schedule_data[0]], session).soft_delete(session)
+        # Object.find([Object.id==schedule_data[0]], session).soft_delete(session)
         return None
 
     def run_monitor(self):

@@ -179,7 +179,7 @@ class Record(Base):
             datetime_start=self.datetime_start,
             sec_duration=self.sec_duration,
             file_format=self.file_format,
-            sampling_rate=self.sampling_rate,
+            sampling_rate=int(self.sampling_rate),
             status=self.status,
             schedule_id=self.schedule_id,
         )

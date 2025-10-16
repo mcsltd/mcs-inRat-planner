@@ -233,7 +233,6 @@ def get_path_by_record_id(record_id, session):
 
 def restore(session) -> bool:
     # восстановление расписаний, устройств, объектов
-
     stmt_schedule = update(Schedule).where(Schedule.is_deleted == True).values(is_deleted=False)
     session.execute(stmt_schedule)
 
