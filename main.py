@@ -28,7 +28,7 @@ from widgets import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
-from db.queries import select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
+from db.queries import select_all_records, get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
     update_record_by_id, get_path_by_record_id
 
@@ -90,8 +90,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Метод инициализирующий задачи по записи ЭКГ """
         logger.info("Инициализация задач записи ЭКГ...")
 
-        schedules = select_all_schedules()
-        for job in schedules:
+        schedules: list[Schedule] = Schedule.get_all_schedules(session)
+        for s in schedules:
+            job = s.to_dataclass(session)
 
             if datetime.datetime.now() >= job.datetime_finish:
                 logger.debug(f"Время действия расписания истекло: {job.datetime_finish} для {job.id}")
@@ -152,14 +153,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
 
             # add object in db
-            obj_id = Object.from_dataclasses(schedule.object).create(session)
+            obj_id = Object.from_dataclass(schedule.object).create(session)
             logger.info(f"Добавлен объект: id={obj_id}")
 
-            device_id = Device.from_dataclasses(schedule.device).create(session)
+            device_id = Device.from_dataclass(schedule.device).create(session)
             logger.info(f"Добавлено устройство: id={device_id}")
 
             # add schedule in db
-            schedule_id = Schedule.from_dataclasses(schedule).create(session)
+            schedule_id = Schedule.from_dataclass(schedule).create(session)
             logger.info(f"Добавлено расписание: id={schedule_id}")
 
             # ToDo: проверка времени должна быть внутри диалогового окна
@@ -180,13 +181,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return f"{seconds // 60} мин."
         return f"{seconds} с."
 
-
-    def update_content_table_schedule(self):
+    @connection
+    def update_content_table_schedule(self, session):
         logger.info("Обновление всех данных в таблице \"Расписание\"")
         table_data = []
 
-        schedules = select_all_schedules()
+        schedules: list[Schedule] = Schedule.get_all_schedules(session)
         for schedule in schedules:
+            schedule: ScheduleData = schedule.to_dataclass(session)
 
             schedule_id = schedule.id
             experiment_name = schedule.experiment.name
@@ -230,7 +232,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Обработчик кнопки изменения расписаний """
         ...
 
-    def delete_schedule(self) -> None:
+    @connection
+    def delete_schedule(self, session) -> None:
         """ Обработчик кнопки удаления расписаний """
         # получить удаляемую строку из таблицы
         schedule_data = self.tableModelSchedule.get_selected_data()
@@ -244,7 +247,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.scheduler.remove_job(job_id=str(schedule_data[0]))
 
         # удалить (пометить) расписание из БД
-        delete_schedule(schedule_id=schedule_data[0])  # ToDo: не удалять из бд
+        schedule = Schedule.find([Schedule.id==schedule_data[0]], session)
+        schedule.soft_delete(session)
+        # delete_schedule(schedule_id=schedule_data[0])  # ToDo: не удалять из бд
+
         self.update_content_table_schedule()
         logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
         logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")

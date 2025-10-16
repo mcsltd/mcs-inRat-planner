@@ -28,6 +28,29 @@ class Base(DeclarativeBase):
         except SQLAlchemyError as ex:
             return None
 
+    # def update(self, session: Session, **kwargs) -> bool:
+    #     try:
+    #         for k, v in kwargs.items():
+    #             setattr(self, k, v)
+    #         session.commit()
+    #         return True
+    #     except Exception() as exc:
+    #         return False
+
+    def soft_delete(self, session: Session):
+        try:
+            self.is_deleted = True
+            session.commit()
+            return True
+        except Exception() as exc:
+            return False
+
+    @classmethod
+    def find(cls, where_conditions: list[Any], session: Session):
+        stmt = select(cls).where(*where_conditions, cls.is_deleted==False)
+        result = session.execute(stmt)
+        return result.scalars().first()
+
     @classmethod
     def fetch_all(cls, session):
         stmt = select(cls)
@@ -38,11 +61,6 @@ class Base(DeclarativeBase):
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-    @classmethod
-    def find(cls, where_conditions: list[Any],  session: Session):
-        stmt = select(cls).where(*where_conditions)
-        result = session.execute(stmt)
-        return result.scalars().first()
 
 class Schedule(Base):
 
@@ -67,15 +85,29 @@ class Schedule(Base):
     record: Mapped[list["Record"]] = relationship(
         "Record", back_populates="schedule", cascade="all, delete-orphan")
 
+    def to_dataclass(self, session) -> ScheduleData:
+        return ScheduleData(
+            id=self.id,
+            sec_duration=self.sec_duration,
+            sec_interval=self.sec_interval,
+            datetime_start=self.datetime_start,
+            datetime_finish=self.datetime_finish,
+            sampling_rate=self.sampling_rate,
+            file_format=self.file_format,
+            experiment=Experiment.find([Experiment.id == self.experiment_id], session).to_dataclass(),
+            device=Device.find([Device.id == self.device_id], session).to_dataclass(),
+            object=Object.find([Object.id == self.object_id], session).to_dataclass()
+        )
+
     @classmethod
     def get_all_schedules(cls, session):
-        query = select(cls)
+        query = select(cls).where(cls.is_deleted == False)
         result = session.execute(query)
         schedules = result.scalars().all()
         return schedules
 
     @classmethod
-    def from_dataclasses(cls, schedule: ScheduleData) -> "Schedule":
+    def from_dataclass(cls, schedule: ScheduleData) -> "Schedule":
         return cls(
             id=schedule.id,
             object_id=schedule.object.id,
@@ -89,12 +121,19 @@ class Schedule(Base):
             sampling_rate=schedule.sampling_rate
         )
 
+
 class Object(Base):
     name: Mapped[str]
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="object")
 
+    def to_dataclass(self) -> ObjectData:
+        return ObjectData(
+            id=self.id,
+            name=self.name
+        )
+
     @classmethod
-    def from_dataclasses(cls, obj: ObjectData) -> "Object":
+    def from_dataclass(cls, obj: ObjectData) -> "Object":
         return cls(
             id=obj.id,
             name=obj.name,
@@ -106,8 +145,16 @@ class Device(Base):
     model: Mapped[str]
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="device")
 
+    def to_dataclass(self) -> DeviceData:
+        return DeviceData(
+            id=self.id,
+            model=self.model,
+            ble_name=self.ble_name,
+            serial_number=int(self.serial_number)
+        )
+
     @classmethod
-    def from_dataclasses(cls, device: DeviceData) -> "Device":
+    def from_dataclass(cls, device: DeviceData) -> "Device":
         return cls(
             id=device.id,
             ble_name=device.ble_name,
@@ -148,6 +195,12 @@ class Experiment(Base):
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
 
     schedule: Mapped[list["Schedule"]] = relationship("Schedule", back_populates="experiment")
+
+    def to_dataclass(self) -> ExperimentData:
+        return ExperimentData(
+            id=self.id,
+            name=self.name
+        )
 
     @classmethod
     def from_dataclass(cls, experiment: ExperimentData) -> "Experiment":
