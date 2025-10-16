@@ -3,16 +3,20 @@ import logging
 
 
 from asyncio import run
+from dataclasses import asdict
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QMessageBox
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
+from sqlalchemy.orm import Session
 
 from ble_manager import BLEManager
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
+from db.database import connection
+from db.models import Schedule, Object, Device, Record
 # from device.main import create_task_recording
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
@@ -24,10 +28,9 @@ from widgets import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
-from db.queries import add_schedule, add_device, add_object, add_record, \
-    select_all_records, select_all_schedules, get_count_records, get_count_error_records, \
+from db.queries import select_all_records, get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
-    update_record_by_id, get_path_by_record_id
+    update_record_by_id, get_path_by_record_id, restore, soft_delete_records
 
 logger = logging.getLogger(__name__)
 
@@ -82,12 +85,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_history()
         self.update_content_table_schedule()
 
-    def init_jobs(self):
+    @connection
+    def init_jobs(self, session):
         """ Метод инициализирующий задачи по записи ЭКГ """
         logger.info("Инициализация задач записи ЭКГ...")
 
-        schedules = select_all_schedules()
-        for job in schedules:
+        schedules: list[Schedule] = Schedule.get_all_schedules(session)
+        for s in schedules:
+            job = s.to_dataclass(session)
 
             if datetime.datetime.now() >= job.datetime_finish:
                 logger.debug(f"Время действия расписания истекло: {job.datetime_finish} для {job.id}")
@@ -95,7 +100,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             self.create_job(job, start_time=job.datetime_start)
 
-    def create_job(self, schedule, start_time: datetime.datetime):
+    def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Создание задачи для расписания"""
         logger.debug(
             f"Создана задача: {str(schedule.id)};"
@@ -111,7 +116,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             next_run_time=start_time,
         )
 
-    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime):
+    @connection
+    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime, session: Session):
         logger.debug(f"Начало записи данных: {start_time} по расписанию {schedule.id}")
 
         # добавление в базу данных информации о начале записи
@@ -123,7 +129,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             file_format=schedule.file_format,
             sampling_rate=schedule.sampling_rate,
         )
-        record_id = add_record(rec_d)
+        record_id = Record.from_dataclass(rec_d).create(session)
+        logger.debug(f"Добавлена запись: {record_id}")
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
@@ -131,7 +138,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     # Schedule
-    def add_schedule(self) -> None:
+    @connection
+    def add_schedule(self, session) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
         # experiments = get_experiments()
         dlg = DlgCreateSchedule()
@@ -145,16 +153,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
 
             # add object in db
-            object_id = add_object(schedule.object)
-            logger.info(f"Добавлен объект: id={object_id}")
+            obj_id = Object.from_dataclass(schedule.object).create(session)
+            logger.info(f"Добавлен объект: id={obj_id}")
 
-            # обработка для повторного добавления устройства
-            # add device in db
-            device_id = add_device(schedule.device)
+            device_id = Device.from_dataclass(schedule.device).create(session)
             logger.info(f"Добавлено устройство: id={device_id}")
 
             # add schedule in db
-            schedule_id = add_schedule(schedule=schedule)
+            schedule_id = Schedule.from_dataclass(schedule).create(session)
             logger.info(f"Добавлено расписание: id={schedule_id}")
 
             # ToDo: проверка времени должна быть внутри диалогового окна
@@ -175,12 +181,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return f"{seconds // 60} мин."
         return f"{seconds} с."
 
-    def update_content_table_schedule(self):
+    @connection
+    def update_content_table_schedule(self, session):
         logger.info("Обновление всех данных в таблице \"Расписание\"")
         table_data = []
 
-        schedules = select_all_schedules()
+        schedules: list[Schedule] = Schedule.get_all_schedules(session)
         for schedule in schedules:
+
+            schedule: ScheduleData = schedule.to_dataclass(session)
 
             schedule_id = schedule.id
             experiment_name = schedule.experiment.name
@@ -202,12 +211,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
-    def update_content_table_history(self) -> None:
+    @connection
+    def update_content_table_history(self, session) -> None:
         logger.info("Обновление всех данных в таблице \"Записи\"")
 
         table_data = []
-        records = select_all_records()
+        records: list[Record] = Record.fetch_all(session)
         for idx, rec in enumerate(records):
+
+            rec = rec.to_dataclass()
+
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
@@ -224,7 +237,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Обработчик кнопки изменения расписаний """
         ...
 
-    def delete_schedule(self) -> None:
+    @connection
+    def delete_schedule(self, session) -> None:
         """ Обработчик кнопки удаления расписаний """
         # получить удаляемую строку из таблицы
         schedule_data = self.tableModelSchedule.get_selected_data()
@@ -238,16 +252,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.scheduler.remove_job(job_id=str(schedule_data[0]))
 
         # удалить (пометить) расписание из БД
-        delete_schedule(schedule_id=schedule_data[0])  # ToDo: не удалять из бд
+        schedule = Schedule.find([Schedule.id==schedule_data[0]], session)
+        schedule.soft_delete(session)
+
         self.update_content_table_schedule()
         logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
         logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
 
         # удалить записи для расписания в history
-        delete_records_by_schedule_id(schedule_id=schedule_data[0]) # ToDo: не удалять из бд
+        soft_delete_records(schedule_data[0], session)
+
         self.update_content_table_history()
         logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
 
+        # Device.find([Schedule.id==schedule_data[0]], session).soft_delete(session)
+        # Object.find([Object.id==schedule_data[0]], session).soft_delete(session)
         return None
 
     def run_monitor(self):
@@ -288,17 +307,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         dlg = DlgConfiguration()
+        dlg.signal_restore.connect(self.update_content_table_history)
+        dlg.signal_restore.connect(self.update_content_table_schedule)
         ok = dlg.exec()
 
 
+
 class DlgConfiguration(QDialog, Ui_DlgMainConfig):
+
+    signal_restore = Signal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
+        self.pushButtonRecordRecovery.clicked.connect(self.restore)
+
         self.pushButtonOk.clicked.connect(self.close)
         self.pushButtonCancel.clicked.connect(self.close)
+
+    @connection
+    def restore(self, session):
+        restore(session)
+        self.signal_restore.emit()
 
 
 if __name__ == "__main__":

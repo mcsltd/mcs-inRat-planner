@@ -52,26 +52,26 @@ def add_schedule(schedule: ScheduleData, session):
     session.commit()
     return query.id
 
-@connection
-def add_device(device: DeviceData, session):
-    query = Device(**asdict(device))
-    session.add(query)
-    session.commit()
-    return query.id
+# @connection
+# def add_device(device: DeviceData, session):
+#     query = Device(**asdict(device))
+#     session.add(query)
+#     session.commit()
+#     return query.id
 
-@connection
-def add_object(obj: ObjectData, session):
-    query = Object(**asdict(obj))
-    session.add(query)
-    session.commit()
-    return query.id
+# @connection
+# def add_object(obj: ObjectData, session):
+#     query = Object(**asdict(obj))
+#     session.add(query)
+#     session.commit()
+#     return query.id
 
-@connection
-def add_experiment(experiment: ExperimentData, session):
-    query = Experiment(**asdict(experiment))
-    session.add(query)
-    session.commit()
-    return query.id
+# @connection
+# def add_experiment(experiment: ExperimentData, session):
+#     query = Experiment(**asdict(experiment))
+#     session.add(query)
+#     session.commit()
+#     return query.id
 
 @connection
 def add_record(record: RecordData, session):
@@ -85,32 +85,36 @@ def select_all_records(session) -> list[RecordData]:
     records = []
     for record in Record.get_all_records(session):
         record_dict = record.to_dict()
-        del record_dict["path"] # todo - костыль
+
+        # todo - костыль
+        del record_dict["path"]
+        del record_dict["is_deleted"]
+
         records.append(RecordData(**record_dict))
     return records
 
-@connection
-def select_all_schedules(session) -> list[ScheduleData]:
-    schedules = []
-
-    for schedule in Schedule.get_all_schedules(session):
-        schedule_dict = schedule.to_dict()
-
-        object_dict = schedule.object.to_dict()
-        device_dict = schedule.device.to_dict()
-        experiment_dict = schedule.experiment.to_dict()
-
-        del schedule_dict["device_id"]
-        schedule_dict["device"] = DeviceData(**device_dict)
-
-        del schedule_dict["object_id"]
-        schedule_dict["object"] = ObjectData(**object_dict)
-
-        del schedule_dict["experiment_id"]
-        schedule_dict["experiment"] = ExperimentData(**experiment_dict)
-
-        schedules.append(ScheduleData(**schedule_dict))
-    return schedules
+# @connection
+# def select_all_schedules(session) -> list[ScheduleData]:
+#     schedules = []
+#
+#     for schedule in Schedule.get_all_schedules(session):
+#         schedule_dict = schedule.to_dict()
+#
+#         object_dict = schedule.object.to_dict()
+#         device_dict = schedule.device.to_dict()
+#         experiment_dict = schedule.experiment.to_dict()
+#
+#         del schedule_dict["device_id"]
+#         schedule_dict["device"] = DeviceData(**device_dict)
+#
+#         del schedule_dict["object_id"]
+#         schedule_dict["object"] = ObjectData(**object_dict)
+#
+#         del schedule_dict["experiment_id"]
+#         schedule_dict["experiment"] = ExperimentData(**experiment_dict)
+#
+#         schedules.append(ScheduleData(**schedule_dict))
+#     return schedules
 
 @connection
 def get_count_records(schedule_id, session):
@@ -227,3 +231,23 @@ def get_path_by_record_id(record_id, session):
     result = result.scalars().all()[0]
     return result
 
+def restore(session) -> bool:
+    # восстановление расписаний, устройств, объектов
+    stmt_schedule = update(Schedule).where(Schedule.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_schedule)
+
+    stmt_device = update(Device).where(Device.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_device)
+
+    stmt_object = update(Object).where(Object.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_object)
+
+    stmt_record = update(Record).where(Record.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_record)
+
+    session.commit()
+    return True
+
+def soft_delete_records(schedule_id, session):
+    for record in Record.get_records_by_schedule_id(schedule_id, session):
+        record.soft_delete(session)

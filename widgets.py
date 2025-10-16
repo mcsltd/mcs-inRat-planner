@@ -7,7 +7,9 @@ from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
 from constants import Formats, Devices
-from db.queries import add_experiment, get_experiments
+from db.database import connection
+from db.models import Experiment
+from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
@@ -70,12 +72,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
                 self.comboBoxExperiment.addItem(exp, userData=exp_id)
             self.comboBoxExperiment.setCurrentIndex(-1)
 
-    def add_experiment(self) -> None:
+    @connection
+    def add_experiment(self, session) -> None:
         dlg = DlgCreateExperiment()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
             exp = dlg.getExperiment()
-            experiment_id = add_experiment(exp)
+            experiment_id = Experiment.from_dataclass(exp).create(session)
             logger.info(f"Add Experiment in DB: id={experiment_id}")
 
             # add experiment in db
