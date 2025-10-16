@@ -28,18 +28,19 @@ class Base(DeclarativeBase):
         except SQLAlchemyError as ex:
             return None
 
-    # def update(self, session: Session, **kwargs) -> bool:
-    #     try:
-    #         for k, v in kwargs.items():
-    #             setattr(self, k, v)
-    #         session.commit()
-    #         return True
-    #     except Exception() as exc:
-    #         return False
-
     def soft_delete(self, session: Session):
+        """ Пометить строку в таблице как удаленную """
         try:
             self.is_deleted = True
+            session.commit()
+            return True
+        except Exception() as exc:
+            return False
+
+    def restore(self, session: Session):
+        """ Восстановить строку в таблице """
+        try:
+            self.is_deleted = False
             session.commit()
             return True
         except Exception() as exc:
@@ -53,7 +54,7 @@ class Base(DeclarativeBase):
 
     @classmethod
     def fetch_all(cls, session):
-        stmt = select(cls)
+        stmt = select(cls).where(cls.is_deleted==False)
         result = session.execute(stmt)
         return result.scalars().all()
 
@@ -171,6 +172,24 @@ class Record(Base):
     path: Mapped[str] = mapped_column(nullable=True, default=None)
     schedule_id: Mapped[UUID] = mapped_column(ForeignKey("schedule.id"))
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="record")
+
+    def to_dataclass(self) -> RecordData:
+        return RecordData(
+            id=self.id,
+            datetime_start=self.datetime_start,
+            sec_duration=self.sec_duration,
+            file_format=self.file_format,
+            sampling_rate=self.sampling_rate,
+            status=self.status,
+            schedule_id=self.schedule_id,
+        )
+
+    @classmethod
+    def get_records_by_schedule_id(cls, schedule_id, session):
+        query = select(cls).where(cls.schedule_id == schedule_id)
+        result = session.execute(query)
+        records = result.scalars().all()
+        return records
 
     @classmethod
     def get_all_records(cls, session):

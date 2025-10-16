@@ -231,3 +231,24 @@ def get_path_by_record_id(record_id, session):
     result = result.scalars().all()[0]
     return result
 
+def restore(session) -> bool:
+    # восстановление расписаний, устройств, объектов
+
+    stmt_schedule = update(Schedule).where(Schedule.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_schedule)
+
+    stmt_device = update(Device).where(Device.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_device)
+
+    stmt_object = update(Object).where(Object.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_object)
+
+    stmt_record = update(Record).where(Record.is_deleted == True).values(is_deleted=False)
+    session.execute(stmt_record)
+
+    session.commit()
+    return True
+
+def soft_delete_records(schedule_id, session):
+    for record in Record.get_records_by_schedule_id(schedule_id, session):
+        record.soft_delete(session)

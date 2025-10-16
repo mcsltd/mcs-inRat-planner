@@ -30,7 +30,7 @@ from tools.modview import GenericTableWidget
 # database
 from db.queries import select_all_records, get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
-    update_record_by_id, get_path_by_record_id
+    update_record_by_id, get_path_by_record_id, restore, soft_delete_records
 
 logger = logging.getLogger(__name__)
 
@@ -188,6 +188,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         schedules: list[Schedule] = Schedule.get_all_schedules(session)
         for schedule in schedules:
+
             schedule: ScheduleData = schedule.to_dataclass(session)
 
             schedule_id = schedule.id
@@ -210,12 +211,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
-    def update_content_table_history(self) -> None:
+    @connection
+    def update_content_table_history(self, session) -> None:
         logger.info("Обновление всех данных в таблице \"Записи\"")
 
         table_data = []
-        records = select_all_records()
+        records: list[Record] = Record.fetch_all(session)
         for idx, rec in enumerate(records):
+
+            rec = rec.to_dataclass()
+
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
@@ -256,7 +261,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
 
         # удалить записи для расписания в history
-        delete_records_by_schedule_id(schedule_id=schedule_data[0]) # ToDo: не удалять из бд
+        # delete_records_by_schedule_id(schedule_id=schedule_data[0]) # ToDo: не удалять из бд
+        soft_delete_records(schedule_data[0], session)
+
         self.update_content_table_history()
         logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
 
@@ -300,17 +307,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         dlg = DlgConfiguration()
+        dlg.signal_restore.connect(self.update_content_table_history)
+        dlg.signal_restore.connect(self.update_content_table_schedule)
         ok = dlg.exec()
 
 
+
 class DlgConfiguration(QDialog, Ui_DlgMainConfig):
+
+    signal_restore = Signal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
+        self.pushButtonRecordRecovery.clicked.connect(self.restore)
+
         self.pushButtonOk.clicked.connect(self.close)
         self.pushButtonCancel.clicked.connect(self.close)
+
+    @connection
+    def restore(self, session):
+        restore(session)
+        self.signal_restore.emit()
 
 
 if __name__ == "__main__":
