@@ -4,6 +4,8 @@ from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
 
+from constants import MONTHS
+
 
 class _DataTableModel(QAbstractTableModel):
 
@@ -31,9 +33,11 @@ class _DataTableModel(QAbstractTableModel):
             return None
 
         if role == Qt.ItemDataRole.DisplayRole:
-            if type(self.array_data[index.row()][index.column()]) is datetime.datetime:
-                self.array_data[index.row()][index.column()] = str(self.array_data[index.row()][index.column()].replace(microsecond=0))
-            return self.array_data[index.row()][index.column()]
+            value = self.array_data[index.row()][index.column()]
+            if isinstance(value, datetime.datetime):
+                value = self.convert_datetime_to_str(value.replace(microsecond=0))
+                self.array_data[index.row()][index.column()] = value
+            return value
 
         elif role == Qt.ItemDataRole.TextAlignmentRole:
             return Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
@@ -53,6 +57,16 @@ class _DataTableModel(QAbstractTableModel):
             return True
         return False
 
+    def convert_datetime_to_str(self, time: datetime.datetime):
+        """
+        Конвертация time (тип: datetime.datetime) в строку для отображения в таблице
+        """
+        try:
+            date_part = f"{time.day:02d}-{MONTHS[time.month]}-{time.year}"
+            time_part = time.strftime("%H:%M:%S")
+            return f"{date_part} {time_part}"
+        except (KeyError, AttributeError) as e:
+            raise ValueError(f"Некорректный объект datetime: {e}")
 
 class GenericTableWidget(QTableView):
 
