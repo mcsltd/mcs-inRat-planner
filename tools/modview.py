@@ -73,13 +73,15 @@ class GenericTableWidget(QTableView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.data = []
         self.description = []
+        self.data_model = None
+        self.data = []
 
         self.headerFont = QFont()
         self.headerFont.setBold(True)
         self.horizontalHeader().setFont(self.headerFont)
 
+        # self.setSortingEnabled(True) # сортировка данных
         self.setShowGrid(True)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # выбирать только строки
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -114,13 +116,27 @@ class GenericTableWidget(QTableView):
 
         return row_data
 
-    def setData(self, data, description):
+    def setData(self, data, description) -> None:
+        """ Установка колонок (description) и строк (data) в таблицу"""
         self.data = data
         self.description = description
 
         self.data_model = _DataTableModel(data=data, description=description)
         self.setModel(self.data_model)
+        self.adjust_headers()
 
+
+    def adjust_headers(self) -> None:
+        """
+        Регулировка колонок таблицы
+        :return: None
+        """
         if "id" in self.description:
             index = self.description.index("id")
             self.hideColumn(index)
+
+        if "№" in self.description:
+            index = self.description.index("№")
+            self.horizontalHeader().setSectionResizeMode(index, QHeaderView.ResizeMode.ResizeToContents)
+
+
