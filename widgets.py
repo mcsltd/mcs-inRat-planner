@@ -1,8 +1,9 @@
 import logging
+import uuid
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QDateTime, Signal
+from PySide6.QtCore import QDateTime, Signal, QDate, QTime
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
@@ -22,11 +23,15 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     signal_add_experiment = Signal()
 
-    def __init__(self, experiments: Optional[list | set] = None, *args, **kwargs):
+    def __init__(self, schedule: Optional[ScheduleData | set] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
+        self.default_schedule: ScheduleData = schedule
         self.has_unsaved_changes = False
+
+        if schedule is not None:
+            self.setWindowTitle("Изменение расписания")
 
         # setup datetime edit
         self.dateTimeEditStartExperiment.setCalendarPopup(True)
@@ -52,6 +57,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).setText("Отменить")
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).setText("По умолчанию")
 
+        self.setDefaults()
+
         # monitoring the has_unsaved_change flag
         self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
         self.LineEditObject.textChanged.connect(self.on_form_changed)
@@ -63,7 +70,58 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
         self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
 
-        self.setDefaults()
+    def _upload(self, schedule: ScheduleData):
+        """ Загрузка данных расписания """
+        # experiment
+        self.set_combobox_value(self.comboBoxExperiment, schedule.experiment.name)
+
+        # object
+        self.LineEditObject.setText(schedule.object.name)
+
+        # model
+        models = {"EMG-SENS-": "EMGsens", "InRat-": "InRat"}
+        self.set_combobox_value(self.comboBoxModelDevice, models[schedule.device.model])
+
+        # serial number
+        self.LineEditSnDevice.setText(str(schedule.device.serial_number))
+
+        # schedule
+        # start time
+        st = schedule.datetime_start
+        self.dateTimeEditStartExperiment.setDateTime(
+            QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
+        )
+
+        # finish time
+        ft = schedule.datetime_finish
+        self.dateTimeEditFinishExperiment.setDateTime(
+            QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
+        )
+        # interval
+        interval = self.convert_seconds_to_combobox_data(seconds=schedule.sec_interval, time_format="[hh:mm]")
+        self.set_combobox_value(self.comboBoxInterval, interval)
+
+        # param records
+        # record duration
+        duration = self.convert_seconds_to_combobox_data(seconds=schedule.sec_duration, time_format="[mm:ss]")
+        self.set_combobox_value(self.comboBoxDuration, duration)
+
+        # sampling rate
+        self.set_combobox_value(self.comboBoxSamplingRate, f"{schedule.sampling_rate} Гц")
+
+        # file format
+        formats = {
+            "CSV" : "Comma Separate Value (CSV)",
+            "EDF" : "European Data Format (EDF)",
+            "WFDB" : "Waveform Database (WFDB)"
+        }
+        self.set_combobox_value(self.comboBoxFormat, formats[schedule.file_format])
+
+    def set_combobox_value(self, combobox: QComboBox, value: str) -> None:
+        idx = combobox.findText(value)
+        if idx == -1:
+            raise ValueError(f"Не найдено значение: {idx=}")
+        combobox.setCurrentIndex(idx)
 
     def fill_combobox_experiment(self):
         exps = get_experiments()
@@ -90,7 +148,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     def fill_combobox(combobox: QComboBox, enumeration: Enum) -> None:
         for field in enumeration:
             combobox.addItem(list(field.value.keys())[0], userData=field)
-
 
     def on_form_changed(self) -> None:
         if self.has_unsaved_changes:
@@ -122,8 +179,14 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         event.accept()
 
     def setDefaults(self):
-        logger.info("Set default settings for schedule")
         self.has_unsaved_changes = False
+
+        if self.default_schedule is not None:
+            logger.debug(f"Установка настроек по умолчанию из структуры расписания: {self.default_schedule}")
+            self._upload(self.default_schedule)
+            return
+
+        logger.info("Установка настроек по умолчанию")
 
         # set text
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
@@ -158,13 +221,23 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             return None
 
         # object
+        if self.default_schedule is None:
+            object_id = uuid.uuid4()
+        else:
+            object_id = self.default_schedule.object.id
+
         obj = self.LineEditObject.text()
-        obj_d: ObjectData = ObjectData(name=obj)
+        obj_d: ObjectData = ObjectData(id=object_id, name=obj)
 
         # device
+        if self.default_schedule is None:
+            device_id = uuid.uuid4()
+        else:
+            device_id = self.default_schedule.device.id
+
         device_sn = self.LineEditSnDevice.text()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
-        dev_d: DeviceData = DeviceData(ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
+        dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
         finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
@@ -173,8 +246,14 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
         sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
+        if self.default_schedule is None:
+            schedule_id = uuid.uuid4()
+        else:
+            schedule_id = self.default_schedule.id
+
         # schedule
         sch_d = ScheduleData(
+            id=schedule_id,
             experiment=exp_d,
             device=dev_d,
             object=obj_d,
@@ -197,6 +276,17 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         for i, t in enumerate(time):
             sec_duration += int(t) * (60 ** i)
         return sec_duration
+
+    def convert_seconds_to_combobox_data(self, seconds: int, time_format: str) -> str | None:
+        if time_format == "[mm:ss]":    # duration
+            s = seconds % 60
+            m = seconds // 60
+            return f"{m:02d}:{s:02d}"
+        if time_format == "[hh:mm]":    # interval
+            m = seconds // 60 % 60
+            h = seconds // 3600
+            return f"{h:02d}:{m:02d}"
+        return None
 
     @classmethod
     def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:

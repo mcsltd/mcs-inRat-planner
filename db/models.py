@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import ForeignKey, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr, relationship, class_mapper, Session
+from sqlalchemy.util import await_only
 
 from structure import ScheduleData, DeviceData, ObjectData, RecordData, ExperimentData
 
@@ -85,6 +86,14 @@ class Schedule(Base):
     # один-ко-многим
     record: Mapped[list["Record"]] = relationship(
         "Record", back_populates="schedule", cascade="all, delete-orphan")
+
+    def update(self, session, **kwargs):
+        try:
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+            return session.commit()
+        except SQLAlchemyError as ex:
+            raise ValueError(ex)
 
     def to_dataclass(self, session) -> ScheduleData:
         return ScheduleData(

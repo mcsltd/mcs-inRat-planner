@@ -4,6 +4,7 @@ import logging
 
 from asyncio import run
 from dataclasses import asdict
+from uuid import UUID
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QMessageBox
@@ -73,13 +74,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # buttons
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
-        # ToDo: self.pushButtonUpdateSchedule.clicked.connect(...)
+        self.pushButtonUpdateSchedule.clicked.connect(self.update_schedule)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
         self.actionSettings.triggered.connect(self.configuration_clicked)
         self.actionExit.triggered.connect(self.close)
 
         self.pushButtonDownloadRecords.setDisabled(True)
-        self.pushButtonUpdateSchedule.setDisabled(True)
+        self.pushButtonUpdateSchedule.setDisabled(False)
 
         # загрузить в таблицы данные
         self.update_content_table_history()
@@ -233,9 +234,60 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # update label Schedule
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
-    def update_schedule(self) -> None:
+    @connection
+    def update_schedule(self, session) -> None:
         """ Обработчик кнопки изменения расписаний """
-        ...
+        schedule_data = self.tableModelSchedule.get_selected_data()
+        if schedule_data is None:
+            return None
+
+        schedule_id = str(schedule_data[0])
+        # остановить и удалить задачи из расписания
+        job = self.scheduler.get_job(job_id=schedule_id)
+        if job is not None:
+            logger.debug(f"Удалено расписание из планировщика с индексом: {schedule_id}")
+            self.scheduler.remove_job(job_id=schedule_id)
+
+        schedule = Schedule.find([Schedule.id == UUID(schedule_id)], session).to_dataclass(session)
+        dlg = DlgCreateSchedule(schedule)
+        code = dlg.exec()
+
+        if code == QDialog.DialogCode.Accepted:
+            schedule: ScheduleData = dlg.getSchedule()
+
+            if schedule is None:
+                logger.error("Возникла ошибка при обновлении расписания")
+                return
+
+            # проверка есть ли объект в бд
+            has_obj = Object.find([Object.id == schedule.object.id], session)
+            if has_obj is None:
+                obj_id = Object.from_dataclass(schedule.object).create(session)
+                logger.info(f"Добавлен новый объект: id={obj_id}")
+
+            # проверка есть ли устройство в бд
+            has_device = Device.find([Device.id == schedule.device.id], session)
+            if has_device is None:
+                device_id = Device.from_dataclass(schedule.device).create(session)
+                logger.info(f"Добавлено устройство: id={device_id}")
+
+            # проверка есть ли расписание в бд
+            has_schedule = Schedule.find([Schedule.id == schedule.id], session)
+            if has_schedule is None:
+                raise ValueError(f"В базе данных не найдено расписание с индексом: {schedule.id}")
+            has_schedule.update(session, **schedule.to_dict_with_ids())
+
+            # ToDo: проверка времени должна быть внутри диалогового окна
+            # time = schedule.datetime_start
+            # if time <= datetime.datetime.now():
+            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=10)
+            self.create_job(schedule, start_time=time)
+
+            # fill table Schedule
+            self.update_content_table_schedule()
+            logger.info("Расписание было добавлено в базу данных и таблицу")
+
+        return None
 
     @connection
     def delete_schedule(self, session) -> None:
@@ -286,7 +338,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Приём данных о завершении записи сигнала с устройства """
         update_record_by_id(record_id, path_to_file, status=RecordStatus.OK.value)
         logger.debug(f"Update path in record with id {record_id}")
-
 
     def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
         model = table.model()
