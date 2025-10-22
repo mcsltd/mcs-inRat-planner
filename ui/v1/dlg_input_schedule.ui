@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>486</width>
-    <height>492</height>
+    <height>458</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
    <property name="geometry">
     <rect>
      <x>170</x>
-     <y>430</y>
+     <y>400</y>
      <width>301</width>
      <height>32</height>
     </rect>
@@ -51,9 +51,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>290</y>
+     <y>260</y>
      <width>451</width>
-     <height>131</height>
+     <height>121</height>
     </rect>
    </property>
    <property name="title">
@@ -71,6 +71,18 @@
     <layout class="QFormLayout" name="formLayoutRecords">
      <item row="0" column="0">
       <widget class="QLabel" name="labelDuration">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Длительность записи</string>
        </property>
@@ -78,26 +90,71 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labelSamplingRate">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Частота оцифровки</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="comboBoxSamplingRate"/>
+      <widget class="QComboBox" name="comboBoxSamplingRate">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelFormat">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Формат</string>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QComboBox" name="comboBoxFormat"/>
+      <widget class="QComboBox" name="comboBoxFormat">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="comboBoxDuration"/>
+      <widget class="QComboBox" name="comboBoxDuration">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -106,7 +163,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>160</y>
+     <y>130</y>
      <width>451</width>
      <height>121</height>
     </rect>
@@ -120,39 +177,96 @@
       <x>10</x>
       <y>30</y>
       <width>431</width>
-      <height>77</height>
+      <height>103</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayoutSchedule">
      <item row="0" column="0">
       <widget class="QLabel" name="labelStarTime">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Дата начала</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="labelIntervalRecord">
-       <property name="text">
-        <string>Периодичность записи</string>
+     <item row="0" column="1">
+      <widget class="QDateTimeEdit" name="dateTimeEditStartExperiment">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <widget class="QDateTimeEdit" name="dateTimeEditStartExperiment"/>
-     </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labeFinishTime">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Дата окончания</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QDateTimeEdit" name="dateTimeEditFinishExperiment"/>
+      <widget class="QDateTimeEdit" name="dateTimeEditFinishExperiment">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelIntervalRecord">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Периодичность записи</string>
+       </property>
+      </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QComboBox" name="comboBoxInterval"/>
+      <widget class="QComboBox" name="comboBoxInterval">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -163,44 +277,26 @@
      <x>30</x>
      <y>30</y>
      <width>441</width>
-     <height>115</height>
+     <height>91</height>
     </rect>
    </property>
    <layout class="QFormLayout" name="formLayoutInformation">
     <item row="0" column="0">
      <widget class="QLabel" name="LabelExperiment">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>140</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Эксперимент</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="LabelObject">
-      <property name="text">
-       <string>Объект</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="LineEditObject"/>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="LabelModelDevice">
-      <property name="text">
-       <string>Модель устройства</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="1">
-     <widget class="QComboBox" name="comboBoxModelDevice"/>
-    </item>
-    <item row="3" column="1">
-     <widget class="QLineEdit" name="LineEditSnDevice"/>
-    </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="LabelSnDevice">
-      <property name="text">
-       <string>Серийный номер устройства</string>
       </property>
      </widget>
     </item>
@@ -221,6 +317,84 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButtonAddExperiment">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Создать</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="LabelObject">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>140</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Объект</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <layout class="QHBoxLayout" name="horizontalLayoutObjs">
+      <item>
+       <widget class="QComboBox" name="comboBoxObjs"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButtonAddObj">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Создать</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="LabelModelDevice">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>140</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Устройство</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <layout class="QHBoxLayout" name="horizontalLayoutDevice">
+      <item>
+       <widget class="QComboBox" name="comboBoxDevices"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButtonAddDevice">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
