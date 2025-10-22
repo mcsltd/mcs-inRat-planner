@@ -37,6 +37,42 @@ class ScheduleData:
     file_format: str
     id: UUID = field(default_factory=uuid.uuid4)
 
+    def to_dict_with_ids(self) -> dict:
+        """
+        Преобразует объект в словарь, заменяя вложенные объекты на их ID.
+
+        Returns:
+            dict: Словарь с ID вместо объектов
+        """
+        result = {
+            'id': self.id,
+            'sec_duration': self.sec_duration,
+            'sec_interval': self.sec_interval,
+            'datetime_start': self.datetime_start,
+            'datetime_finish': self.datetime_finish,
+            'sampling_rate': self.sampling_rate,
+            'file_format': self.file_format,
+        }
+
+        # Обрабатываем experiment
+        if self.experiment:
+            result['experiment_id'] = self.experiment.id if hasattr(self.experiment, 'id') else None
+        else:
+            raise ValueError("Поле experiment не заполнено")
+
+        # Обрабатываем device
+        if self.device:
+            result['device_id'] = self.device.id if hasattr(self.device, 'id') else None
+        else:
+            raise ValueError("Поле device не заполнено")
+
+        # Обрабатываем object (object - зарезервированное слово, поэтому используем object_id)
+        if self.object:
+            result['object_id'] = self.object.id if hasattr(self.object, 'id') else None
+        else:
+            raise ValueError("Поле object не заполнено")
+
+        return result
 
 @dataclass
 class RecordData:
