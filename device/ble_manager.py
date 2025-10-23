@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from logging import Logger
 from uuid import UUID
 
 from PySide6.QtCore import Signal, QObject

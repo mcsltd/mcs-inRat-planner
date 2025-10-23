@@ -8,7 +8,7 @@ from threading import Thread
 from dataclasses import dataclass, field
 
 import bleak
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, Qt
 from uuid import UUID
 
 from bleak import BLEDevice, BleakScanner
@@ -19,6 +19,7 @@ from device.emgsens import EmgSens
 from device.emgsens.constants import EventType, Channel, ScaleGyro, ScaleAccel, SamplingRate
 from device.emgsens.structures import Settings
 from device.inrat.inrat import InRat
+from storage_v1 import Storage
 from structure import DeviceData
 
 logger = logging.getLogger(__name__)
@@ -39,11 +40,16 @@ class BleManager(QObject):
 
     signal_connected = Signal()
     signal_disconnected = Signal()
-    signal_data_received = Signal()
+
+    signal_start_acquisition = Signal(UUID)
+    signal_data_received = Signal(UUID, dict)
+    signal_stop_acquisition = Signal(UUID)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_running = False
+
+        self.storage = Storage()
 
         self._recording_tasks: list[RecordingTaskData] = []             # задачи для записи
         self._acquisition_tasks: dict[UUID, asyncio.Task] = {}          # запущенные задачи на получение данных
@@ -76,6 +82,7 @@ class BleManager(QObject):
         Главный цикл, в котором происходит обработка очереди из устройств.
         Обработка включает в себя: 1) поиск; 2) соединение; 3) получение данных; 4) отключение
         """
+
         while self.is_running:
 
             await self._process_new_task()              # обработка новых задач записи
@@ -122,16 +129,16 @@ class BleManager(QObject):
                     self._connected_devices[device_id] = emg_sens
                     self._device_queues[device_id] = asyncio.Queue()
 
+                    self.signal_start_acquisition.emit(device_id)   # активация сигнала о начале записи
+
                     # создание задачи на получение данных с устройства
                     acquisition_task = asyncio.create_task(self._start_data_acquisition(emg_sens, task))
                     self._acquisition_tasks[device_id] = acquisition_task
-
                     break
                 else:
                     logger.warning(f"Не удалось подключиться к устройству {device_name}")
             except Exception as exc:
                 logger.error(f"Ошибка при подключении к {device_name}: {exc}")
-
 
     async def _start_data_acquisition(self, emg_sens: EmgSens, task: RecordingTaskData):
         """ Запуск сбора данных с устройства и их обработка """
@@ -145,15 +152,18 @@ class BleManager(QObject):
             EnabledEvents=EventType.DISABLE,
             ActivityThreshold=1)
 
-        data_queue = asyncio.Queue()
+        device_id = task.device.id
+        data_queue = self._device_queues[device_id]
+
         try:
             if await emg_sens.start_emg_acquisition(settings=base_settings, emg_queue=data_queue):
                 logger.info(f"Сбор данных запущен для устройства {task.device.ble_name}")
 
                 # обработка входящих данных
-                while self.is_running and datetime.datetime.now() < task.finish_time and emg_sens.is_connected:
+                while self.is_running and emg_sens.is_connected and datetime.datetime.now() < task.finish_time:
                     try:
                         data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
+                        self.signal_data_received.emit(device_id, data)
                         data_queue.task_done()
 
                     except asyncio.TimeoutError:
@@ -161,13 +171,13 @@ class BleManager(QObject):
 
                     except Exception as exp:
                         logger.error(f"Ошибка обработки данных от {task.device.ble_name}")
+                        self.signal_stop_acquisition.emit(device_id)
                         break
-
         except Exception as e:
             logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {e}")
         finally:
-            await self._cleanup_device(task.device.id)     # Очистка при завершении
-
+            self.signal_stop_acquisition.emit(device_id)
+            await self._cleanup_device(device_id)     # Очистка при завершении
 
     async def _cleanup_device(self, device_id: UUID):
         """ Очистка ресурсов устройства """
@@ -200,20 +210,28 @@ class BleManager(QObject):
             logger.error("Возникла ошибка очистки ресурсов для устройств....")
 
     async def _find_device_by_name(self, device_name: str) -> BLEDevice | None:
-        devices = await BleakScanner.discover(timeout=SCAN_TIMEOUT)
-        for d in devices:
-            if d.name and device_name in d.name:
-                logger.info(f"Найдено устройство: {d.name} ({d.address})")
-                return d
-            logger.warning(f"Устройство {device_name} не найдено")
-            return None
-        return None
+        """ Поиск устройств по имени """
+        try:
+            devices = await BleakScanner.discover(timeout=SCAN_TIMEOUT)
+            for d in devices:
+                if d.name and device_name in d.name:
+                    logger.info(f"Найдено устройство: {d.name} ({d.address})")
+                    return d
 
+                logger.warning(f"Устройство {device_name} не найдено")
+                return None
+
+            return None
+        except Exception as exc:
+            logger.error(f"Ошибка при поиске устройства: {device_name}: {exc}")
+            return None
 
     def stop(self):
         """ Остановка BLE менеджера """
         if not self.is_running:
             logger.debug("BLE менеджер не был запущен, не могу выполнить остановку")
+
+        # asyncio.create_task(self.disconnect_all_devices())
 
         self.is_running = False
         self._work_thread.join(timeout=0.1) # ожидание остановки потока
@@ -227,12 +245,18 @@ class BleManager(QObject):
         logger.info(f"Добавлено устройство {task.device.ble_name} в очередь на обработку")
         self._recording_tasks.append(task)
 
+    async def disconnect_all_devices(self):
+        """ Отключение всех устройств """
+        devices_id = list(self._connected_devices.keys())
+        for idx in devices_id:
+            await self._cleanup_device(idx)
+
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
-    )
+    # logging.basicConfig(
+    #     level=logging.DEBUG,
+    #     format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
+    # )
 
     manager = BleManager()
     manager.start()
@@ -241,8 +265,8 @@ if __name__ == "__main__":
     d_1144 = None
     d_1102 = None
 
-    # while datetime.datetime.now() < ft:
-    while True:
+    while datetime.datetime.now() < ft:
+    # while True:
 
         if d_1144 is None:
             # add device 1144
@@ -254,7 +278,7 @@ if __name__ == "__main__":
             task_1144 = RecordingTaskData(
                 device=d_1144,
                 start_time=datetime.datetime.now(),
-                finish_time=datetime.datetime.now() + datetime.timedelta(seconds=20)
+                finish_time=datetime.datetime.now() + datetime.timedelta(seconds=30)
             )
             manager.add_task(task_1144)
 
