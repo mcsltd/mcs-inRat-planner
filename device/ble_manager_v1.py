@@ -8,7 +8,7 @@ from threading import Thread
 from dataclasses import dataclass, field
 
 import bleak
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Signal
 from uuid import UUID
 
 from bleak import BLEDevice, BleakScanner
@@ -37,14 +37,18 @@ MAX_COUNT_ATTEMPT_CONNECTION = 5
 
 class BleManager(QObject):
 
+    signal_connected = Signal()
+    signal_disconnected = Signal()
+    signal_data_received = Signal()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_running = False
 
         self._recording_tasks: list[RecordingTaskData] = []             # задачи для записи
         self._acquisition_tasks: dict[UUID, asyncio.Task] = {}          # запущенные задачи на получение данных
-        self._connected_devices: dict[UUID, EmgSens | InRat] = {}       # подключенные устройства
-        self._device_queues: dict[UUID, asyncio.Queue] = {}             # очередь для устройства
+        self._connected_devices: dict[UUID, EmgSens | InRat] = {}       # словарь с подключенными устройствами
+        self._device_queues: dict[UUID, asyncio.Queue] = {}             # очередь для получения данных с устройства
 
         self._work_thread: None | Thread  = None
         self._async_loop: None | asyncio.AbstractEventLoop = None
@@ -74,7 +78,7 @@ class BleManager(QObject):
         """
         while self.is_running:
 
-            await self._process_new_task()  # обработка новых задач записи
+            await self._process_new_task()              # обработка новых задач записи
             # await self._monitoring_connected_device() # мониторинг подключенных устройств
 
             await asyncio.sleep(0.1)
@@ -83,8 +87,12 @@ class BleManager(QObject):
         """ Обработка новых задач на подключение """
         while len(self._recording_tasks) != 0:
             recording_task = self._recording_tasks.pop()
+            device_id = recording_task.device.id
 
             # ToDo: обработка на случай уже подключенного или подключаемого устройства
+            if device_id in self._connected_devices:
+                logger.warning(f"Устройство {recording_task.device.ble_name} уже подключено или в процессе подключения")
+                continue
 
             # запуск подключения и получения данных с устройства на фоне
             asyncio.create_task(
@@ -114,6 +122,7 @@ class BleManager(QObject):
                     self._connected_devices[device_id] = emg_sens
                     self._device_queues[device_id] = asyncio.Queue()
 
+                    # создание задачи на получение данных с устройства
                     acquisition_task = asyncio.create_task(self._start_data_acquisition(emg_sens, task))
                     self._acquisition_tasks[device_id] = acquisition_task
 
@@ -157,20 +166,38 @@ class BleManager(QObject):
         except Exception as e:
             logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {e}")
         finally:
-            await self._cleanup_device(task.device.ble_name)     # Очистка при завершении
+            await self._cleanup_device(task.device.id)     # Очистка при завершении
 
 
-    async def _cleanup_device(self, device_id):
-        """ Отключение и очистка устройства """
-        logger.debug(f"Отключение от устройства: {self._connected_devices[device_id].name}")
+    async def _cleanup_device(self, device_id: UUID):
+        """ Очистка ресурсов устройства """
+        try:
 
-        await self._connected_devices[device_id].disconnect()
+            # убрать device_id из словаря подключенных устройств
+            if device_id in self._connected_devices:
+                emg_sens = self._connected_devices[device_id]
+                if emg_sens.is_connected:
+                    await emg_sens.stop_acquisition()
+                    await emg_sens.disconnect()
+                del self._connected_devices[device_id]
 
-        if not self._connected_devices[device_id].is_connected:
-            device = self._connected_devices.pop(device_id)
-            logger.debug(f"Устройство {device.name} отключено и удалено из списка подключенных устройств")
+            # отмена задачи на получение данных
+            if device_id in self._acquisition_tasks:
+                self._acquisition_tasks[device_id].cancel()
+                try:
+                    await self._acquisition_tasks[device_id]
+                except asyncio.CancelledError:
+                    pass
+                del self._acquisition_tasks[device_id]
 
-        self._connected_devices.pop(device_id)
+            # удаление очереди для emgsens с device_id
+            if device_id in self._device_queues:
+                self._device_queues.pop(device_id)
+
+            logger.info(f"Ресурсы устройства {device_id} очищены")
+
+        except Exception:
+            logger.error("Возникла ошибка очистки ресурсов для устройств....")
 
     async def _find_device_by_name(self, device_name: str) -> BLEDevice | None:
         devices = await BleakScanner.discover(timeout=SCAN_TIMEOUT)
@@ -243,11 +270,10 @@ if __name__ == "__main__":
         #     task_1102 = RecordingTaskData(
         #         device=d_1102,
         #         start_time=datetime.datetime.now(),
-        #         finish_time=datetime.datetime.now() + datetime.timedelta(seconds=40)
+        #         finish_time=datetime.datetime.now() + datetime.timedelta(seconds=20)
         #     )
         #
         #     manager.add_task(task_1102)
-        #     time.sleep(1)
 
     print("Текущее кол-во потоков:", threading.active_count())
     manager.stop()
