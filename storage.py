@@ -3,17 +3,18 @@ import logging
 import os
 
 import numpy as np
-
-from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import QObject
 from pyedflib import EdfWriter
 
 from constants import Formats
 
 logger = logging.getLogger(__name__)
 
-class StorageData:    # заготовка
+class StorageData(QObject):    # заготовка
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.freq: int | None = None
         self.data_queue: asyncio.Queue | None = None
         self.data_buffer: dict | None = None

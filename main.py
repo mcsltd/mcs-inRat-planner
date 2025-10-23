@@ -3,7 +3,6 @@ import logging
 
 
 from asyncio import run
-from dataclasses import asdict
 from uuid import UUID
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
@@ -13,12 +12,11 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QM
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from ble_manager import BLEManager
+from device.ble_manager_v1 import BleManager, RecordingTaskData
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
-# from device.main import create_task_recording
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
 from ui.v1.dlg_main_config import Ui_DlgMainConfig
@@ -29,8 +27,8 @@ from widgets import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
-from db.queries import select_all_records, get_count_records, get_count_error_records, \
-    get_object_by_schedule_id, get_experiment_by_schedule_id, delete_schedule, delete_records_by_schedule_id, \
+from db.queries import get_count_records, get_count_error_records, \
+    get_object_by_schedule_id, get_experiment_by_schedule_id, \
     update_record_by_id, get_path_by_record_id, restore, soft_delete_records
 
 logger = logging.getLogger(__name__)
@@ -38,14 +36,14 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
 
         # init ble manager
-        self.ble_manager = BLEManager()
+        self.ble_manager = BleManager()
+        self.ble_manager.start()
 
         # init scheduler
         self.scheduler = QtScheduler()
@@ -66,8 +64,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # соединение сигналов с функциями
-        self.ble_manager.signal_stop_acquisition.connect(self.accept_signal)
-        self.ble_manager.signal_error_recording.connect(self.handler_error_recording)
+        # self.ble_manager.signal_stop_acquisition.connect(self.accept_signal)
+        # self.ble_manager.signal_error_recording.connect(self.handler_error_recording)
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
@@ -118,7 +116,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
 
     @connection
-    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime, session: Session):
+    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime, session: Session) -> None:
+        """
+        Запуск записи
+        :param schedule:
+        :param start_time:
+        :param session:
+        :return:
+        """
         logger.debug(f"Начало записи данных: {start_time} по расписанию {schedule.id}")
 
         # добавление в базу данных информации о начале записи
@@ -135,7 +140,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
-        run(self.ble_manager.start_recording(schedule, record_id))
+
+        self.ble_manager.add_task(
+            task=RecordingTaskData(device=schedule.device, start_time=start_time, finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration))
+        )
+
+        # run(self.ble_manager.start_recording(schedule, record_id))
 
 
     # Schedule
@@ -362,7 +372,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dlg.signal_restore.connect(self.update_content_table_schedule)
         ok = dlg.exec()
 
-
+    def closeEvent(self, event, /):
+        self.ble_manager.stop()
 
 class DlgConfiguration(QDialog, Ui_DlgMainConfig):
 

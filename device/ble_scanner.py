@@ -17,6 +17,7 @@ async def find_device(
         with contextlib.suppress(asyncio.TimeoutError):
             async with asyncio.timeout(timeout):
                 async for device, advertisement in scanner.advertisement_data():
+                    await asyncio.sleep(0.01)
                     if device is not None and device.name is not None and device.name.startswith(template):
                         return device, advertisement
     return None, None

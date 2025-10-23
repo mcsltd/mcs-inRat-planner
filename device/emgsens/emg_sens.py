@@ -46,6 +46,10 @@ class EmgSens:
         return self._client.address
 
     @property
+    def name(self) -> str:
+        return self._client.name
+
+    @property
     def is_notifying(self) -> bool:
         return self._is_notifying
 
@@ -92,8 +96,17 @@ class EmgSens:
 
         try:
             if self._client.is_connected:
-                await self._client.stop_notify(self.UUID_DATA_SERVICE)
-                await self._client.stop_notify(self.UUID_ACQUISITION_SERVICE)
+
+                try:
+                    await self._client.stop_notify(self.UUID_DATA_SERVICE)
+                except Exception as exc:
+                    pass
+
+                try:
+                    await self._client.stop_notify(self.UUID_ACQUISITION_SERVICE)
+                except Exception as exc:
+                    pass
+
             self._is_notifying = False
             logger.info(f"Stopped acquisition on {self.address}")
             return True
@@ -133,7 +146,7 @@ class EmgSens:
         async def emg_handler(_, raw_data: bytearray):
             try:
                 counter, emg = decoder.decode_emg(raw_data)
-                logger.debug(f"Get emg - counter: {counter}")
+                # logger.debug(f"Device: {self.name}; get emg - counter: {counter}")
                 await emg_queue.put({"counter": counter, "emg": emg, "timestamp": time.time()})
             except Exception as exp:
                 logger.error(f"Error processing EMG data: {exp}")
