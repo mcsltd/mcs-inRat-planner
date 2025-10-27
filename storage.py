@@ -1,142 +1,119 @@
-import asyncio
 import logging
 import os
-
+import threading
 import numpy as np
-from PySide6.QtCore import QObject
+
+from uuid import UUID
+
+from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
 
-from constants import Formats
+
+from constants import Formats, RecordStatus
+from structure import RecordingTaskData, RecordData
 
 logger = logging.getLogger(__name__)
 
-class StorageData(QObject):    # заготовка
+class Storage(QObject):
+
+    signal_success_save = Signal(RecordData)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.freq: int | None = None
-        self.data_queue: asyncio.Queue | None = None
-        self.data_buffer: dict | None = None
-        self.file_format = None
-        self._event_consume: asyncio.Event | None = None
+        self._devices_id: set[UUID] = set()
+        self._recording_task_data: dict[UUID, np.ndarray] = {}
+        self._recording_task_property: dict[UUID, RecordingTaskData] = {}
 
-    def setup(
-            self,
-            data_queue: asyncio.Queue, event_consume: asyncio.Event,
-            freq: int, file_format: str
-    ):
-        self.data_queue: asyncio.Queue = data_queue
-        self.freq = freq
-        self.file_format = file_format
-        self.data_buffer = None
-        self._event_consume = event_consume
+        # print(f"Объект Storage создан в потоке {threading.current_thread()}")
 
-    async def consume(self, device_name, record_id):
-        if self.data_queue is None:
-            raise TypeError("Queue is not initialized")
-        if self._event_consume is None:
-            raise TypeError("Event consume is not initialized")
+    def add_recording_task(self, task: RecordingTaskData) -> None:
+        """ Начало записи данных, приходящих из BleManager """
+        if task.device.id in self._devices_id:
+            logging.warning(f"Для устройства c индексом {task.device.id} уже создана задача на запись")
+            return
 
-        logger.debug("Start consuming data from queue")
-        self._is_consuming = True
+        logger.info(f"Начало записи данных для устройства с индексом {task.device.id}")
+        self._devices_id.add(task.device.id)
+        self._recording_task_data[task.device.id] = np.array([])
+        self._recording_task_property[task.device.id] = task
 
-        # get signals
-        data = await self.data_queue.get()
-        self.data_queue.task_done()
+    def accept_data(self, device_id: UUID, data: dict) -> None:
+        """ Получение данных от устройства с device_id и сохранение их в _data """
+        logger.debug(f"Получены данные от устройства с индексом: {device_id}")
+        signal = np.array(data["emg"])
+        self._recording_task_data[device_id] = np.append(self._recording_task_data[device_id], signal)
 
-        # init data buffer
-        if self.data_buffer is None:
-            headers = list(data.keys())
-            headers.remove("counter")
-            self.data_buffer = dict.fromkeys(headers, None)
-            # extract signals
-            for key in data.keys():
-                if key != "counter":
-                    self.data_buffer[key] = data[key]
+    def stop_recording_task(self, device_id: UUID) -> None:
+        """ Остановка записи данных с устройства """
+        if device_id not in self._devices_id:
+            logger.warning(f"Отсутствует задача записи для {device_id}, данные не могут быть сохранены")
+            return
 
-        logger.debug("Consume data from queue")
-        while not self._event_consume.is_set():
-            # data = await self.data_queue.get()
+        try:
+            self._save(device_id)
+        except Exception as exc:
+            logger.error(f"Ошибка сохранения данных для устройства с индексом {device_id}: {exc}")
+        else:
+            logger.info(f"Полученные данные для устройства с индексом {device_id} сохранены")
+        finally:
+            ...
 
-            try:
-                # get signals
-                data = await asyncio.wait_for(self.data_queue.get(), timeout=0.1)
+    def _save(self, device_id: UUID):
+        """ Сохранение данных для устройства с device_id """
+        record_property: RecordingTaskData = self._recording_task_property[device_id]
+        record_id = record_property.id
+        device_name = record_property.device.ble_name
+        file_format = record_property.file_format
+        sampling_rate = int(record_property.sampling_rate)
+        signal = self._recording_task_data[device_id]
 
-                # extract signals
-                for key in data.keys():
-                    if key != "counter":
-                        self.data_buffer[key] = np.append(self.data_buffer[key], data[key])
-
-                self.data_queue.task_done()
-            except asyncio.TimeoutError:
-                continue
-            except Exception as e:
-                logger.error(f"Error processing data: {e}")
-                if not self.data_queue.empty():
-                    self.data_queue.task_done()
-
-        file_name = self.save(record_id, device_name)
-        print(f"{file_name=}")
-        return file_name
-
-    def stop(self):
-        logger.debug("Stop consumer...")
-        if not self._event_consume.is_set:
-            raise ValueError("Event is not set. Can't stop consumer!")
-
-        # self._event_consume = None
-        self.freq = None
-        self.data_queue = None
-        self.data_buffer = None
-        self.file_format = None
-
-    def save(self, record_id, device_name) -> str | None:
         write_dir = f".\\data\\{device_name}\\"
+
         path_to_file = None
-
-        if self.file_format == list(Formats.CSV.value.values())[0]:
-            write_dir += "CSV\\"
-            path_to_file = self.save_to_csv()
-
-        if self.file_format == list(Formats.EDF.value.values())[0]:
+        if file_format == list(Formats.EDF.value.values())[0]:
             write_dir += "EDF\\"
             # create dir for saving files with selected format
             os.makedirs(write_dir, exist_ok=True)
-            path_to_file = self.save_to_edf(record_id, write_dir)
+            path_to_file = self.save_to_edf(record_id, write_dir, sampling_rate, signal)
 
-        if self.file_format == list(Formats.WFDB.value.values())[0]:
-            write_dir += "WFDB\\"
-            path_to_file = self.save_to_wfdb()
+        if path_to_file is not None:
+            task = self._recording_task_property[device_id]
+            sec_duration = (task.finish_time - task.start_time).seconds
 
-        return path_to_file
+            record_data = task.get_result_record(duration=sec_duration, status=RecordStatus.OK, path=path_to_file)
+            self.signal_success_save.emit(record_data)
+        else:
+            ...
+        self._cleanup_task(device_id)
 
-    def save_to_edf(self, record_id, write_dir, units: str = "uV", sig_name: str="EMG") -> str | None:
+
+    def save_to_edf(self, record_id: UUID, write_dir: str, sampling_rage: int, ecg_signal: np.ndarray) -> str | None:
         logger.debug("Save data to edf.")
-        file_name = write_dir + f"{record_id}.edf"
 
+        file_name = None
         try:
+            file_name = write_dir + f"{record_id}.edf"
+
             writer = EdfWriter(
                 n_channels=1,
                 file_name=file_name,
             )
 
-            self.signal = np.round(self.data_buffer["emg"] * 1e6, decimals=3)
+            self.signal = np.round(ecg_signal * 1e6, decimals=3)
 
             margin = 0.15
             signal_max = np.max(self.signal)
             signal_min = np.min(self.signal)
-            physical_max = np.round(signal_max * (1 + margin) if signal_max > 0 else signal_max * (1 - margin), decimals=3)
-            physical_min = np.round(signal_min * (1 - margin) if signal_min > 0 else signal_min * (1 + margin), decimals=3)
+            physical_max = np.round(signal_max * (1 + margin) if signal_max > 0 else signal_max * (1 - margin),
+                                    decimals=3)
+            physical_min = np.round(signal_min * (1 - margin) if signal_min > 0 else signal_min * (1 + margin),
+                                    decimals=3)
 
             channel_info = {
-                'label': sig_name,
-                'dimension': units,
-                'sample_frequency': 1000,
-                'physical_max': physical_max,
-                'physical_min': physical_min,
-                'digital_max': 32767,
-                'digital_min': -32768,
+                'label': "ECG", 'dimension': "uV", 'sample_frequency': sampling_rage,
+                'physical_max': physical_max, 'physical_min': physical_min,
+                'digital_max': 32767, 'digital_min': -32768,
             }
             writer.setSignalHeader(0, channel_info)
             writer.writeSamples(self.signal[np.newaxis])
@@ -148,8 +125,8 @@ class StorageData(QObject):    # заготовка
             logger.debug(f"Файл EDF успешно создан - {file_name}")
             return file_name
 
-    def save_to_wfdb(self):
-        logger.debug("Save data to wfdb.")
+    def _cleanup_task(self, device_id):
 
-    def save_to_csv(self):
-        logger.debug("Save data to csv.")
+        self._devices_id.remove(device_id)
+        del self._recording_task_data[device_id]
+        del self._recording_task_property[device_id]

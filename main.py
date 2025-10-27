@@ -1,18 +1,15 @@
 import datetime
 import logging
 
-
-from asyncio import run
 from uuid import UUID
 
-from PySide6.QtCore import QModelIndex, Qt, Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QTableView, QDialog, QMessageBox
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
-from sqlalchemy.orm import Session
 
-from device.ble_manager_v1 import BleManager, RecordingTaskData
+from device.ble_manager import BleManager, RecordingTaskData
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
 from db.database import connection
@@ -64,8 +61,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # соединение сигналов с функциями
-        # self.ble_manager.signal_stop_acquisition.connect(self.accept_signal)
-        # self.ble_manager.signal_error_recording.connect(self.handler_error_recording)
+        self.ble_manager.signal_record_result.connect(self.handle_record_result)
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
@@ -100,14 +96,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.create_job(job, start_time=job.datetime_start)
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
-        """ Создание задачи для расписания"""
+        """ Планирование задачи записи сигнала ЭКГ по времени """
         logger.debug(
-            f"Создана задача: {str(schedule.id)};"
+            f"Создано расписание: {str(schedule.id)};"
             f" запланированное время старта: {start_time.replace(microsecond=0)};"
             f" длительность записи: {schedule.sec_duration}"
         )
+
         self.scheduler.add_job(
-            self.create_record,
+            self._create_record,
             args=(schedule, start_time),
             trigger="interval",
             seconds=schedule.sec_interval,
@@ -115,38 +112,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             next_run_time=start_time,
         )
 
-    @connection
-    def create_record(self, schedule: ScheduleData, start_time: datetime.datetime, session: Session) -> None:
+    def _create_record(self, schedule: ScheduleData, start_time: datetime.datetime) -> None:
         """
-        Запуск записи
-        :param schedule:
-        :param start_time:
-        :param session:
-        :return:
+        Запуск задачи на запись ЭКГ с устройства с заданной длительностью
         """
-        logger.debug(f"Начало записи данных: {start_time} по расписанию {schedule.id}")
+        logger.debug(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
 
-        # добавление в базу данных информации о начале записи
-        rec_d = RecordData(
-            schedule_id=schedule.id,
-            datetime_start=start_time,
-            sec_duration=schedule.sec_duration,
-            status=RecordStatus.IN_PROCESS.value,
-            file_format=schedule.file_format,
-            sampling_rate=schedule.sampling_rate,
+        self.ble_manager.add_task(
+            task=RecordingTaskData(
+                schedule_id=schedule.id,
+                device=schedule.device,
+                start_time=start_time,
+                finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration),
+                file_format=schedule.file_format,
+                sampling_rate=schedule.sampling_rate
+            )
         )
-        record_id = Record.from_dataclass(rec_d).create(session)
-        logger.debug(f"Добавлена запись: {record_id}")
+
+    @connection
+    def handle_record_result(self, record_data: RecordData, session):
+        """ Обработка результата записи сигнала """
+        record_id = Record.from_dataclass(record_data).create(session)
+        logger.debug(f"Добавлена запись в базу данных: {record_id}")
+
+        # Todo: обновить информацию в таблице "Расписания" по schedule_id
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
-
-        self.ble_manager.add_task(
-            task=RecordingTaskData(device=schedule.device, start_time=start_time, finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration))
-        )
-
-        # run(self.ble_manager.start_recording(schedule, record_id))
-
 
     # Schedule
     @connection
@@ -344,27 +336,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         monitor.load_data(path_to_file=path)
         monitor.exec()
 
-    def accept_signal(self, schedule, record_id, path_to_file):
-        """ Приём данных о завершении записи сигнала с устройства """
-        update_record_by_id(record_id, path_to_file, status=RecordStatus.OK.value)
-        logger.debug(f"Update path in record with id {record_id}")
-
-    def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
-        model = table.model()
-        data: dict = {}
-        for idx_col in range(model.columnCount()):
-            key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
-            data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
-        return data
-
-    def handler_error_recording(self, schedule: ScheduleData, record_id, status):
-        """ Обработка ошибки записи сигнала """
-        update_record_by_id(record_id=record_id, status=status)
-        reply = QMessageBox.warning(
-            self, "Ошибка записи",
-            f"Возникла ошибка записи с устройства {schedule.device.ble_name}",
-            QMessageBox.StandardButton.Ok
-        )
 
     def configuration_clicked(self):
         dlg = DlgConfiguration()
@@ -374,6 +345,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event, /):
         self.ble_manager.stop()
+
+    # def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
+    #     model = table.model()
+    #     data: dict = {}
+    #     for idx_col in range(model.columnCount()):
+    #         key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+    #         data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
+    #     return data
 
 class DlgConfiguration(QDialog, Ui_DlgMainConfig):
 
