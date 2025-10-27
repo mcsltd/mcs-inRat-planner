@@ -17,7 +17,7 @@ from device.emgsens import EmgSens
 from device.emgsens.constants import EventType, Channel, ScaleGyro, ScaleAccel, SamplingRate
 from device.emgsens.structures import Settings
 from device.inrat.inrat import InRat
-from storage_v1 import Storage
+from storage import Storage
 from structure import DeviceData, RecordingTaskData, RecordData
 
 logger = logging.getLogger(__name__)
