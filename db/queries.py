@@ -52,27 +52,6 @@ def add_schedule(schedule: ScheduleData, session):
     session.commit()
     return query.id
 
-# @connection
-# def add_device(device: DeviceData, session):
-#     query = Device(**asdict(device))
-#     session.add(query)
-#     session.commit()
-#     return query.id
-
-# @connection
-# def add_object(obj: ObjectData, session):
-#     query = Object(**asdict(obj))
-#     session.add(query)
-#     session.commit()
-#     return query.id
-
-# @connection
-# def add_experiment(experiment: ExperimentData, session):
-#     query = Experiment(**asdict(experiment))
-#     session.add(query)
-#     session.commit()
-#     return query.id
-
 @connection
 def add_record(record: RecordData, session):
     rec = Record(**asdict(record))
@@ -93,29 +72,6 @@ def select_all_records(session) -> list[RecordData]:
         records.append(RecordData(**record_dict))
     return records
 
-# @connection
-# def select_all_schedules(session) -> list[ScheduleData]:
-#     schedules = []
-#
-#     for schedule in Schedule.get_all_schedules(session):
-#         schedule_dict = schedule.to_dict()
-#
-#         object_dict = schedule.object.to_dict()
-#         device_dict = schedule.device.to_dict()
-#         experiment_dict = schedule.experiment.to_dict()
-#
-#         del schedule_dict["device_id"]
-#         schedule_dict["device"] = DeviceData(**device_dict)
-#
-#         del schedule_dict["object_id"]
-#         schedule_dict["object"] = ObjectData(**object_dict)
-#
-#         del schedule_dict["experiment_id"]
-#         schedule_dict["experiment"] = ExperimentData(**experiment_dict)
-#
-#         schedules.append(ScheduleData(**schedule_dict))
-#     return schedules
-
 @connection
 def get_count_records(schedule_id, session):
     stmt = select(Record).where(Record.schedule_id == schedule_id)
@@ -127,17 +83,6 @@ def get_count_error_records(schedule_id, session):
     stmt = select(Record).where(Record.schedule_id == schedule_id and Record.status == RecordStatus.ERROR.value)
     result = session.execute(stmt).scalars().all()
     return len(result)
-
-# @connection
-# def get_experiment_by_schedule_id(schedule_id, session):
-#     stmt = select(Schedule).where(Schedule.id == schedule_id)
-#     result = session.execute(stmt)
-#     if result.first() is None:
-#         return "Название эксперимента не найдено по id"
-#         # ToDo: raise Error
-#     result = result.scalars()
-#     result = result.fetchone().experiment.name
-#     return result
 
 
 @connection

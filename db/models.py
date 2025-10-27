@@ -131,7 +131,6 @@ class Schedule(Base):
             sampling_rate=schedule.sampling_rate
         )
 
-
 class Object(Base):
     name: Mapped[str]
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="object")
@@ -216,6 +215,7 @@ class Record(Base):
             file_format=record.file_format,
             sampling_rate=record.sampling_rate,
             status=record.status,
+            path=record.path,
             schedule_id=record.schedule_id
         )
 

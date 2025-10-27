@@ -82,8 +82,33 @@ class RecordData:
     sampling_rate: int
     status: str
     schedule_id: UUID
+
+    path: str | None = field(default=None)
     id: UUID = field(default_factory=uuid.uuid4)
 
+@dataclass
+class RecordingTaskData:
+    schedule_id: UUID
+    device: DeviceData
+    start_time: datetime.datetime
+    finish_time: datetime.datetime
+    file_format: str
+    sampling_rate: int
+
+    id: UUID = field(default_factory=uuid.uuid4)
+
+    def get_result_record(self, duration: int, status: RecordStatus, path: str | None = None):
+        """ Отдать результат выполнения задачи на запись сигнала """
+        return RecordData(
+            datetime_start=self.start_time,
+            sec_duration=duration,
+            file_format=self.file_format,
+            sampling_rate=self.sampling_rate,
+            status=status.value,
+            schedule_id=self.schedule_id,
+            path=path,
+            id=self.id,
+        )
 
 
 if __name__ == "__main__":
