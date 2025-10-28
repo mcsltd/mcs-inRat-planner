@@ -73,11 +73,13 @@ def select_all_records(session) -> list[RecordData]:
     return records
 
 @connection
-def get_all_record_time(schedule_id, session):
+def get_all_record_time(schedule_id, session) -> int:
     stmt = select(func.sum(Record.sec_duration)).where(
         Record.schedule_id == schedule_id, Record.status == RecordStatus.OK.value)
     all_seconds_duration = session.execute(stmt).scalar()
-    return all_seconds_duration
+    if isinstance(all_seconds_duration, int):
+        return all_seconds_duration
+    return 0
 
 @connection
 def get_count_records(schedule_id, session):

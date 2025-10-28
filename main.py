@@ -11,7 +11,7 @@ from apscheduler.schedulers.qt import QtScheduler
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from monitor import SignalMonitor
@@ -61,6 +61,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # соединение сигналов с функциями
+        self.ble_manager.signal_schedule_state.connect(self.handle_schedule_state)
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
 
         # tables
@@ -114,7 +115,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             f" длительность записи: {schedule.sec_duration}"
         )
 
-
     def _create_record(self, schedule: ScheduleData, start_time: datetime.datetime) -> None:
         """
         Создание задачи на подключение и запись BleManager'у
@@ -131,6 +131,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 sampling_rate=schedule.sampling_rate
             )
         )
+
+    def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState):
+        """ Обработчик сигнала (signal_schedule_state) состояния расписания определяемый BleManager """
+        if not self.tableModelSchedule.modify_value_by_id(row_id=schedule_id, column_name="Статус", value=status.value):
+            raise ValueError(f"Не удалось обновить статус для расписания с индексом: {schedule_id}")
 
     @connection
     def handle_record_result(self, record_data: RecordData, session):
@@ -342,12 +347,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def clicked_schedule(self):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
+        # ToDo: сделать приложение по отображению сигналов ЭКГ с устройства в реальном времени
         data = self.tableModelSchedule.get_selected_data()
         schedule_id = data[0]
         print(f"{schedule_id=}")
 
-
     def configuration_clicked(self):
+        """ Активация окна настроек """
         dlg = DlgConfiguration()
         dlg.signal_restore.connect(self.update_content_table_history)
         dlg.signal_restore.connect(self.update_content_table_schedule)

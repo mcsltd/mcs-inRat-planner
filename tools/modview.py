@@ -1,4 +1,5 @@
 import datetime
+from uuid import UUID
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont
@@ -104,7 +105,6 @@ class GenericTableWidget(QTableView):
             return None
         return indexes
 
-
     def get_selected_data(self) -> None | list:
         """ Получение данных в выбранной строке таблицы """
         selected_indexes = self.get_selected_index()
@@ -125,7 +125,6 @@ class GenericTableWidget(QTableView):
         self.setModel(self.data_model)
         self.adjust_headers()
 
-
     def adjust_headers(self) -> None:
         """
         Регулировка колонок таблицы
@@ -139,4 +138,28 @@ class GenericTableWidget(QTableView):
             index = self.description.index("№")
             self.horizontalHeader().setSectionResizeMode(index, QHeaderView.ResizeMode.ResizeToContents)
 
+    def modify_value_by_id(self, row_id: UUID, column_name: str, value: str) -> bool:
+        """ Изменение значения в колонке по идентификатору и названию колонки """
+        if not self.data_model or not self.data_model.array_data:
+            return False
+
+        if column_name not in self.description:
+            return False
+
+        column_index = self.description.index(column_name)
+        row_index = -1
+        if "id" in self.description:
+            for r_idx, row_data in enumerate(self.data_model.array_data):
+                if row_id in row_data:
+                    row_index = r_idx
+                    break
+
+        if row_index == -1:
+            return False
+
+        model_index = self.data_model.index(row_index, column_index)
+        self.data_model.array_data[row_index][column_index] = value
+        self.data_model.dataChanged.emit(model_index, model_index, [Qt.ItemDataRole.DisplayRole])
+
+        return True
 
