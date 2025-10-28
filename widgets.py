@@ -3,9 +3,9 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QDateTime, Signal, QDate, QTime
-from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
+from PySide6.QtCore import QDateTime, Signal, QDate, QTime, Qt, QModelIndex
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox, QWidget, QHBoxLayout, QLabel
+from PySide6.QtGui import QFont
 
 from constants import Formats, Devices
 from db.database import connection
@@ -15,6 +15,7 @@ from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
 from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from ui.v1.dlg_input_experiment import Ui_DlgInputExperiment
+from ui.v1.frm_localConfig import Ui_FrmMainConfig
 
 logger = logging.getLogger(__name__)
 
@@ -309,3 +310,103 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
     def getExperiment(self) -> ExperimentData:
         exp_d = ExperimentData(name=self.lineEditExperiment.text())
         return exp_d
+
+
+class DlgMainConfig(QDialog, Ui_FrmMainConfig):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        self._idx_selected_widget = 0
+        self.widgets = [WidgetCfgDevice(), WidgetCfgExperiment(), WidgetCfgObject(), WidgetCfgSchedule(),]
+        self.set_widgets()
+
+        self.listWidget.clicked.connect(self.setup_widget)
+
+    def setup_widget(self, index: QModelIndex):
+        model_idx = self.listWidget.selectedIndexes()[0]
+        idx = model_idx.row()
+        if idx != self._idx_selected_widget:
+            # удаление старого виджета
+            crt_widget = self.widgets[self._idx_selected_widget]
+            self.horizontalLayoutMainConfig.removeWidget(crt_widget)
+            crt_widget.hide()
+
+            # добавление нового виджета
+            self._idx_selected_widget = idx
+            new_widget = self.widgets[self._idx_selected_widget]
+            self.horizontalLayoutMainConfig.addWidget(self.widgets[self._idx_selected_widget])
+            new_widget.show()
+
+    def set_widgets(self):
+        for idx, widget in enumerate(self.widgets):
+            self.listWidget.addItem(widget.name)
+            if self._idx_selected_widget == idx:
+                self.horizontalLayoutMainConfig.addWidget(widget)
+
+
+
+class WidgetCfgDevice(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.name = "Устройства"
+        self.font = QFont("Arial", 12)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.label.setFont(self.font)
+
+        self.horizontalLayout.addWidget(self.label)
+        self.setLayout(self.horizontalLayout)
+
+
+class WidgetCfgExperiment(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "Эксперименты"
+        self.font = QFont("Arial", 12)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.label.setFont(self.font)
+
+        self.horizontalLayout.addWidget(self.label)
+        self.setLayout(self.horizontalLayout)
+
+class WidgetCfgSchedule(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "Расписания"
+        self.font = QFont("Arial", 12)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.label.setFont(self.font)
+
+        self.horizontalLayout.addWidget(self.label)
+        self.setLayout(self.horizontalLayout)
+
+
+class WidgetCfgObject(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "Объекты исследования"
+        self.font = QFont("Arial", 12)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.label.setFont(self.font)
+
+        self.horizontalLayout.addWidget(self.label)
+        self.setLayout(self.horizontalLayout)
+
+
+if __name__ == "__main__":
+    from PySide6.QtWidgets import QApplication
+    app = QApplication([])
+    window = DlgMainConfig()
+    # window.showMaximized()
+    window.show()
+    app.exec()

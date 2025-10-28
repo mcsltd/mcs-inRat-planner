@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_localConfigcGUxGK.ui'
+## Form generated from reading UI file 'frm_localConfiggdMqfT.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -15,56 +15,74 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QGridLayout, QLabel, QListView,
-    QListWidget, QListWidgetItem, QSizePolicy, QSpacerItem,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QFrame, QGridLayout, QHBoxLayout,
+    QListWidget, QListWidgetItem, QPushButton, QSizePolicy,
+    QSpacerItem, QVBoxLayout, QWidget)
 
-class Ui_FrmConfig(object):
-    def setupUi(self, FrmConfig):
-        if not FrmConfig.objectName():
-            FrmConfig.setObjectName(u"FrmConfig")
-        FrmConfig.resize(565, 426)
-        self.gridLayout = QGridLayout(FrmConfig)
+class Ui_FrmMainConfig(object):
+    def setupUi(self, FrmMainConfig):
+        if not FrmMainConfig.objectName():
+            FrmMainConfig.setObjectName(u"FrmMainConfig")
+        FrmMainConfig.resize(762, 534)
+        self.gridLayout = QGridLayout(FrmMainConfig)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.verticalLayout = QVBoxLayout()
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.labelItem = QLabel(FrmConfig)
-        self.labelItem.setObjectName(u"labelItem")
-        font = QFont()
-        font.setPointSize(11)
-        self.labelItem.setFont(font)
-        self.labelItem.setAlignment(Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignTop)
-
-        self.verticalLayout.addWidget(self.labelItem)
-
-
-        self.gridLayout.addLayout(self.verticalLayout, 0, 2, 1, 1)
-
-        self.listWidget = QListWidget(FrmConfig)
+        self.verticalLayoutConfig = QVBoxLayout()
+        self.verticalLayoutConfig.setObjectName(u"verticalLayoutConfig")
+        self.horizontalLayoutMainConfig = QHBoxLayout()
+        self.horizontalLayoutMainConfig.setObjectName(u"horizontalLayoutMainConfig")
+        self.listWidget = QListWidget(FrmMainConfig)
         self.listWidget.setObjectName(u"listWidget")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.listWidget.sizePolicy().hasHeightForWidth())
-        self.listWidget.setSizePolicy(sizePolicy)
-        self.listWidget.setMinimumSize(QSize(100, 0))
-        self.listWidget.setMaximumSize(QSize(200, 16777215))
-        self.listWidget.setFlow(QListView.Flow.TopToBottom)
+        self.listWidget.setMaximumSize(QSize(250, 16777215))
 
-        self.gridLayout.addWidget(self.listWidget, 0, 0, 1, 1)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout.addItem(self.horizontalSpacer, 0, 3, 1, 1)
+        self.horizontalLayoutMainConfig.addWidget(self.listWidget)
 
 
-        self.retranslateUi(FrmConfig)
+        self.verticalLayoutConfig.addLayout(self.horizontalLayoutMainConfig)
 
-        QMetaObject.connectSlotsByName(FrmConfig)
+        self.lineSeparate = QFrame(FrmMainConfig)
+        self.lineSeparate.setObjectName(u"lineSeparate")
+        self.lineSeparate.setFrameShape(QFrame.Shape.HLine)
+        self.lineSeparate.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.verticalLayoutConfig.addWidget(self.lineSeparate)
+
+        self.horizontalLayoutControlConfig = QHBoxLayout()
+        self.horizontalLayoutControlConfig.setObjectName(u"horizontalLayoutControlConfig")
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayoutControlConfig.addItem(self.horizontalSpacer_2)
+
+        self.pushButtonDefault = QPushButton(FrmMainConfig)
+        self.pushButtonDefault.setObjectName(u"pushButtonDefault")
+
+        self.horizontalLayoutControlConfig.addWidget(self.pushButtonDefault)
+
+        self.pushButtonOk = QPushButton(FrmMainConfig)
+        self.pushButtonOk.setObjectName(u"pushButtonOk")
+
+        self.horizontalLayoutControlConfig.addWidget(self.pushButtonOk)
+
+        self.pushButtonCancel = QPushButton(FrmMainConfig)
+        self.pushButtonCancel.setObjectName(u"pushButtonCancel")
+
+        self.horizontalLayoutControlConfig.addWidget(self.pushButtonCancel)
+
+
+        self.verticalLayoutConfig.addLayout(self.horizontalLayoutControlConfig)
+
+
+        self.gridLayout.addLayout(self.verticalLayoutConfig, 0, 0, 1, 1)
+
+
+        self.retranslateUi(FrmMainConfig)
+
+        QMetaObject.connectSlotsByName(FrmMainConfig)
     # setupUi
 
-    def retranslateUi(self, FrmConfig):
-        FrmConfig.setWindowTitle(QCoreApplication.translate("FrmConfig", u"\u041b\u043e\u043a\u0430\u043b\u044c\u043d\u044b\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
-        self.labelItem.setText(QCoreApplication.translate("FrmConfig", u"Item", None))
+    def retranslateUi(self, FrmMainConfig):
+        FrmMainConfig.setWindowTitle(QCoreApplication.translate("FrmMainConfig", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
+        self.pushButtonDefault.setText(QCoreApplication.translate("FrmMainConfig", u"\u041f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e", None))
+        self.pushButtonOk.setText(QCoreApplication.translate("FrmMainConfig", u"\u041e\u043a", None))
+        self.pushButtonCancel.setText(QCoreApplication.translate("FrmMainConfig", u"\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c", None))
     # retranslateUi
 
