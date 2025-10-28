@@ -5,6 +5,7 @@ from enum import Enum
 
 from bleak import BleakClient, BLEDevice
 
+from constants import ConnectionState
 from device.crypt import get_control_sum
 from device.emgsens.constants import Command
 from device.emgsens.decoder import Decoder
@@ -13,12 +14,6 @@ from device.emgsens.structures import Settings
 from config import BLE_KEY
 
 logger = logging.getLogger(__name__)
-
-class ConnectionState(Enum):
-    DISCONNECTED = "disconnected"
-    CONNECTING = "connecting"
-    CONNECTED = "connected"
-    DISCONNECTING = "disconnecting"
 
 
 class EmgSens:

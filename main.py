@@ -2,7 +2,6 @@ import datetime
 import logging
 
 from uuid import UUID
-
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
 
@@ -10,8 +9,9 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
 from apscheduler.schedulers.qt import QtScheduler
 
 from device.ble_manager import BleManager, RecordingTaskData
+
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, RecordStatus
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from monitor import SignalMonitor
@@ -26,7 +26,7 @@ from tools.modview import GenericTableWidget
 # database
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
-    update_record_by_id, get_path_by_record_id, restore, soft_delete_records
+    get_path_by_record_id, restore, soft_delete_records, get_all_record_time
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +61,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayoutSchedule.addWidget(self.tableModelSchedule)
 
         # соединение сигналов с функциями
+        self.ble_manager.signal_schedule_state.connect(self.handle_schedule_state)
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+
+        # ToDo: сделать приложение в реальном времени показывающее сигнал с устройства
+        self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
 
         # buttons
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
@@ -82,7 +86,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @connection
     def init_jobs(self, session):
-        """ Метод инициализирующий задачи по записи ЭКГ """
+        """ Метод инициализирующий планировщик и загружающий в него расписания записи ЭКГ """
         logger.info("Инициализация задач записи ЭКГ...")
 
         schedules: list[Schedule] = Schedule.get_all_schedules(session)
@@ -97,12 +101,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Планирование задачи записи сигнала ЭКГ по времени """
-        logger.debug(
-            f"Создано расписание: {str(schedule.id)};"
-            f" запланированное время старта: {start_time.replace(microsecond=0)};"
-            f" длительность записи: {schedule.sec_duration}"
-        )
-
         self.scheduler.add_job(
             self._create_record,
             args=(schedule, start_time),
@@ -111,10 +109,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             id=str(schedule.id),
             next_run_time=start_time,
         )
+        logger.info(
+            f"Создано расписание: {str(schedule.id)};"
+            f" запланированное время старта: {start_time.replace(microsecond=0)};"
+            f" длительность записи: {schedule.sec_duration}"
+        )
 
     def _create_record(self, schedule: ScheduleData, start_time: datetime.datetime) -> None:
         """
-        Запуск задачи на запись ЭКГ с устройства с заданной длительностью
+        Создание задачи на подключение и запись BleManager'у
         """
         logger.debug(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
 
@@ -129,13 +132,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
         )
 
+    def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState):
+        """ Обработчик сигнала (signal_schedule_state) состояния расписания определяемый BleManager """
+        if not self.tableModelSchedule.modify_value_by_id(row_id=schedule_id, column_name="Статус", value=status.value):
+            raise ValueError(f"Не удалось обновить статус для расписания с индексом: {schedule_id}")
+
     @connection
     def handle_record_result(self, record_data: RecordData, session):
-        """ Обработка результата записи сигнала """
+        """ Обработка  сигнала (signal_record_result) из BleManager c результатом записи сигнала """
         record_id = Record.from_dataclass(record_data).create(session)
         logger.debug(f"Добавлена запись в базу данных: {record_id}")
 
         # Todo: обновить информацию в таблице "Расписания" по schedule_id
+        self.update_content_table_schedule()
 
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
@@ -203,7 +212,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             status = "Ожидание"
             interval = self.convert_seconds_to_str(schedule.sec_interval)
             duration = self.convert_seconds_to_str(schedule.sec_duration)
-            all_records_time = 0
+            all_records_time = self.convert_seconds_to_str(get_all_record_time(schedule.id))
             all_records = get_count_records(schedule.id)
             error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
@@ -336,8 +345,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         monitor.load_data(path_to_file=path)
         monitor.exec()
 
+    def clicked_schedule(self):
+        """ Обработчик двойного нажатия на строку в таблице Schedule """
+        # ToDo: сделать приложение по отображению сигналов ЭКГ с устройства в реальном времени
+        data = self.tableModelSchedule.get_selected_data()
+        schedule_id = data[0]
+        print(f"{schedule_id=}")
 
     def configuration_clicked(self):
+        """ Активация окна настроек """
         dlg = DlgConfiguration()
         dlg.signal_restore.connect(self.update_content_table_history)
         dlg.signal_restore.connect(self.update_content_table_schedule)

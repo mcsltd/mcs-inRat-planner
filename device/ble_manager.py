@@ -3,16 +3,17 @@ import datetime
 import logging
 import threading
 import time
-import uuid
+from uuid import UUID
+from enum import Enum
 from threading import Thread
 from dataclasses import dataclass, field
+from typing import NewType
 
 from PySide6.QtCore import QObject, Signal
-from uuid import UUID
 
 from bleak import BLEDevice, BleakScanner
 
-from constants import RecordStatus
+from constants import RecordStatus, ScheduleState
 from device.emgsens import EmgSens
 from device.emgsens.constants import EventType, Channel, ScaleGyro, ScaleAccel, SamplingRate
 from device.emgsens.structures import Settings
@@ -22,15 +23,16 @@ from structure import DeviceData, RecordingTaskData, RecordData
 
 logger = logging.getLogger(__name__)
 
-SCAN_TIMEOUT = 0.1
+# константы ограничения времени
 CONNECTION_TIMEOUT = 5
+SCAN_TIMEOUT = 0.1
 
-MAX_COUNT_ATTEMPT_CONNECTION = 5
 
 class BleManager(QObject):
 
     # for main window
     signal_record_result = Signal(RecordData)
+    signal_schedule_state = Signal(UUID, object)
 
     # for devices
     signal_start_acquisition = Signal(UUID)
@@ -84,7 +86,6 @@ class BleManager(QObject):
         while self.is_running:
 
             await self._process_new_task()              # обработка новых задач записи
-            # await self._monitoring_connected_device() # мониторинг подключенных устройств
 
             await asyncio.sleep(0.1)
 
@@ -109,6 +110,8 @@ class BleManager(QObject):
         device_id = task.device.id
         device_name = task.device.ble_name
 
+        self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECTION)
+
         while self.is_running and device_id not in self._connected_devices:
             try:
                 logger.info(f"Попытка подключения к устройству {device_name}")
@@ -121,13 +124,15 @@ class BleManager(QObject):
 
                 emg_sens = EmgSens(ble_device)
                 if await emg_sens.connect(CONNECTION_TIMEOUT):
+                    self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECT)
+
                     logger.info(f"Успешное подключение к устройств {device_name}")
 
                     # добавляем новое подключенное устройство
                     self._connected_devices[device_id] = emg_sens
                     self._device_queues[device_id] = asyncio.Queue()
 
-                    self.signal_start_acquisition.emit(task)   # активация сигнала о начале записи
+                    self.signal_start_acquisition.emit(task)   # сигнал о начале записи
 
                     # создание задачи на получение данных с устройства
                     acquisition_task = asyncio.create_task(self._start_data_acquisition(emg_sens, task))
@@ -159,6 +164,7 @@ class BleManager(QObject):
         try:
             if await emg_sens.start_emg_acquisition(settings=base_settings, emg_queue=data_queue):
                 logger.info(f"Сбор данных запущен для устройства {task.device.ble_name}")
+                self.signal_schedule_state.emit(task.schedule_id, ScheduleState.ACQUISITION)
 
                 # обработка входящих данных
                 while self.is_running and emg_sens.is_connected and datetime.datetime.now() < task.finish_time:
@@ -183,6 +189,7 @@ class BleManager(QObject):
 
             logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {e}")
         finally:
+            self.signal_schedule_state.emit(task.schedule_id, ScheduleState.DISCONNECT)
             self.signal_stop_acquisition.emit(device_id)
             await self._cleanup_device(device_id)     # Очистка при завершении
 
@@ -220,6 +227,7 @@ class BleManager(QObject):
         """ Поиск устройств по имени """
         try:
             devices = await BleakScanner.discover(timeout=SCAN_TIMEOUT)
+
             for d in devices:
                 if d.name and device_name in d.name:
                     logger.info(f"Найдено устройство: {d.name} ({d.address})")

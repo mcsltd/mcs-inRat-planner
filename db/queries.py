@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, func
 from sqlalchemy.orm import class_mapper
 
 from constants import RecordStatus
@@ -73,17 +73,25 @@ def select_all_records(session) -> list[RecordData]:
     return records
 
 @connection
+def get_all_record_time(schedule_id, session) -> int:
+    stmt = select(func.sum(Record.sec_duration)).where(
+        Record.schedule_id == schedule_id, Record.status == RecordStatus.OK.value)
+    all_seconds_duration = session.execute(stmt).scalar()
+    if isinstance(all_seconds_duration, int):
+        return all_seconds_duration
+    return 0
+
+@connection
 def get_count_records(schedule_id, session):
-    stmt = select(Record).where(Record.schedule_id == schedule_id)
-    result = session.execute(stmt).scalars().all()
-    return len(result)
+    stmt = select(func.count()).where(Record.schedule_id == schedule_id)
+    cnt = session.execute(stmt).scalar()
+    return cnt
 
 @connection
 def get_count_error_records(schedule_id, session):
-    stmt = select(Record).where(Record.schedule_id == schedule_id and Record.status == RecordStatus.ERROR.value)
-    result = session.execute(stmt).scalars().all()
-    return len(result)
-
+    stmt = select(func.count()).where(Record.schedule_id == schedule_id, Record.status == RecordStatus.ERROR.value)
+    result = session.execute(stmt).scalar()
+    return result
 
 @connection
 def get_experiment_by_schedule_id(schedule_id, session):
