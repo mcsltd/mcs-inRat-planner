@@ -1,6 +1,6 @@
 from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QFont, Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QPushButton, QHBoxLayout
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QGroupBox, QSpinBox, QLabel
 
 from db.database import connection
 from db.models import Device, Experiment, Schedule, Object
@@ -15,7 +15,7 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
         self.setupUi(self)
 
         self._idx_selected_widget = 0
-        self.widgets = [WidgetCfgGeneral(), WidgetCfgDevice(), WidgetCfgExperiment(), WidgetCfgObject()]
+        self.widgets = [WidgetCfgDevice(), WidgetCfgExperiment(), WidgetCfgObject()]
         self.set_widgets()
 
         self.listWidget.clicked.connect(self.setup_widget)
@@ -79,30 +79,76 @@ class WidgetCfg(QWidget):
         return f"{seconds} с."
 
 
+# class WidgetCfgGeneral(WidgetCfg):
+#     """ Класс для общих настроек приложения """
+#
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.name = "Общее"
+#         self.setup_ui()
+#         self.delete_table()
+#
+#         self.labelCntDevice = QLabel("Максимальное количество подключаемых устройств:")
+#         self.verticalLayout.addWidget(self.labelCntDevice)
+#
+#     def delete_table(self):
+#         self.verticalLayout.removeWidget(self.table)
+#         for w in [self.btnUpdate, self.btnAdd, self.btnDelete]:
+#             self.horizontalLayoutControlTable.removeWidget(w)
+#             w.hide()
+#         self.table.hide()
+
+
 class WidgetCfgGeneral(WidgetCfg):
-    """ Класс для общих настроек приложения """
+    """Виджет настроек конфигурации BLE устройств"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "Общее"
+        self.name = "Конфигурация BLE"
         self.setup_ui()
-        self.delete_table()
+        self.setup_ble_settings()
 
-    def delete_table(self):
-        self.verticalLayout.removeWidget(self.table)
+    def setup_ble_settings(self):
+        """Настройка интерфейса для BLE настроек"""
 
-        for w in [self.btnUpdate, self.btnAdd, self.btnDelete]:
-            self.horizontalLayoutControlTable.removeWidget(w)
-            w.hide()
+        # Группа настроек подключения BLE
+        self.ble_connection_group = QGroupBox("Настройки подключения BLE устройств")
+        ble_connection_layout = QVBoxLayout(self.ble_connection_group)
 
-        self.table.hide()
+        # Настройка максимального количества подключений
+        connection_limit_layout = QHBoxLayout()
+        self.label_cnt_device = QLabel("Максимальное количество подключаемых устройств:")
+        connection_limit_layout.addWidget(self.label_cnt_device)
+
+        self.connection_spinbox = QSpinBox()
+        self.connection_spinbox.setRange(1, 4)
+        self.connection_spinbox.setValue(2)
+        self.connection_spinbox.setSuffix(" устройств")
+        self.connection_spinbox.setFixedWidth(120)
+        connection_limit_layout.addWidget(self.connection_spinbox)
+
+        connection_limit_layout.addStretch()
+        ble_connection_layout.addLayout(connection_limit_layout)
+
+        # Поясняющая надпись
+        info_label = QLabel("• Увеличение количества может повлиять на стабильность работы")
+        info_label.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
+        ble_connection_layout.addWidget(info_label)
+
+        self.verticalLayout.addWidget(self.ble_connection_group)
+
+        # Добавляем растягивающий элемент в конец
+        # self.verticalLayout.addStretch()
+
 
 class WidgetCfgDevice(WidgetCfg):
     """ Класс для настройки устройств """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "Устройства"
+        self.name = "BLE устройства"
         self.setup_ui()
         self.set_data_table()
+        self.setup_ble_settings()
 
     @connection
     def set_data_table(self, session):
@@ -114,6 +160,33 @@ class WidgetCfgDevice(WidgetCfg):
             data.append([idx + 1, d.ble_name])
 
         self.table.setData(data=data, description=columns)
+
+    def setup_ble_settings(self):
+        """Настройка интерфейса для BLE настроек"""
+        # Группа настроек подключения BLE
+        self.ble_connection_group = QGroupBox("Настройки подключения BLE устройств")
+        ble_connection_layout = QVBoxLayout(self.ble_connection_group)
+
+        # Настройка максимального количества подключений
+        connection_limit_layout = QHBoxLayout()
+        self.label_cnt_device = QLabel("Максимальное количество подключаемых устройств:")
+        connection_limit_layout.addWidget(self.label_cnt_device)
+
+        self.connection_spinbox = QSpinBox()
+        self.connection_spinbox.setRange(1, 4)
+        self.connection_spinbox.setValue(2)
+        self.connection_spinbox.setSuffix(" устройств")
+        self.connection_spinbox.setFixedWidth(120)
+        connection_limit_layout.addWidget(self.connection_spinbox)
+
+        connection_limit_layout.addStretch()
+        ble_connection_layout.addLayout(connection_limit_layout)
+
+        # Поясняющая надпись
+        info_label = QLabel("• Увеличение количества может повлиять на стабильность работы")
+        info_label.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
+        ble_connection_layout.addWidget(info_label)
+        self.verticalLayout.insertWidget(1, self.ble_connection_group)
 
 class WidgetCfgExperiment(WidgetCfg):
     """ Класс для настройки экспериментов """

@@ -20,13 +20,14 @@ from resources.v1.dlg_main_config import Ui_DlgMainConfig
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
-from widgets import DlgCreateSchedule
+from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     get_path_by_record_id, restore, soft_delete_records, get_all_record_time
+from ui.settings_dialog import DlgMainConfig
 
 logger = logging.getLogger(__name__)
 
@@ -354,9 +355,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         """ Активация окна настроек """
-        dlg = DlgConfiguration()
-        dlg.signal_restore.connect(self.update_content_table_history)
-        dlg.signal_restore.connect(self.update_content_table_schedule)
+        dlg = DlgMainConfig()
+        # dlg.signal_restore.connect(self.update_content_table_history)
+        # dlg.signal_restore.connect(self.update_content_table_schedule)
         ok = dlg.exec()
 
     def closeEvent(self, event, /):
@@ -370,23 +371,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #         data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
     #     return data
 
-class DlgConfiguration(QDialog, Ui_DlgMainConfig):
-
-    signal_restore = Signal()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setupUi(self)
-
-        self.pushButtonRecordRecovery.clicked.connect(self.restore)
-
-        self.pushButtonOk.clicked.connect(self.close)
-        self.pushButtonCancel.clicked.connect(self.close)
-
-    @connection
-    def restore(self, session):
-        restore(session)
-        self.signal_restore.emit()
+# class DlgConfiguration(QDialog, Ui_DlgMainConfig):
+#
+#     signal_restore = Signal()
+#
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.setupUi(self)
+#         self.pushButtonRecordRecovery.clicked.connect(self.restore)
+#         self.pushButtonOk.clicked.connect(self.close)
+#         self.pushButtonCancel.clicked.connect(self.close)
+#
+#     @connection
+#     def restore(self, session):
+#         restore(session)
+#         self.signal_restore.emit()
 
 
 if __name__ == "__main__":
