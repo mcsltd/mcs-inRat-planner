@@ -8,7 +8,7 @@ import numpy as np
 from typing import List, Optional
 import os
 
-from ui.v1.wdt_monitor import Ui_FormMonitor
+from resources.v1.wdt_monitor import Ui_FormMonitor
 
 
 class Display(PlotWidget):

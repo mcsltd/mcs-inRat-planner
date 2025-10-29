@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QDateTime, Signal, QDate, QTime
-from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
 from constants import Formats, Devices
@@ -13,8 +12,9 @@ from db.models import Experiment
 from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
-from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
-from ui.v1.dlg_input_experiment import Ui_DlgInputExperiment
+from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
+
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.has_unsaved_changes = True
             logger.debug("Detected unsaved change...")
 
-
     def closeEvent(self, event):
         logger.info("Close dialog window")
 
@@ -204,7 +203,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # ToDo: start_time < finish_time
         self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
         self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addDays(2).addSecs(60))
-
 
     def getSchedule(self) -> Optional[ScheduleData]:
         # experiment

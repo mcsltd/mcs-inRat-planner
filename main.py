@@ -16,17 +16,17 @@ from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
-from ui.v1.dlg_main_config import Ui_DlgMainConfig
 
 # ui
-from ui.v1.main_window import Ui_MainWindow
-from widgets import DlgCreateSchedule
+from resources.v1.main_window import Ui_MainWindow
+from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     get_path_by_record_id, restore, soft_delete_records, get_all_record_time
+from ui.settings_dialog import DlgMainConfig
 
 logger = logging.getLogger(__name__)
 
@@ -354,39 +354,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         """ Активация окна настроек """
-        dlg = DlgConfiguration()
-        dlg.signal_restore.connect(self.update_content_table_history)
-        dlg.signal_restore.connect(self.update_content_table_schedule)
+        dlg = DlgMainConfig()
         ok = dlg.exec()
 
     def closeEvent(self, event, /):
         self.ble_manager.stop()
 
-    # def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
-    #     model = table.model()
-    #     data: dict = {}
-    #     for idx_col in range(model.columnCount()):
-    #         key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
-    #         data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
-    #     return data
-
-class DlgConfiguration(QDialog, Ui_DlgMainConfig):
-
-    signal_restore = Signal()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setupUi(self)
-
-        self.pushButtonRecordRecovery.clicked.connect(self.restore)
-
-        self.pushButtonOk.clicked.connect(self.close)
-        self.pushButtonCancel.clicked.connect(self.close)
-
-    @connection
-    def restore(self, session):
-        restore(session)
-        self.signal_restore.emit()
 
 
 if __name__ == "__main__":
