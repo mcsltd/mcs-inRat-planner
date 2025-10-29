@@ -4,18 +4,19 @@ from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QDateTime, Signal, QDate, QTime, Qt, QModelIndex
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox, QWidget, QHBoxLayout, QLabel
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox, QWidget, QVBoxLayout, QLabel
 from PySide6.QtGui import QFont
 
 from constants import Formats, Devices
 from db.database import connection
-from db.models import Experiment
+from db.models import Experiment, Device, Schedule, Object
 from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+from tools.modview import GenericTableWidget
 
-from ui.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
-from ui.v1.dlg_input_experiment import Ui_DlgInputExperiment
-from ui.v1.frm_localConfig import Ui_FrmMainConfig
+from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
+from resources.v1.frm_localConfig import Ui_FrmMainConfig
 
 logger = logging.getLogger(__name__)
 
@@ -312,83 +313,3 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
         return exp_d
 
 
-class DlgMainConfig(QDialog, Ui_FrmMainConfig):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setupUi(self)
-
-        self._idx_selected_widget = 0
-        self.widgets = [WidgetCfgDevice(), WidgetCfgExperiment(), WidgetCfgObject(), WidgetCfgSchedule(),]
-        self.set_widgets()
-
-        self.listWidget.clicked.connect(self.setup_widget)
-
-    def setup_widget(self, index: QModelIndex):
-        model_idx = self.listWidget.selectedIndexes()[0]
-        idx = model_idx.row()
-        if idx != self._idx_selected_widget:
-            # удаление старого виджета
-            crt_widget = self.widgets[self._idx_selected_widget]
-            self.horizontalLayoutMainConfig.removeWidget(crt_widget)
-            crt_widget.hide()
-
-            # добавление нового виджета
-            self._idx_selected_widget = idx
-            new_widget = self.widgets[self._idx_selected_widget]
-            self.horizontalLayoutMainConfig.addWidget(self.widgets[self._idx_selected_widget])
-            new_widget.show()
-
-    def set_widgets(self):
-        for idx, widget in enumerate(self.widgets):
-            self.listWidget.addItem(widget.name)
-            if self._idx_selected_widget == idx:
-                self.horizontalLayoutMainConfig.addWidget(widget)
-
-
-class WidgetCfg(QWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Эксперименты"
-
-    def setup_ui(self):
-        self.font = QFont("Bold-Arial", 10)
-        self.horizontalLayout = QHBoxLayout()
-        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.label.setFont(self.font)
-        self.horizontalLayout.addWidget(self.label)
-        self.setLayout(self.horizontalLayout)
-
-
-class WidgetCfgDevice(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Устройства"
-        self.setup_ui()
-
-class WidgetCfgExperiment(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Эксперименты"
-        self.setup_ui()
-
-class WidgetCfgSchedule(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Расписания"
-        self.setup_ui()
-
-class WidgetCfgObject(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Объекты исследования"
-        self.setup_ui()
-
-
-if __name__ == "__main__":
-    from PySide6.QtWidgets import QApplication
-    app = QApplication([])
-    window = DlgMainConfig()
-    # window.showMaximized()
-    window.show()
-    app.exec()

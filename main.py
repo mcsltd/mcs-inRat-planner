@@ -16,10 +16,10 @@ from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
-from ui.v1.dlg_main_config import Ui_DlgMainConfig
+from resources.v1.dlg_main_config import Ui_DlgMainConfig
 
 # ui
-from ui.v1.main_window import Ui_MainWindow
+from resources.v1.main_window import Ui_MainWindow
 from widgets import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 
