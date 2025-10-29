@@ -16,7 +16,6 @@ from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
-from resources.v1.dlg_main_config import Ui_DlgMainConfig
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
@@ -356,36 +355,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def configuration_clicked(self):
         """ Активация окна настроек """
         dlg = DlgMainConfig()
-        # dlg.signal_restore.connect(self.update_content_table_history)
-        # dlg.signal_restore.connect(self.update_content_table_schedule)
         ok = dlg.exec()
 
     def closeEvent(self, event, /):
         self.ble_manager.stop()
 
-    # def _get_row_as_dict(self, table: QTableView, index: QModelIndex) -> dict:
-    #     model = table.model()
-    #     data: dict = {}
-    #     for idx_col in range(model.columnCount()):
-    #         key = model.headerData(idx_col, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
-    #         data[key] = model.index(index.row(), idx_col).data(Qt.ItemDataRole.DisplayRole)
-    #     return data
-
-# class DlgConfiguration(QDialog, Ui_DlgMainConfig):
-#
-#     signal_restore = Signal()
-#
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.setupUi(self)
-#         self.pushButtonRecordRecovery.clicked.connect(self.restore)
-#         self.pushButtonOk.clicked.connect(self.close)
-#         self.pushButtonCancel.clicked.connect(self.close)
-#
-#     @connection
-#     def restore(self, session):
-#         restore(session)
-#         self.signal_restore.emit()
 
 
 if __name__ == "__main__":
