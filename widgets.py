@@ -346,61 +346,43 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
                 self.horizontalLayoutMainConfig.addWidget(widget)
 
 
-
-class WidgetCfgDevice(QWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.name = "Устройства"
-        self.font = QFont("Arial", 12)
-
-        self.horizontalLayout = QHBoxLayout()
-        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.label.setFont(self.font)
-
-        self.horizontalLayout.addWidget(self.label)
-        self.setLayout(self.horizontalLayout)
-
-
-class WidgetCfgExperiment(QWidget):
+class WidgetCfg(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "Эксперименты"
-        self.font = QFont("Arial", 12)
 
+    def setup_ui(self):
+        self.font = QFont("Bold-Arial", 10)
         self.horizontalLayout = QHBoxLayout()
         self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.label.setFont(self.font)
-
         self.horizontalLayout.addWidget(self.label)
         self.setLayout(self.horizontalLayout)
 
-class WidgetCfgSchedule(QWidget):
+
+class WidgetCfgDevice(WidgetCfg):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "Устройства"
+        self.setup_ui()
+
+class WidgetCfgExperiment(WidgetCfg):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "Эксперименты"
+        self.setup_ui()
+
+class WidgetCfgSchedule(WidgetCfg):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "Расписания"
-        self.font = QFont("Arial", 12)
+        self.setup_ui()
 
-        self.horizontalLayout = QHBoxLayout()
-        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.label.setFont(self.font)
-
-        self.horizontalLayout.addWidget(self.label)
-        self.setLayout(self.horizontalLayout)
-
-
-class WidgetCfgObject(QWidget):
+class WidgetCfgObject(WidgetCfg):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "Объекты исследования"
-        self.font = QFont("Arial", 12)
-
-        self.horizontalLayout = QHBoxLayout()
-        self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.label.setFont(self.font)
-
-        self.horizontalLayout.addWidget(self.label)
-        self.setLayout(self.horizontalLayout)
+        self.setup_ui()
 
 
 if __name__ == "__main__":
