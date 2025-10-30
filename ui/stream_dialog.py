@@ -64,6 +64,8 @@ class PlotSignal(PlotWidget):
         self.ecg = np.array([])
         self.clear()
 
+
+
 class BLESignalViewer(QDialog, Ui_FormMonitor):
 
     def __init__(self, device_name, device_id, fs, *args, **kwargs):
@@ -74,6 +76,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self.device_name = device_name
         self._device_id: UUID | None = device_id
         self.fs = fs
+        self.mock_time = None
 
         self.plot = PlotSignal(self)
         self.verticalLayoutMonitor.addWidget(self.plot)
@@ -88,8 +91,10 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
             logger.debug("Идентификатор устройства не соответствует установленному")
             return
 
-        time, ecg = None, None
+        if self.mock_time is None:
+            self.mock_time = time.time()
 
+        time_arr, ecg = None, None
         if "emg" in data:
             ecg = np.array(data["emg"])
         elif "ecg" in data:
@@ -98,11 +103,11 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
             raise ValueError("No ECG recording")
 
         if "timestamp" in data:
-            time = np.linspace(data["timestamp"], data["timestamp"] + len(ecg) / self.fs, len(ecg))
+            time_arr = np.linspace(data["timestamp"], data["timestamp"] + len(ecg) / self.fs, len(ecg)) - self.mock_time
         else:
             raise ValueError("No time recording")
 
-        self.plot.set_data(time, ecg)
+        self.plot.set_data(time_arr, ecg)
 
 class DeviceMockup(QWidget):
     signal_data_received = Signal(UUID, dict)
