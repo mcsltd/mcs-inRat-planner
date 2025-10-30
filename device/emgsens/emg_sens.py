@@ -140,9 +140,10 @@ class EmgSens:
 
         async def emg_handler(_, raw_data: bytearray):
             try:
+                sample_timestamp = time.time()
                 counter, emg = decoder.decode_emg(raw_data)
                 # logger.debug(f"Device: {self.name}; get emg - counter: {counter}")
-                await emg_queue.put({"counter": counter, "emg": emg, "timestamp": time.time()})
+                await emg_queue.put({"counter": counter, "emg": emg, "timestamp": sample_timestamp})
             except Exception as exp:
                 logger.error(f"Error processing EMG data: {exp}")
 

@@ -235,3 +235,13 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         """Обработка закрытия окна"""
         self.clear_display()
         event.accept()
+
+
+if __name__ == "__main__":
+
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication([])
+    window = SignalMonitor()
+    window.show()
+    app.exec()
