@@ -27,6 +27,7 @@ from db.queries import get_count_records, get_count_error_records, \
     get_path_by_record_id, soft_delete_records, get_all_record_time
 from ui.settings_dialog import DlgMainConfig
 from ui.monitor_dialog import SignalMonitor
+from ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 
@@ -340,16 +341,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         monitor.load_data(path_to_file=path)
         monitor.exec()
 
-    def clicked_schedule(self):
+    @connection
+    def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
-        # ToDo: сделать приложение по отображению сигналов ЭКГ с устройства в реальном времени
-        data = self.tableModelSchedule.get_selected_data()
-        schedule_id = data[0]
-        print(f"{schedule_id=}")
+        # ToDo: обработка случаев: 1) произошел конец записи; 2) устройство ещё не записывает; 3) устройство записало сигнал; 4) возможность получения сигналов с неск. устр.
 
-        ...
-        self.ble_manager.signal_data_received.connect(dlg.accept_data)
-        ...
+        data = self.tableModelSchedule.get_selected_data()
+
+        # получение параметров запущенного устройства
+        schedule_data = Schedule.find([Schedule.id == data[0]], session).to_dataclass(session)
+        device_id = schedule_data.device.id
+        device_name = schedule_data.device.ble_name
+
+        dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
+        self.ble_manager.signal_data_received.connect(dlg.accept_signal)
+        dlg.exec()
 
     def configuration_clicked(self):
         """ Активация окна настроек """

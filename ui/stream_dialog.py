@@ -27,7 +27,7 @@ class PlotSignal(PlotWidget):
 
         self.time = np.array([])
         self.ecg = np.array([])
-        self.plot_signal = self.plot(self.time, self.ecg)
+        self.plot_signal = self.plot(self.time, self.ecg, pen=mkPen("b"))
 
         self.setLabel("left", "V (мкВ)", pen=mkPen(color='k'), font=font)
         self.setLabel("bottom", "Время (с)", pen=mkPen(color='k'), font=font)
@@ -69,6 +69,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
     def __init__(self, device_name, device_id, fs, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        self.setWindowTitle(f"Просмотр сигнала с {device_name}")
 
         self.device_name = device_name
         self._device_id: UUID | None = device_id
@@ -76,7 +77,6 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
 
         self.plot = PlotSignal(self)
         self.verticalLayoutMonitor.addWidget(self.plot)
-
 
     def accept_signal(self, device_id: UUID, data: dict):
         """ Принять данные от устройства с device_id """
