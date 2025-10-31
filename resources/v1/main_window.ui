@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>823</width>
-    <height>592</height>
+    <width>819</width>
+    <height>584</height>
    </rect>
   </property>
   <property name="font">
@@ -159,19 +159,26 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>823</width>
+     <width>819</width>
      <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="file">
     <property name="title">
-     <string>Меню</string>
+     <string>Файл</string>
     </property>
     <addaction name="actionSettings"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
-   <addaction name="menu"/>
+   <widget class="QMenu" name="help">
+    <property name="title">
+     <string>Помощь</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="file"/>
+   <addaction name="help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionExit">
@@ -182,6 +189,11 @@
   <action name="actionSettings">
    <property name="text">
     <string>Настройки</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>О программе...</string>
    </property>
   </action>
  </widget>

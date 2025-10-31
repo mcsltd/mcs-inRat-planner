@@ -2,19 +2,16 @@ import datetime
 import logging
 
 from uuid import UUID
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
-
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
-from monitor import SignalMonitor
 from structure import ScheduleData, RecordData
 
 # ui
@@ -25,8 +22,10 @@ from tools.modview import GenericTableWidget
 # database
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
-    get_path_by_record_id, restore, soft_delete_records, get_all_record_time
+    get_path_by_record_id, soft_delete_records, get_all_record_time
 from ui.settings_dialog import DlgMainConfig
+from ui.monitor_dialog import SignalMonitor
+from ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +65,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
-
-        # ToDo: сделать приложение в реальном времени показывающее сигнал с устройства
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
 
         # buttons
@@ -86,10 +83,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @connection
     def init_jobs(self, session):
-        """ Метод инициализирующий планировщик и загружающий в него расписания записи ЭКГ """
+        """ Создать задачи записи ЭКГ при старте приложения """
         logger.info("Инициализация задач записи ЭКГ...")
 
         schedules: list[Schedule] = Schedule.get_all_schedules(session)
+        cnt_job = 0
         for s in schedules:
             job = s.to_dataclass(session)
 
@@ -98,9 +96,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
 
             self.create_job(job, start_time=job.datetime_start)
+            cnt_job += 1
+
+        logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
+
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
-        """ Планирование задачи записи сигнала ЭКГ по времени """
+        """ Установка задачи в планировщик """
         self.scheduler.add_job(
             self._create_record,
             args=(schedule, start_time),
@@ -116,10 +118,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
 
     def _create_record(self, schedule: ScheduleData, start_time: datetime.datetime) -> None:
-        """
-        Создание задачи на подключение и запись BleManager'у
-        """
-        logger.debug(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
+        """ Добавление задачи по съёму ЭКГ в BleManager """
+        logger.info(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
 
         self.ble_manager.add_task(
             task=RecordingTaskData(
@@ -185,14 +185,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.update_content_table_schedule()
             logger.info("Расписание было добавлено в базу данных и таблицу")
 
-    @classmethod
-    def convert_seconds_to_str(cls, seconds) -> str | None:
-        if seconds / 3600 >= 1:
-            return f"{seconds // 3600} ч."
-        if seconds / 60 >= 1:
-            return f"{seconds // 60} мин."
-        return f"{seconds} с."
-
     @connection
     def update_content_table_schedule(self, session):
         logger.info("Обновление всех данных в таблице \"Расписание\"")
@@ -230,9 +222,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         table_data = []
         records: list[Record] = Record.fetch_all(session)
         for idx, rec in enumerate(records):
-
             rec = rec.to_dataclass()
-
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
@@ -345,12 +335,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         monitor.load_data(path_to_file=path)
         monitor.exec()
 
-    def clicked_schedule(self):
+    @connection
+    def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
-        # ToDo: сделать приложение по отображению сигналов ЭКГ с устройства в реальном времени
+        # ToDo: обработка случаев: 1) произошел конец записи; 2) устройство ещё не записывает; 3) устройство записало сигнал; 4) возможность получения сигналов с неск. устр.
         data = self.tableModelSchedule.get_selected_data()
-        schedule_id = data[0]
-        print(f"{schedule_id=}")
+
+        # получение параметров запущенного устройства
+        schedule_data = Schedule.find([Schedule.id == data[0]], session).to_dataclass(session)
+        device_id = schedule_data.device.id
+        device_name = schedule_data.device.ble_name
+
+        dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
+        self.ble_manager.signal_data_received.connect(dlg.accept_signal)
+        dlg.exec()
 
     def configuration_clicked(self):
         """ Активация окна настроек """
@@ -358,8 +356,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         ok = dlg.exec()
 
     def closeEvent(self, event, /):
+        """ Обработка закрытия приложения """
         self.ble_manager.stop()
 
+    @classmethod
+    def convert_seconds_to_str(cls, seconds: int) -> str | None:
+        if not isinstance(seconds, int):
+            raise ValueError("Seconds is not int")
+
+        if seconds / 3600 >= 1:
+            return f"{seconds // 3600} ч."
+        if seconds / 60 >= 1:
+            return f"{seconds // 60} мин."
+        return f"{seconds} с."
 
 
 if __name__ == "__main__":
