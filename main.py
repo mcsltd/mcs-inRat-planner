@@ -6,14 +6,12 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QDialog
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
-
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
-from ui.monitor_dialog import SignalMonitor
 from structure import ScheduleData, RecordData
 
 # ui
@@ -67,8 +65,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # tables
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
-
-        # ToDo: сделать приложение в реальном времени показывающее сигнал с устройства
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
 
         # buttons
@@ -226,9 +222,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         table_data = []
         records: list[Record] = Record.fetch_all(session)
         for idx, rec in enumerate(records):
-
             rec = rec.to_dataclass()
-
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
@@ -345,7 +339,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
         # ToDo: обработка случаев: 1) произошел конец записи; 2) устройство ещё не записывает; 3) устройство записало сигнал; 4) возможность получения сигналов с неск. устр.
-
         data = self.tableModelSchedule.get_selected_data()
 
         # получение параметров запущенного устройства

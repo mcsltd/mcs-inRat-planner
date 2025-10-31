@@ -6,11 +6,10 @@ import numpy as np
 import logging
 from uuid import UUID
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QWidget
 from pyqtgraph import PlotWidget, mkPen
-from pyqtgraph.multiprocess import CanceledError
 
 from resources.v1.wdt_monitor import Ui_FormMonitor
 
@@ -72,6 +71,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle(f"Просмотр сигнала с {device_name}")
+        self.setWindowModality(Qt.WindowModality.NonModal)
 
         self.device_name = device_name
         self._device_id: UUID | None = device_id
@@ -139,7 +139,7 @@ class DeviceMockup(QWidget):
                 data = {"timestamp": timestamp, "emg": ecg_array.tolist()}
                 self.signal_data_received.emit(self._id, data)
                 time.sleep(1 / self.fs * self.sample_size)
-        except CanceledError:
+        except KeyboardInterrupt:
             return
 
 
