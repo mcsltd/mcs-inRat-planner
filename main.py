@@ -223,13 +223,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Сортировка строк в таблице История по идентификатору расписания """
         schedule_id = None
         schedule_row = self.tableModelSchedule.get_selected_data()
+
         if isinstance(schedule_row, list):
             schedule_id = schedule_row[0]
+
         if isinstance(schedule_id, str):
             try:
                 schedule_id = uuid.UUID(schedule_id)
             except Exception as exc:
-                logger.error(f"Невозможно преобразовать {schedule_id=} в тип UUID")
+                logger.error(f"Не удалось преобразовать {schedule_id=} в тип UUID")
 
         if schedule_id is not None:
             logger.debug(f"Данные в таблице \"История\" отсортированы по идентификатору {schedule_id}")
@@ -243,7 +245,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         table_data = []
         records: list[Record] = Record.fetch_all(session)
-        for idx, rec in enumerate(records):
+        idx = 1
+        for rec in records:
 
             rec = rec.to_dataclass()
             start_time = rec.datetime_start
@@ -253,11 +256,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             file_format = rec.file_format
 
             if schedule_id is None or schedule_id == rec.schedule_id:
-                table_data.append([rec.id, idx + 1, start_time, duration, experiment, obj, file_format,])
+                table_data.append([rec.id, idx, start_time, duration, experiment, obj, file_format,])
+                idx += 1
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 
-        # update label Schedule
+        # update label
+        if schedule_id is not None:
+            schedule = Schedule.find([schedule_id == Schedule.id], session).to_dataclass(session)
+            # update label Schedule
+            self.labelHistory.setText(f"Записей с {schedule.device.ble_name} (всего: {len(table_data)})")
+            return
+
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
     @connection
