@@ -98,6 +98,7 @@ class GenericTableWidget(QTableView):
             }
         """)
 
+
     def get_selected_index(self) -> None | list[QModelIndex]:
         """ Получение выбранных индексов """
         indexes = self.selectedIndexes()

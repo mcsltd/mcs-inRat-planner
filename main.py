@@ -1,11 +1,14 @@
 import datetime
 import logging
+import uuid
 
 from uuid import UUID
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
+from sqlalchemy.orm import Session
+
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
@@ -64,8 +67,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
 
         # tables
-        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+        self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
+
+        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
 
         # buttons
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
@@ -99,7 +104,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             cnt_job += 1
 
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
-
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
@@ -215,20 +219,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
+    def sort_records_by_schedule_id(self):
+        """ Сортировка строк в таблице История по идентификатору расписания """
+        schedule_id = None
+        schedule_row = self.tableModelSchedule.get_selected_data()
+        if isinstance(schedule_row, list):
+            schedule_id = schedule_row[0]
+        if isinstance(schedule_id, str):
+            try:
+                schedule_id = uuid.UUID(schedule_id)
+            except Exception as exc:
+                logger.error(f"Невозможно преобразовать {schedule_id=} в тип UUID")
+
+        if schedule_id is not None:
+            logger.debug(f"Данные в таблице \"История\" отсортированы по идентификатору {schedule_id}")
+
+        self.update_content_table_history(schedule_id)
+
     @connection
-    def update_content_table_history(self, session) -> None:
+    def update_content_table_history(self, schedule_id: uuid.UUID | None = None, session: Session | None=None) -> None:
+        """ Обновить данные в таблице Записей """
         logger.info("Обновление всех данных в таблице \"Записи\"")
 
         table_data = []
         records: list[Record] = Record.fetch_all(session)
         for idx, rec in enumerate(records):
+
             rec = rec.to_dataclass()
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
             obj = get_object_by_schedule_id(rec.schedule_id)
             file_format = rec.file_format
-            table_data.append([rec.id, idx + 1, start_time, duration, experiment, obj, file_format,])
+
+            if schedule_id is None or schedule_id == rec.schedule_id:
+                table_data.append([rec.id, idx + 1, start_time, duration, experiment, obj, file_format,])
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 

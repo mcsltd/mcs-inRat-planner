@@ -1,6 +1,7 @@
 from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QFont, Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QGroupBox, QSpinBox, QLabel
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
+    QSpacerItem, QSizePolicy
 
 from db.database import connection
 from db.models import Device, Experiment, Schedule, Object
@@ -15,7 +16,11 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
         self.setupUi(self)
 
         self._idx_selected_widget = 0
-        self.widgets = [WidgetCfgDevice(), WidgetCfgExperiment(), WidgetCfgObject()]
+        self.widgets = [
+            WidgetCfgDevice(),
+            # WidgetCfgExperiment(),
+            # WidgetCfgObject()
+        ]
         self.set_widgets()
 
         self.listWidget.clicked.connect(self.setup_widget)
@@ -57,16 +62,16 @@ class WidgetCfg(QWidget):
         self.label = QLabel(self.name, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.label.setFont(self.font)
 
-        self.table = GenericTableWidget()
-        self.btnAdd = QPushButton("Добавить")
-        self.horizontalLayoutControlTable.addWidget(self.btnAdd)
-        self.btnUpdate = QPushButton("Изменить")
-        self.horizontalLayoutControlTable.addWidget(self.btnUpdate)
-        self.btnDelete = QPushButton("Удалить")
-        self.horizontalLayoutControlTable.addWidget(self.btnDelete)
+        # self.table = GenericTableWidget()
+        # self.btnAdd = QPushButton("Добавить")
+        # self.horizontalLayoutControlTable.addWidget(self.btnAdd)
+        # self.btnUpdate = QPushButton("Изменить")
+        # self.horizontalLayoutControlTable.addWidget(self.btnUpdate)
+        # self.btnDelete = QPushButton("Удалить")
+        # self.horizontalLayoutControlTable.addWidget(self.btnDelete)
 
         self.verticalLayout.addWidget(self.label)
-        self.verticalLayout.addWidget(self.table)
+        # self.verticalLayout.addWidget(self.table)
         self.verticalLayout.addLayout(self.horizontalLayoutControlTable)
         self.setLayout(self.verticalLayout)
 
@@ -77,26 +82,6 @@ class WidgetCfg(QWidget):
         if seconds / 60 >= 1:
             return f"{seconds // 60} мин."
         return f"{seconds} с."
-
-
-# class WidgetCfgGeneral(WidgetCfg):
-#     """ Класс для общих настроек приложения """
-#
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.name = "Общее"
-#         self.setup_ui()
-#         self.delete_table()
-#
-#         self.labelCntDevice = QLabel("Максимальное количество подключаемых устройств:")
-#         self.verticalLayout.addWidget(self.labelCntDevice)
-#
-#     def delete_table(self):
-#         self.verticalLayout.removeWidget(self.table)
-#         for w in [self.btnUpdate, self.btnAdd, self.btnDelete]:
-#             self.horizontalLayoutControlTable.removeWidget(w)
-#             w.hide()
-#         self.table.hide()
 
 
 class WidgetCfgGeneral(WidgetCfg):
@@ -145,7 +130,7 @@ class WidgetCfgDevice(WidgetCfg):
     """ Класс для настройки устройств """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "BLE устройства"
+        self.name = "Устройства"
         self.setup_ui()
         self.set_data_table()
         self.setup_ble_settings()
@@ -159,7 +144,7 @@ class WidgetCfgDevice(WidgetCfg):
             d = d.to_dataclass()
             data.append([idx + 1, d.ble_name])
 
-        self.table.setData(data=data, description=columns)
+        # self.table.setData(data=data, description=columns)
 
     def setup_ble_settings(self):
         """Настройка интерфейса для BLE настроек"""
@@ -179,6 +164,8 @@ class WidgetCfgDevice(WidgetCfg):
         self.connection_spinbox.setFixedWidth(120)
         connection_limit_layout.addWidget(self.connection_spinbox)
 
+        self.v_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
         connection_limit_layout.addStretch()
         ble_connection_layout.addLayout(connection_limit_layout)
 
@@ -186,7 +173,9 @@ class WidgetCfgDevice(WidgetCfg):
         info_label = QLabel("• Увеличение количества может повлиять на стабильность работы")
         info_label.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
         ble_connection_layout.addWidget(info_label)
+
         self.verticalLayout.insertWidget(1, self.ble_connection_group)
+        self.verticalLayout.insertItem(2, self.v_spacer)
 
 class WidgetCfgExperiment(WidgetCfg):
     """ Класс для настройки экспериментов """
@@ -204,7 +193,7 @@ class WidgetCfgExperiment(WidgetCfg):
         for idx, exp in enumerate(experiments):
             exp = exp.to_dataclass()
             data.append([idx + 1, exp.name])
-        self.table.setData(data=data, description=columns)
+        # self.table.setData(data=data, description=columns)
 
 class WidgetCfgSchedule(WidgetCfg):
     """ Класс для настройки расписаний """
@@ -228,25 +217,25 @@ class WidgetCfgSchedule(WidgetCfg):
                          self.convert_seconds_to_str(sch.sec_interval),
                          self.convert_seconds_to_str(sch.sec_duration)]
             )
-        self.table.setData(data=data, description=columns)
+        # self.table.setData(data=data, description=columns)
 
-class WidgetCfgObject(WidgetCfg):
-    """ Класс для настройки объектов исследования """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Объекты исследования"
-        self.setup_ui()
-        self.set_data_table()
-
-    @connection
-    def set_data_table(self, session):
-        data = []
-        columns = ["№", "Название"]
-        objs = Object.fetch_all(session)
-        for idx, obj in enumerate(objs):
-            obj = obj.to_dataclass()
-            data.append([idx + 1, obj.name])
-        self.table.setData(data=data, description=columns)
+# class WidgetCfgObject(WidgetCfg):
+#     """ Класс для настройки объектов исследования """
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.name = "Объекты"
+#         self.setup_ui()
+#         self.set_data_table()
+#
+#     @connection
+#     def set_data_table(self, session):
+#         data = []
+#         columns = ["№", "Название"]
+#         objs = Object.fetch_all(session)
+#         for idx, obj in enumerate(objs):
+#             obj = obj.to_dataclass()
+#             data.append([idx + 1, obj.name])
+#         # self.table.setData(data=data, description=columns)
 
 
 
