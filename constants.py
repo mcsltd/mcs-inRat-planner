@@ -56,7 +56,7 @@ class Formats(Enum):
 
 
 class Devices(Enum):
-    INRAT = {"InRat": "InRat-"}
+    # INRAT = {"InRat": "InRat-"}
     EMGSENS = {"EMGsens": "EMG-SENS-"}
 
 class RecordStatus(Enum):

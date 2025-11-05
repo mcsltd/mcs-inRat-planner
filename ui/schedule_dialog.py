@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QDateTime, Signal, QDate, QTime
+from PySide6.QtGui import QIcon, QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
 
 from constants import Formats, Devices
@@ -12,8 +13,9 @@ from db.models import Experiment
 from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
-from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from resources.v1.dlg_input_schedule__new import Ui_DlgCreateNewSchedule
 from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
+PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 
 logger = logging.getLogger(__name__)
@@ -26,12 +28,18 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     def __init__(self, schedule: Optional[ScheduleData | set] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         self.default_schedule: ScheduleData = schedule
         self.has_unsaved_changes = False
 
         if schedule is not None:
             self.setWindowTitle("Изменение расписания")
+
+        # настройка поля ввода серийного номера
+        validator = QIntValidator(0, 9999, self)
+        self.LineEditSnDevice.setMaxLength(4)
+        self.LineEditSnDevice.setValidator(validator)
 
         # setup datetime edit
         self.dateTimeEditStartExperiment.setCalendarPopup(True)
@@ -46,17 +54,15 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
         self.fill_combobox(self.comboBoxFormat, Formats)
 
-        self.comboBoxDuration.setPlaceholderText("[mm:ss]")
-        self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
+        # self.comboBoxDuration.setPlaceholderText("[mm:ss]")
+        # self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
+        self.comboBoxDuration.addItems(
+            ["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
 
-        self.comboBoxInterval.setPlaceholderText("[hh:mm]")
+        # self.comboBoxInterval.setPlaceholderText("[hh:mm]")
         self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
 
         # rename buttons
-        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).setText("Ок")
-        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).setText("Отменить")
-        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).setText("По умолчанию")
-
         self.setDefaults()
 
         # monitoring the has_unsaved_change flag
@@ -65,10 +71,33 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
 
         # соединение кнопок с методами
-        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.accept)
-        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
-        self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
+        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect()
+        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
+        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
+
+        self.pushButtonByDefault.clicked.connect(self.setDefaults)
+        self.pushButtonOk.clicked.connect(self.on_ok_clicked)
+        self.pushButtonCancel.clicked.connect(self.closeEvent)
+
         self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
+
+    def on_ok_clicked(self):
+        """ Обработчик нажатия кнопки Ok """
+        if not self.validate_input():
+            pass
+
+        self.close()
+
+    def validate_input(self) -> bool:
+        """ Проверка заполнения обязательных полей """
+
+        # проверка данных эксперимента
+
+        # проверка данных объекта
+
+        # проверка серийного номера
+
+        return True
 
     def _upload(self, schedule: ScheduleData):
         """ Загрузка данных расписания """
@@ -79,7 +108,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.LineEditObject.setText(schedule.object.name)
 
         # model
-        models = {"EMG-SENS-": "EMGsens", "InRat-": "InRat"}
+        models = {"EMG-SENS-": "EMGsens"}
         self.set_combobox_value(self.comboBoxModelDevice, models[schedule.device.model])
 
         # serial number
@@ -103,7 +132,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # param records
         # record duration
-        duration = self.convert_seconds_to_str_by_format(seconds=schedule.sec_duration, time_format="[mm:ss]")
+        # duration = self.convert_seconds_to_str_by_format(seconds=schedule.sec_duration, time_format="[mm:ss]")
+        duration = self.convert_seconds_with_identifier(seconds=schedule.sec_duration)
         self.set_combobox_value(self.comboBoxDuration, duration)
 
         # sampling rate
@@ -179,10 +209,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # set index
         self.comboBoxExperiment.setCurrentIndex(-1)
         self.comboBoxFormat.setCurrentIndex(1)
-        self.comboBoxModelDevice.setCurrentIndex(1)
+        self.comboBoxModelDevice.setCurrentIndex(0) # EMGsens
         self.comboBoxSamplingRate.setCurrentIndex(1)
-        self.comboBoxDuration.setCurrentIndex(-1)
-        self.comboBoxInterval.setCurrentIndex(-1)
+        self.comboBoxDuration.setCurrentIndex(0)
+        self.comboBoxInterval.setCurrentIndex(0)
 
         # ToDo: start_time < finish_time
         self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
@@ -224,7 +254,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
         finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
         sec_interval = self.convert_to_seconds_by_last_word(self.comboBoxInterval.currentText())
-        sec_duration = self.convert_to_seconds_by_format(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
+        # sec_duration = self.convert_to_seconds_by_format(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
+        sec_duration = self.convert_to_seconds_by_last_word(self.comboBoxDuration.currentText())
+
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
         sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
@@ -288,7 +320,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def convert_seconds_with_identifier(self, seconds: int) -> str | None:
         minutes = seconds // 60
-
         if minutes < 60:
             # Для минут кратных 10
             if minutes % 10 == 0:
@@ -296,6 +327,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             # Для 30 минут
             elif minutes == 30:
                 return "30 минут"
+            elif 2 <= minutes <= 4:
+                return f"{minutes} минуты"
+            elif minutes == 1:
+                return f"1 минута"
             else:
                 # Округляем до ближайшего кратного 10
                 rounded_minutes = round(minutes / 10) * 10
@@ -303,14 +338,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         else:
             # Преобразуем в часы
             hours = minutes // 60
-
             if hours == 1:
                 return "1 час"
             elif 2 <= hours <= 4:
                 return f"{hours} часа"
             else:
                 return f"{hours} часов"
-
 
     @classmethod
     def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
@@ -344,6 +377,8 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
+
 
     def getExperiment(self) -> ExperimentData:
         exp_d = ExperimentData(name=self.lineEditExperiment.text())

@@ -86,8 +86,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonUpdateSchedule.setDisabled(False)
 
         # загрузить в таблицы данные
-        self.update_content_table_history()
         self.update_content_table_schedule()
+        self.update_content_table_history()
 
     @connection
     def init_jobs(self, session):
