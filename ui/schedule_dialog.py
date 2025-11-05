@@ -50,9 +50,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
 
         self.comboBoxInterval.setPlaceholderText("[hh:mm]")
-
-        # intervals = ["10 минут", "20 минут", "30 минут"]
-        self.comboBoxInterval.addItems(["01:00", "02:00", "03:00"])
+        self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
 
         # rename buttons
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).setText("Ок")
@@ -100,12 +98,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
         )
         # interval
-        interval = self.convert_seconds_to_combobox_data(seconds=schedule.sec_interval, time_format="[hh:mm]")
+        interval = self.convert_seconds_with_identifier(seconds=schedule.sec_interval)
         self.set_combobox_value(self.comboBoxInterval, interval)
 
         # param records
         # record duration
-        duration = self.convert_seconds_to_combobox_data(seconds=schedule.sec_duration, time_format="[mm:ss]")
+        duration = self.convert_seconds_to_str_by_format(seconds=schedule.sec_duration, time_format="[mm:ss]")
         self.set_combobox_value(self.comboBoxDuration, duration)
 
         # sampling rate
@@ -162,22 +160,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         if self.LineEditSnDevice.text() != "" or self.LineEditObject.text() != "":
             self.has_unsaved_changes = True
             logger.debug("Detected unsaved change...")
-
-    def closeEvent(self, event):
-        logger.info("Close dialog window")
-
-        if self.has_unsaved_changes:
-            reply = QMessageBox.question(
-                self,"Подтверждение выхода",
-                "У вас есть несохраненные изменения. Вы уверены, что хотите выйти?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-            )
-
-            if reply == QMessageBox.StandardButton.No:
-                event.ignore()
-                return
-
-        event.accept()
 
     def setDefaults(self):
         self.has_unsaved_changes = False
@@ -241,8 +223,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
         finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
-        sec_interval = self.convert_to_seconds(self.comboBoxInterval.currentText(), time_format="[hh:mm]")
-        sec_duration = self.convert_to_seconds(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
+        sec_interval = self.convert_to_seconds_by_last_word(self.comboBoxInterval.currentText())
+        sec_duration = self.convert_to_seconds_by_format(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
         sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
 
@@ -264,7 +246,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         return sch_d
 
-    def convert_to_seconds(self, duration: str, time_format: str) -> int:
+    def convert_to_seconds_by_format(self, duration: str, time_format: str) -> int:
         sec_duration = 0
 
         if time_format == "[mm:ss]":    # duration
@@ -277,7 +259,23 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             sec_duration += int(t) * (60 ** i)
         return sec_duration
 
-    def convert_seconds_to_combobox_data(self, seconds: int, time_format: str) -> str | None:
+    def convert_to_seconds_by_last_word(self, value: str):
+        """ Конвертация в секунды по последнему слову """
+        seconds = None
+
+        value, last_word = tuple(value.split(" "))
+        if value.isdigit():
+            if "минут" in last_word:
+                seconds = int(value) * 60
+            elif "час" in last_word:
+                seconds = int(value) * 3600
+
+        if seconds is None:
+            raise ValueError("Невозможно выполнить конвертацию в секунды")
+
+        return seconds
+
+    def convert_seconds_to_str_by_format(self, seconds: int, time_format: str) -> str | None:
         if time_format == "[mm:ss]":    # duration
             s = seconds % 60
             m = seconds // 60
@@ -287,6 +285,32 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             h = seconds // 3600
             return f"{h:02d}:{m:02d}"
         return None
+
+    def convert_seconds_with_identifier(self, seconds: int) -> str | None:
+        minutes = seconds // 60
+
+        if minutes < 60:
+            # Для минут кратных 10
+            if minutes % 10 == 0:
+                return f"{minutes} минут"
+            # Для 30 минут
+            elif minutes == 30:
+                return "30 минут"
+            else:
+                # Округляем до ближайшего кратного 10
+                rounded_minutes = round(minutes / 10) * 10
+                return f"{rounded_minutes} минут"
+        else:
+            # Преобразуем в часы
+            hours = minutes // 60
+
+            if hours == 1:
+                return "1 час"
+            elif 2 <= hours <= 4:
+                return f"{hours} часа"
+            else:
+                return f"{hours} часов"
+
 
     @classmethod
     def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
@@ -299,6 +323,21 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             return spinbox.value() * (60 ** 2)
         raise ValueError("Invalid data type")
 
+    def closeEvent(self, event):
+        logger.info("Close dialog window")
+
+        if self.has_unsaved_changes:
+            reply = QMessageBox.question(
+                self,"Подтверждение выхода",
+                "У вас есть несохраненные изменения. Вы уверены, что хотите выйти?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+            )
+
+            if reply == QMessageBox.StandardButton.No:
+                event.ignore()
+                return
+
+        event.accept()
 
 class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
 
