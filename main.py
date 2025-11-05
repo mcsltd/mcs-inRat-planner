@@ -3,7 +3,8 @@ import logging
 import uuid
 
 from uuid import UUID
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
+from PySide6.QtGui import QIcon
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from structure import ScheduleData, RecordData
@@ -21,6 +22,7 @@ from structure import ScheduleData, RecordData
 from resources.v1.main_window import Ui_MainWindow
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
+PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
@@ -39,6 +41,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         # init ble manager
         self.ble_manager = BleManager()
@@ -144,8 +147,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def handle_record_result(self, record_data: RecordData, session):
         """ Обработка  сигнала (signal_record_result) из BleManager c результатом записи сигнала """
+
         record_id = Record.from_dataclass(record_data).create(session)
         logger.debug(f"Добавлена запись в базу данных: {record_id}")
+
+        if record_data.status == RecordStatus.ERROR.value:
+            schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
+            reply = QMessageBox.warning(
+                self, f"Ошибка записи ЭКГ",
+                f"Возникла ошибка записи с устройства {schedule_data.device.ble_name}.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+            )
 
         # Todo: обновить информацию в таблице "Расписания" по schedule_id
         self.update_content_table_schedule()
@@ -205,7 +217,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             finish_datetime = schedule.datetime_finish
             obj = schedule.object.name
             device = schedule.device.ble_name
-            status = "Ожидание"
+
+            status = self.ble_manager.get_device_status(device_id=schedule.device.id)
+
             interval = self.convert_seconds_to_str(schedule.sec_interval)
             duration = self.convert_seconds_to_str(schedule.sec_duration)
             all_records_time = self.convert_seconds_to_str(get_all_record_time(schedule.id))
@@ -255,17 +269,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             obj = get_object_by_schedule_id(rec.schedule_id)
             file_format = rec.file_format
 
-            if schedule_id is None or schedule_id == rec.schedule_id:
+            if (schedule_id is None or schedule_id == rec.schedule_id) and rec.status == RecordStatus.OK.value:
                 table_data.append([rec.id, idx, start_time, duration, experiment, obj, file_format,])
                 idx += 1
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 
-        # update label
+        # обновление
         if schedule_id is not None:
             schedule = Schedule.find([schedule_id == Schedule.id], session).to_dataclass(session)
-            # update label Schedule
-            self.labelHistory.setText(f"Записей с {schedule.device.ble_name} (всего: {len(table_data)})")
+            self.labelHistory.setText(f"Записи с {schedule.device.ble_name} (всего: {len(table_data)})")
             return
 
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
@@ -381,9 +394,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         device_id = schedule_data.device.id
         device_name = schedule_data.device.ble_name
 
-        dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
-        self.ble_manager.signal_data_received.connect(dlg.accept_signal)
-        dlg.exec()
+        if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
+            dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
+            self.ble_manager.signal_data_received.connect(dlg.accept_signal)
+            dlg.exec()
 
     def configuration_clicked(self):
         """ Активация окна настроек """

@@ -50,7 +50,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
 
         self.comboBoxInterval.setPlaceholderText("[hh:mm]")
-        self.comboBoxInterval.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "12:00", "24:00", "48:00"])
+
+        # intervals = ["10 минут", "20 минут", "30 минут"]
+        self.comboBoxInterval.addItems(["01:00", "02:00", "03:00"])
 
         # rename buttons
         self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).setText("Ок")
