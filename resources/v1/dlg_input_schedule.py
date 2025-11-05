@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_scheduleYxzJZX.ui'
+## Form generated from reading UI file 'dlg_input_scheduleqVTZMc.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
