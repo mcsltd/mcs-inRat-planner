@@ -49,6 +49,18 @@
     <layout class="QFormLayout" name="formLayoutRecords">
      <item row="0" column="0">
       <widget class="QLabel" name="labelDuration">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Длительность записи</string>
        </property>
@@ -56,6 +68,18 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labelSamplingRate">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Частота оцифровки</string>
        </property>
@@ -66,6 +90,18 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelFormat">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Формат</string>
        </property>
@@ -104,6 +140,18 @@
     <layout class="QFormLayout" name="formLayoutSchedule">
      <item row="0" column="0">
       <widget class="QLabel" name="labelStarTime">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Дата начала</string>
        </property>
@@ -111,6 +159,18 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelIntervalRecord">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Периодичность записи</string>
        </property>
@@ -121,6 +181,18 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labeFinishTime">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Дата окончания</string>
        </property>
@@ -147,6 +219,18 @@
    <layout class="QFormLayout" name="formLayoutInformation">
     <item row="0" column="0">
      <widget class="QLabel" name="LabelExperiment">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Эксперимент</string>
       </property>
@@ -154,6 +238,18 @@
     </item>
     <item row="1" column="0">
      <widget class="QLabel" name="LabelObject">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Объект</string>
       </property>
@@ -164,6 +260,18 @@
     </item>
     <item row="2" column="0">
      <widget class="QLabel" name="LabelModelDevice">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Модель устройства</string>
       </property>
@@ -177,6 +285,18 @@
     </item>
     <item row="3" column="0">
      <widget class="QLabel" name="LabelSnDevice">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Серийный номер устройства</string>
       </property>

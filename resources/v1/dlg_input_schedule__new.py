@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_schedule__newyUSByi.ui'
+## Form generated from reading UI file 'dlg_input_schedule__newPbOjke.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -40,11 +40,20 @@ class Ui_DlgCreateNewSchedule(object):
         self.formLayoutRecords.setContentsMargins(0, 0, 0, 0)
         self.labelDuration = QLabel(self.formLayoutWidget_2)
         self.labelDuration.setObjectName(u"labelDuration")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Maximum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.labelDuration.sizePolicy().hasHeightForWidth())
+        self.labelDuration.setSizePolicy(sizePolicy)
+        self.labelDuration.setMinimumSize(QSize(170, 0))
 
         self.formLayoutRecords.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelDuration)
 
         self.labelSamplingRate = QLabel(self.formLayoutWidget_2)
         self.labelSamplingRate.setObjectName(u"labelSamplingRate")
+        sizePolicy.setHeightForWidth(self.labelSamplingRate.sizePolicy().hasHeightForWidth())
+        self.labelSamplingRate.setSizePolicy(sizePolicy)
+        self.labelSamplingRate.setMinimumSize(QSize(170, 0))
 
         self.formLayoutRecords.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelSamplingRate)
 
@@ -55,6 +64,9 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.labelFormat = QLabel(self.formLayoutWidget_2)
         self.labelFormat.setObjectName(u"labelFormat")
+        sizePolicy.setHeightForWidth(self.labelFormat.sizePolicy().hasHeightForWidth())
+        self.labelFormat.setSizePolicy(sizePolicy)
+        self.labelFormat.setMinimumSize(QSize(170, 0))
 
         self.formLayoutRecords.setWidget(2, QFormLayout.ItemRole.LabelRole, self.labelFormat)
 
@@ -79,11 +91,17 @@ class Ui_DlgCreateNewSchedule(object):
         self.formLayoutSchedule.setContentsMargins(0, 0, 0, 0)
         self.labelStarTime = QLabel(self.formLayoutWidget_3)
         self.labelStarTime.setObjectName(u"labelStarTime")
+        sizePolicy.setHeightForWidth(self.labelStarTime.sizePolicy().hasHeightForWidth())
+        self.labelStarTime.setSizePolicy(sizePolicy)
+        self.labelStarTime.setMinimumSize(QSize(170, 0))
 
         self.formLayoutSchedule.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelStarTime)
 
         self.labelIntervalRecord = QLabel(self.formLayoutWidget_3)
         self.labelIntervalRecord.setObjectName(u"labelIntervalRecord")
+        sizePolicy.setHeightForWidth(self.labelIntervalRecord.sizePolicy().hasHeightForWidth())
+        self.labelIntervalRecord.setSizePolicy(sizePolicy)
+        self.labelIntervalRecord.setMinimumSize(QSize(170, 0))
 
         self.formLayoutSchedule.setWidget(2, QFormLayout.ItemRole.LabelRole, self.labelIntervalRecord)
 
@@ -94,6 +112,9 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.labeFinishTime = QLabel(self.formLayoutWidget_3)
         self.labeFinishTime.setObjectName(u"labeFinishTime")
+        sizePolicy.setHeightForWidth(self.labeFinishTime.sizePolicy().hasHeightForWidth())
+        self.labeFinishTime.setSizePolicy(sizePolicy)
+        self.labeFinishTime.setMinimumSize(QSize(170, 0))
 
         self.formLayoutSchedule.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labeFinishTime)
 
@@ -115,11 +136,17 @@ class Ui_DlgCreateNewSchedule(object):
         self.formLayoutInformation.setContentsMargins(0, 0, 0, 0)
         self.LabelExperiment = QLabel(self.formLayoutWidget)
         self.LabelExperiment.setObjectName(u"LabelExperiment")
+        sizePolicy.setHeightForWidth(self.LabelExperiment.sizePolicy().hasHeightForWidth())
+        self.LabelExperiment.setSizePolicy(sizePolicy)
+        self.LabelExperiment.setMinimumSize(QSize(170, 0))
 
         self.formLayoutInformation.setWidget(0, QFormLayout.ItemRole.LabelRole, self.LabelExperiment)
 
         self.LabelObject = QLabel(self.formLayoutWidget)
         self.LabelObject.setObjectName(u"LabelObject")
+        sizePolicy.setHeightForWidth(self.LabelObject.sizePolicy().hasHeightForWidth())
+        self.LabelObject.setSizePolicy(sizePolicy)
+        self.LabelObject.setMinimumSize(QSize(170, 0))
 
         self.formLayoutInformation.setWidget(1, QFormLayout.ItemRole.LabelRole, self.LabelObject)
 
@@ -130,6 +157,9 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.LabelModelDevice = QLabel(self.formLayoutWidget)
         self.LabelModelDevice.setObjectName(u"LabelModelDevice")
+        sizePolicy.setHeightForWidth(self.LabelModelDevice.sizePolicy().hasHeightForWidth())
+        self.LabelModelDevice.setSizePolicy(sizePolicy)
+        self.LabelModelDevice.setMinimumSize(QSize(170, 0))
 
         self.formLayoutInformation.setWidget(2, QFormLayout.ItemRole.LabelRole, self.LabelModelDevice)
 
@@ -145,6 +175,9 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.LabelSnDevice = QLabel(self.formLayoutWidget)
         self.LabelSnDevice.setObjectName(u"LabelSnDevice")
+        sizePolicy.setHeightForWidth(self.LabelSnDevice.sizePolicy().hasHeightForWidth())
+        self.LabelSnDevice.setSizePolicy(sizePolicy)
+        self.LabelSnDevice.setMinimumSize(QSize(170, 0))
 
         self.formLayoutInformation.setWidget(3, QFormLayout.ItemRole.LabelRole, self.LabelSnDevice)
 
@@ -159,11 +192,11 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.pushButtonAddExperiment = QPushButton(self.formLayoutWidget)
         self.pushButtonAddExperiment.setObjectName(u"pushButtonAddExperiment")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButtonAddExperiment.sizePolicy().hasHeightForWidth())
-        self.pushButtonAddExperiment.setSizePolicy(sizePolicy)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.pushButtonAddExperiment.sizePolicy().hasHeightForWidth())
+        self.pushButtonAddExperiment.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout.addWidget(self.pushButtonAddExperiment)
 
