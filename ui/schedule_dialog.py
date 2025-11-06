@@ -235,10 +235,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             logger.debug("Detected unsaved change...")
 
     def setDefaults(self):
-        self.has_unsaved_changes = False
-
         if self.default_schedule is not None:
             logger.debug(f"Установка настроек по умолчанию из структуры расписания: {self.default_schedule}")
+            self.has_unsaved_changes = False
             self._upload(self.default_schedule)
             return
 
@@ -246,13 +245,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # set text
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
-        self.LineEditSnDevice.setText("")
-        self.LineEditObject.setText("")
+        # self.LineEditSnDevice.setText("")
+        # self.LineEditObject.setText("")
 
         # set index
-        self.comboBoxExperiment.setCurrentIndex(-1)
+        # self.comboBoxExperiment.setCurrentIndex(-1)
         self.comboBoxFormat.setCurrentIndex(1)
-        self.comboBoxModelDevice.setCurrentIndex(0) # EMGsens
+        self.comboBoxModelDevice.setCurrentIndex(0) # set EMGsens
         self.comboBoxSamplingRate.setCurrentIndex(1)
         self.comboBoxDuration.setCurrentIndex(0)
         self.comboBoxInterval.setCurrentIndex(0)
@@ -260,6 +259,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # ToDo: start_time < finish_time
         self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
         self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addDays(2).addSecs(60))
+
+        if (
+                self.LineEditSnDevice.text().strip() == "" or self.LineEditObject.text().strip() == ""
+            or self.comboBoxExperiment.currentIndex() == -1
+        ):
+            self.has_unsaved_changes = False
 
     def getSchedule(self) -> Optional[ScheduleData]:
         # experiment

@@ -278,7 +278,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # обновление
         if schedule_id is not None:
             schedule = Schedule.find([schedule_id == Schedule.id], session).to_dataclass(session)
-            self.labelHistory.setText(f"Записи с {schedule.device.ble_name} (всего: {len(table_data)})")
+            self.labelHistory.setText(f"Записи объекта \"{schedule.object.name}\" (всего: {len(table_data)})")
             return
 
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
