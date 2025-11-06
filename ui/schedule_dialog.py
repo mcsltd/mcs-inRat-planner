@@ -5,7 +5,7 @@ from typing import Optional
 
 from PySide6.QtCore import QDateTime, Signal, QDate, QTime
 from PySide6.QtGui import QIcon, QIntValidator
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox, QWidget
 
 from constants import Formats, Devices
 from db.database import connection
@@ -77,27 +77,69 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         self.pushButtonByDefault.clicked.connect(self.setDefaults)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
-        self.pushButtonCancel.clicked.connect(self.closeEvent)
+        self.pushButtonCancel.clicked.connect(self.close)
 
         self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
 
+
     def on_ok_clicked(self):
         """ Обработчик нажатия кнопки Ok """
-        if not self.validate_input():
-            pass
+        if not self.validate_input():   # проверка если обязательные поля не были заполнены
+            return
 
-        self.close()
+        self.accept()
 
     def validate_input(self) -> bool:
         """ Проверка заполнения обязательных полей """
+        errors = []
 
         # проверка данных эксперимента
+        if self.comboBoxExperiment.currentIndex() == -1:    # не выбрано
+            logger.warning("Не выбрано название эксперимента в списке")
+            self.highlight_field(self.comboBoxExperiment)
+            errors.append("Необходимо выбрать значение в списке \"Эксперимент\"")
+        else:
+            self.clear_highlight(self.comboBoxExperiment)
 
         # проверка данных объекта
+        if not self.LineEditObject.text().strip():
+            logger.warning("Не введено название объекта в поле ввода")
+            self.highlight_field(self.LineEditObject)
+            errors.append("Поле \"Объект\" обязательно для заполнения")
+        else:
+            self.clear_highlight(self.LineEditObject)
 
         # проверка серийного номера
+        if not self.LineEditSnDevice.text().strip():
+            logger.warning("Не введено значение серийного номера в поле ввода")
+            self.highlight_field(self.LineEditSnDevice)
+            errors.append("Поле \"Серийный номер устройства\" обязательно для заполнения")
+        else:
+            self.clear_highlight(self.LineEditSnDevice)
+
+        if errors:
+            self.show_error_message("\n".join(errors))
+            return False
 
         return True
+
+    def highlight_field(self, field: QWidget):
+        """ Подсветка поля с ошибкой """
+        field.setStyleSheet("border: 1px solid red; background-color: #FFE6E6;")
+
+    def clear_highlight(self, field: QWidget):
+        """ Убрать подсветку """
+        field.setStyleSheet("")
+
+    def show_error_message(self, message):
+        """ Вывод окна с предупреждением о том что невозможно создать расписание """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle("Заполните обязательные поля")
+        msg.setText("Пожалуйста, заполните следующие поля:")
+        msg.setInformativeText(message)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
 
     def _upload(self, schedule: ScheduleData):
         """ Загрузка данных расписания """
@@ -254,7 +296,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
         finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
         sec_interval = self.convert_to_seconds_by_last_word(self.comboBoxInterval.currentText())
-        # sec_duration = self.convert_to_seconds_by_format(self.comboBoxDuration.currentText(), time_format="[mm:ss]")
         sec_duration = self.convert_to_seconds_by_last_word(self.comboBoxDuration.currentText())
 
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
