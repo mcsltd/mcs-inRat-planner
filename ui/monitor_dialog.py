@@ -1,6 +1,7 @@
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QWidget, QDialog
 from PySide6.QtCore import Qt
+PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 from pyqtgraph import PlotWidget, mkPen
 import pyedflib
@@ -38,6 +39,8 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowModality(Qt.WindowModality.NonModal)
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
+
 
         self.display = Display(self)
         self.verticalLayoutMonitor.addWidget(self.display)
