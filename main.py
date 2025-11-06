@@ -20,6 +20,7 @@ from structure import ScheduleData, RecordData
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
+from ui.helper_dialog import DialogHelper
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 PATH_TO_ICON = "resources/v1/icon_app.svg"
@@ -345,26 +346,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule_data = self.tableModelSchedule.get_selected_data()
         if schedule_data is None:
             return None
+        schedule_id = schedule_data[0]
+        schedule = Schedule.find([Schedule.id==schedule_id], session)
+
+        s = schedule.to_dataclass(session)
+        if not DialogHelper.show_confirmation_dialog(
+            parent=self, title="Удаление расписания",
+            message=f"Вы уверены что хотите удалить расписание для объекта \"{s.object.name}\"?"):
+            return None
 
         # остановить и удалить задачи из расписания
-        job = self.scheduler.get_job(job_id=str(schedule_data[0]))
+        job = self.scheduler.get_job(job_id=str(schedule_id))
         if job is not None:
-            logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_data[0])}")
-            self.scheduler.remove_job(job_id=str(schedule_data[0]))
+            logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_id)}")
+            self.scheduler.remove_job(job_id=str(schedule_id))
 
         # удалить (пометить) расписание из БД
-        schedule = Schedule.find([Schedule.id==schedule_data[0]], session)
         schedule.soft_delete(session)
 
         self.update_content_table_schedule()
-        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
-        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
+        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_id)}")
+        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_id)}")
 
         # удалить записи для расписания в history
-        soft_delete_records(schedule_data[0], session)
+        soft_delete_records(schedule_id, session)
 
         self.update_content_table_history()
-        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
+        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_id)}")
 
         # Device.find([Schedule.id==schedule_data[0]], session).soft_delete(session)
         # Object.find([Object.id==schedule_data[0]], session).soft_delete(session)
