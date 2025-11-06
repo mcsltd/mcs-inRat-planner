@@ -29,6 +29,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowIcon(QIcon(PATH_TO_ICON))
+        self.setFixedSize(self.size())
 
         self.default_schedule: ScheduleData = schedule
         self.has_unsaved_changes = False
