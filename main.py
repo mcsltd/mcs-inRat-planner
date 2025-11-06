@@ -228,7 +228,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
 
-            table_data.append([schedule_id, obj, experiment_name,start_datetime,finish_datetime,device,status,interval,duration,all_records_time,all_records,error_record,params,])
+            table_data.append([schedule_id,experiment_name,obj,start_datetime,finish_datetime,device,status,interval,duration,all_records_time,all_records,error_record,params,])
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
