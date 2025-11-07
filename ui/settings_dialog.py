@@ -1,54 +1,21 @@
-from PySide6.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex, QObject, Signal
 from PySide6.QtGui import QFont, Qt, QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
-    QSpacerItem, QSizePolicy, QPushButton
+    QSpacerItem, QSizePolicy, QPushButton, QMessageBox
 
 from db.database import connection
 from db.models import Schedule
 from resources.v1.frm_localConfig import Ui_FrmMainConfig
+from ui.helper_dialog import DialogHelper
+
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
-
-class DlgMainConfig(QDialog, Ui_FrmMainConfig):
-    """ Главное окно настроек """
-
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setupUi(self)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
-
-
-        self._idx_selected_widget = 0
-        self.widgets = [
-            WidgetCfgGeneral(),
-        ]
-        self.set_widgets()
-
-        self.listWidget.clicked.connect(self.setup_widget)
-
-        self.pushButtonCancel.clicked.connect(self.close)
-
-    def setup_widget(self, index: QModelIndex):
-        model_idx = self.listWidget.selectedIndexes()[0]
-        idx = model_idx.row()
-        if idx != self._idx_selected_widget:
-            # удаление старого виджета
-            crt_widget = self.widgets[self._idx_selected_widget]
-            self.horizontalLayoutMainConfig.removeWidget(crt_widget)
-            crt_widget.hide()
-
-            # добавление нового виджета
-            self._idx_selected_widget = idx
-            new_widget = self.widgets[self._idx_selected_widget]
-            self.horizontalLayoutMainConfig.addWidget(self.widgets[self._idx_selected_widget])
-            new_widget.show()
-
-    def set_widgets(self):
-        for idx, widget in enumerate(self.widgets):
-            self.listWidget.addItem(widget.name)
-            if self._idx_selected_widget == idx:
-                self.horizontalLayoutMainConfig.addWidget(widget)
+class ConfigSignals(QObject):
+    """ Сигналы настроек """
+    max_devices_changed = Signal(int)
+    archive_restored = Signal()
+    archive_deleted = Signal()
+    data_changed = Signal()
 
 
 class WidgetCfg(QWidget):
@@ -80,11 +47,53 @@ class WidgetCfg(QWidget):
         return f"{seconds} с."
 
 
-class WidgetCfgGeneral(WidgetCfg):
-    """Виджет настроек конфигурации BLE устройств"""
+class DlgMainConfig(QDialog, Ui_FrmMainConfig):
+    """ Главное окно настроек """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
+        self.signals = ConfigSignals()
+
+        self._idx_selected_widget = 0
+        self.widgets = [
+            WidgetCfgGeneral(self),
+        ]
+        self.set_widgets()
+
+        self.listWidget.clicked.connect(self.setup_widget)
+        self.pushButtonCancel.clicked.connect(self.close)
+
+    def setup_widget(self, index: QModelIndex):
+        model_idx = self.listWidget.selectedIndexes()[0]
+        idx = model_idx.row()
+        if idx != self._idx_selected_widget:
+            # удаление старого виджета
+            crt_widget = self.widgets[self._idx_selected_widget]
+            self.horizontalLayoutMainConfig.removeWidget(crt_widget)
+            crt_widget.hide()
+
+            # добавление нового виджета
+            self._idx_selected_widget = idx
+            new_widget = self.widgets[self._idx_selected_widget]
+            self.horizontalLayoutMainConfig.addWidget(self.widgets[self._idx_selected_widget])
+            new_widget.show()
+
+    def set_widgets(self):
+        for idx, widget in enumerate(self.widgets):
+            self.listWidget.addItem(widget.name)
+            if self._idx_selected_widget == idx:
+                self.horizontalLayoutMainConfig.addWidget(widget)
+
+
+class WidgetCfgGeneral(WidgetCfg):
+    """Виджет настроек конфигурации BLE устройств"""
+
+    def __init__(self, parent=None, *args, **kwargs):
+        super().__init__( *args, **kwargs)
+        self.parent_dialog: DlgMainConfig = parent
+
         self.name = "Общее"
         self.setup_ui()
         self.setup_ble_settings()
@@ -92,10 +101,9 @@ class WidgetCfgGeneral(WidgetCfg):
         self.archive_remove_ui()
         self.verticalLayout.addStretch()  # Растягивающийся spacer
 
-
     def setup_ble_settings(self):
         """Настройка интерфейса для BLE настроек"""
-        self.ble_connection_group = QGroupBox("Настройки подключения BLE устройств")
+        self.ble_connection_group = QGroupBox("Настройки подключения устройств")
         ble_connection_layout = QVBoxLayout(self.ble_connection_group)
         connection_limit_layout = QHBoxLayout()
         self.label_cnt_device = QLabel("Максимальное количество подключаемых устройств:")
@@ -114,16 +122,21 @@ class WidgetCfgGeneral(WidgetCfg):
         info_label.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
         ble_connection_layout.addWidget(info_label)
 
+        self.connection_spinbox.valueChanged.connect(self.on_max_devices_changed)
         self.verticalLayout.addWidget(self.ble_connection_group)
 
-    @connection
-    def archive_recovery_ui(self, session):
+    def on_max_devices_changed(self, value: int):
+        """ Обработчик изменения максимального количества устройств """
+        if self.parent_dialog and hasattr(self.parent_dialog, "signals"):
+            self.parent_dialog.signals.max_devices_changed.emit(value)
+
+    def archive_recovery_ui(self):
         """ Интерфейс восстановления архивированных данных """
         self.restore_group = QGroupBox("Восстановление архивных расписаний и записей")
         restore_layout = QVBoxLayout(self.restore_group)
 
-        cnt_del_sched = Schedule.get_deleted_count(session)
-        self.label_archive_info = QLabel(f"Всего архивированных расписаний: {cnt_del_sched}")
+        self.label_archive_info = QLabel(f"Всего архивированных расписаний: 0")
+        self.set_label_count_archived_schedule()
 
         info_layout = QHBoxLayout()
         info_layout.addWidget(self.label_archive_info)
@@ -132,6 +145,7 @@ class WidgetCfgGeneral(WidgetCfg):
 
         button_layout = QHBoxLayout()
         self.btn_restore_all = QPushButton("Восстановить всё")
+        self.btn_restore_all.clicked.connect(self.on_restore_all)
 
         button_layout.addWidget(self.btn_restore_all)
         button_layout.addStretch()
@@ -139,6 +153,17 @@ class WidgetCfgGeneral(WidgetCfg):
 
         # Добавляем группы в основной layout
         self.verticalLayout.addWidget(self.restore_group)
+
+    @connection
+    def set_label_count_archived_schedule(self, session):
+        cnt_del_schedule = Schedule.get_deleted_count(session)
+        self.label_archive_info.setText(f"Всего архивированных расписаний: {cnt_del_schedule}")
+
+    def on_restore_all(self):
+        """ Обработчик восстановления всех архивных расписаний, устройств, записей, объектов """
+        if self.parent_dialog and hasattr(self.parent_dialog, "signals"):
+            self.parent_dialog.signals.archive_restored.emit()
+            self.parent_dialog.signals.data_changed.emit()
 
     def archive_remove_ui(self):
         """ Интерфейс удаления архивированных данных """
@@ -149,12 +174,29 @@ class WidgetCfgGeneral(WidgetCfg):
         button_layout = QHBoxLayout()
         self.btn_delete = QPushButton("Удалить всё")
 
+        self.btn_delete.clicked.connect(self.on_delete_all)
+
         button_layout.addWidget(self.btn_delete)
         button_layout.addStretch()
         delete_layout.addLayout(button_layout)
 
         # Добавляем группы в основной layout
         self.verticalLayout.addWidget(self.delete_group)
+
+    def on_delete_all(self):
+        """ Обработчик удаления всех архивных расписаний, устройств, записей, объектов """
+
+        res = DialogHelper.show_confirmation_dialog(
+            parent=self,
+            title="Удаление архивных данных",
+            message="Вы уверены что хотите удалить архивные данные?\nУдаленные данные нельзя будет восстановить.",
+            icon=QMessageBox.Icon.Warning
+        )
+
+        if res:
+            if self.parent_dialog and hasattr(self.parent_dialog, "signals"):
+                self.parent_dialog.signals.archive_deleted.emit()
+                self.parent_dialog.signals.data_changed.emit()
 
 """class WidgetCfgDevice(WidgetCfg):
     def __init__(self, *args, **kwargs):

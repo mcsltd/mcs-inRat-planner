@@ -410,7 +410,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def configuration_clicked(self):
         """ Активация окна настроек """
         dlg = DlgMainConfig()
+
+        # ToDo: устанавливать текущее максимальное кол-во одновременно подключенных устройств
+        dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
+        dlg.signals.archive_restored.connect(self.on_archive_restored)
+        dlg.signals.archive_deleted.connect(self.on_archive_deleted)
+
         ok = dlg.exec()
+
+    def on_max_devices_changed(self, max_devices):
+        """ Обработчик изменения количества одновременно подключенных устройств """
+        logger.info(f"Максимальное количество одновременно подключенных устройств: {max_devices=}")
+        # ToDo: ...
+
+    def on_archive_restored(self):
+        """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
+        logger.info(f"Восстановление архивных расписаний, объектов, устройств")
+        # ToDo: ...
+
+    def on_archive_deleted(self):
+        """ Обработчик сигнала удаления архивных расписаний, объектов, устройств """
+        logger.info(f"Удаление архивных расписаний, объектов, устройств")
+        # ToDo: ...
 
     def closeEvent(self, event, /):
         """ Обработка закрытия приложения """
