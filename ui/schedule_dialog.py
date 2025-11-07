@@ -17,16 +17,13 @@ from resources.v1.dlg_input_schedule__new import Ui_DlgCreateNewSchedule
 from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
-
 logger = logging.getLogger(__name__)
 
-
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
-
     signal_add_experiment = Signal()
-
     def __init__(self, schedule: Optional[ScheduleData | set] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.setupUi(self)
         self.setWindowIcon(QIcon(PATH_TO_ICON))
         self.setFixedSize(self.size())
@@ -52,7 +49,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # fill combobox
         # self.comboBoxExperiment.setEditable(True)
         self.fill_combobox(self.comboBoxModelDevice, Devices)
-        self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
+        self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
         self.fill_combobox(self.comboBoxFormat, Formats)
 
         # self.comboBoxDuration.setPlaceholderText("[mm:ss]")
@@ -70,11 +67,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
         self.LineEditObject.textChanged.connect(self.on_form_changed)
         self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
-
-        # соединение кнопок с методами
-        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Ok).clicked.connect()
-        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
-        # self.buttonBoxSchedule.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.setDefaults)
 
         self.pushButtonByDefault.clicked.connect(self.setDefaults)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
@@ -115,6 +107,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             logger.warning("Не введено значение серийного номера в поле ввода")
             self.highlight_field(self.LineEditSnDevice)
             errors.append("Поле \"Серийный номер устройства\" обязательно для заполнения")
+        elif len(self.LineEditSnDevice.text().strip()) < 4:
+            logger.warning("Введено неправильное значение серийного номера в поле ввода")
+            self.highlight_field(self.LineEditSnDevice)
+            errors.append("В поле \"Серийный номер устройства\" должно быть введено 4 числа")
         else:
             self.clear_highlight(self.LineEditSnDevice)
 
@@ -252,21 +248,21 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # self.comboBoxExperiment.setCurrentIndex(-1)
         self.comboBoxFormat.setCurrentIndex(1)
         self.comboBoxModelDevice.setCurrentIndex(0) # set EMGsens
-        self.comboBoxSamplingRate.setCurrentIndex(1)
+        self.comboBoxSamplingRate.setCurrentIndex(0)
         self.comboBoxDuration.setCurrentIndex(0)
         self.comboBoxInterval.setCurrentIndex(0)
 
-        # ToDo: start_time < finish_time
-        self.dateTimeEditStartExperiment.setMinimumDateTime(QDateTime.currentDateTime().addSecs(60))
-        self.dateTimeEditFinishExperiment.setMinimumDateTime(QDateTime.currentDateTime().addDays(2).addSecs(60))
+        crt_dt = QDateTime.currentDateTime()
+        self.dateTimeEditStartExperiment.setMinimumDateTime(crt_dt.addSecs(60))
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(crt_dt.addDays(1))
 
-        if (
-                self.LineEditSnDevice.text().strip() == "" or self.LineEditObject.text().strip() == ""
-            or self.comboBoxExperiment.currentIndex() == -1
-        ):
+        if (self.LineEditSnDevice.text().strip() == ""
+                or self.LineEditObject.text().strip() == ""
+                or self.comboBoxExperiment.currentIndex() == -1):
             self.has_unsaved_changes = False
 
     def getSchedule(self) -> Optional[ScheduleData]:
+        """ Формирование структуры данных с описанием Расписания """
         # experiment
         experiment_id = self.comboBoxExperiment.currentData()
         experiment = self.comboBoxExperiment.currentText()
@@ -294,7 +290,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             device_id = uuid.uuid4()
         else:
             device_id = self.default_schedule.device.id
-
         device_sn = self.LineEditSnDevice.text()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
         dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
@@ -418,6 +413,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
                 return
 
         event.accept()
+
+
 
 class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
 
