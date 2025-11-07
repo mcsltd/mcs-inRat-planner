@@ -53,13 +53,6 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButtonDefault">
-         <property name="text">
-          <string>По умолчанию</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="pushButtonOk">
          <property name="text">
           <string>Ок</string>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_localConfiggdMqfT.ui'
+## Form generated from reading UI file 'frm_localConfigjerjDc.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -52,11 +52,6 @@ class Ui_FrmMainConfig(object):
 
         self.horizontalLayoutControlConfig.addItem(self.horizontalSpacer_2)
 
-        self.pushButtonDefault = QPushButton(FrmMainConfig)
-        self.pushButtonDefault.setObjectName(u"pushButtonDefault")
-
-        self.horizontalLayoutControlConfig.addWidget(self.pushButtonDefault)
-
         self.pushButtonOk = QPushButton(FrmMainConfig)
         self.pushButtonOk.setObjectName(u"pushButtonOk")
 
@@ -81,7 +76,6 @@ class Ui_FrmMainConfig(object):
 
     def retranslateUi(self, FrmMainConfig):
         FrmMainConfig.setWindowTitle(QCoreApplication.translate("FrmMainConfig", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
-        self.pushButtonDefault.setText(QCoreApplication.translate("FrmMainConfig", u"\u041f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e", None))
         self.pushButtonOk.setText(QCoreApplication.translate("FrmMainConfig", u"\u041e\u043a", None))
         self.pushButtonCancel.setText(QCoreApplication.translate("FrmMainConfig", u"\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c", None))
     # retranslateUi

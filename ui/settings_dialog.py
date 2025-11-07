@@ -1,9 +1,10 @@
 from PySide6.QtCore import QModelIndex
-from PySide6.QtGui import QFont, Qt
+from PySide6.QtGui import QFont, Qt, QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
     QSpacerItem, QSizePolicy, QPushButton
 
 from resources.v1.frm_localConfig import Ui_FrmMainConfig
+PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 
 class DlgMainConfig(QDialog, Ui_FrmMainConfig):
@@ -13,6 +14,8 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
+
 
         self._idx_selected_widget = 0
         self.widgets = [
