@@ -7,9 +7,10 @@ import logging
 from uuid import UUID
 
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QDialog, QWidget
 from pyqtgraph import PlotWidget, mkPen
+PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 from resources.v1.wdt_monitor import Ui_FormMonitor
 
@@ -19,6 +20,7 @@ class PlotSignal(PlotWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setBackground("w")
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
         self.setDisabled(True)
 
         pen = mkPen("k")

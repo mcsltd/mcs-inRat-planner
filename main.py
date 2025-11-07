@@ -1,23 +1,29 @@
 import datetime
 import logging
+import uuid
 
 from uuid import UUID
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
+from PySide6.QtGui import QIcon
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
+from sqlalchemy.orm import Session
+
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from structure import ScheduleData, RecordData
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
+from ui.helper_dialog import DialogHelper
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
+PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
@@ -36,6 +42,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         # init ble manager
         self.ble_manager = BleManager()
@@ -64,8 +71,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
 
         # tables
-        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+        self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
+
+        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
 
         # buttons
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
@@ -78,8 +87,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonUpdateSchedule.setDisabled(False)
 
         # загрузить в таблицы данные
-        self.update_content_table_history()
         self.update_content_table_schedule()
+        self.update_content_table_history()
 
     @connection
     def init_jobs(self, session):
@@ -99,7 +108,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             cnt_job += 1
 
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
-
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
@@ -140,8 +148,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def handle_record_result(self, record_data: RecordData, session):
         """ Обработка  сигнала (signal_record_result) из BleManager c результатом записи сигнала """
+
         record_id = Record.from_dataclass(record_data).create(session)
         logger.debug(f"Добавлена запись в базу данных: {record_id}")
+
+        if record_data.status == RecordStatus.ERROR.value:
+            schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
+            reply = QMessageBox.warning(
+                self, f"Ошибка записи ЭКГ",
+                f"Возникла ошибка записи с устройства {schedule_data.device.ble_name}.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+            )
 
         # Todo: обновить информацию в таблице "Расписания" по schedule_id
         self.update_content_table_schedule()
@@ -201,7 +218,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             finish_datetime = schedule.datetime_finish
             obj = schedule.object.name
             device = schedule.device.ble_name
-            status = "Ожидание"
+
+            status = self.ble_manager.get_device_status(device_id=schedule.device.id)
+
             interval = self.convert_seconds_to_str(schedule.sec_interval)
             duration = self.convert_seconds_to_str(schedule.sec_duration)
             all_records_time = self.convert_seconds_to_str(get_all_record_time(schedule.id))
@@ -209,30 +228,60 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
 
-            table_data.append([schedule_id, experiment_name,start_datetime,finish_datetime,obj,device,status,interval,duration,all_records_time,all_records,error_record,params,])
+            table_data.append([schedule_id,experiment_name,obj,start_datetime,finish_datetime,device,status,interval,duration,all_records_time,all_records,error_record,params,])
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
         self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
 
+    def sort_records_by_schedule_id(self):
+        """ Сортировка строк в таблице История по идентификатору расписания """
+        schedule_id = None
+        schedule_row = self.tableModelSchedule.get_selected_data()
+
+        if isinstance(schedule_row, list):
+            schedule_id = schedule_row[0]
+
+        if isinstance(schedule_id, str):
+            try:
+                schedule_id = uuid.UUID(schedule_id)
+            except Exception as exc:
+                logger.error(f"Не удалось преобразовать {schedule_id=} в тип UUID")
+
+        if schedule_id is not None:
+            logger.debug(f"Данные в таблице \"История\" отсортированы по идентификатору {schedule_id}")
+
+        self.update_content_table_history(schedule_id)
+
     @connection
-    def update_content_table_history(self, session) -> None:
+    def update_content_table_history(self, schedule_id: uuid.UUID | None = None, session: Session | None=None) -> None:
+        """ Обновить данные в таблице Записей """
         logger.info("Обновление всех данных в таблице \"Записи\"")
 
         table_data = []
         records: list[Record] = Record.fetch_all(session)
-        for idx, rec in enumerate(records):
+        idx = 1
+        for rec in records:
+
             rec = rec.to_dataclass()
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration)
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
             obj = get_object_by_schedule_id(rec.schedule_id)
             file_format = rec.file_format
-            table_data.append([rec.id, idx + 1, start_time, duration, experiment, obj, file_format,])
+
+            if (schedule_id is None or schedule_id == rec.schedule_id) and rec.status == RecordStatus.OK.value:
+                table_data.append([rec.id, idx, start_time, duration, experiment, obj, file_format,])
+                idx += 1
 
         self.tableModelHistory.setData(description=DESCRIPTION_COLUMN_HISTORY, data=table_data)
 
-        # update label Schedule
+        # обновление
+        if schedule_id is not None:
+            schedule = Schedule.find([schedule_id == Schedule.id], session).to_dataclass(session)
+            self.labelHistory.setText(f"Записи объекта \"{schedule.object.name}\" (всего: {len(table_data)})")
+            return
+
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
     @connection
@@ -297,26 +346,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule_data = self.tableModelSchedule.get_selected_data()
         if schedule_data is None:
             return None
+        schedule_id = schedule_data[0]
+        schedule = Schedule.find([Schedule.id==schedule_id], session)
+
+        s = schedule.to_dataclass(session)
+        if not DialogHelper.show_confirmation_dialog(
+            parent=self, title="Удаление расписания",
+            message=f"Вы уверены что хотите удалить расписание для объекта \"{s.object.name}\"?"):
+            return None
 
         # остановить и удалить задачи из расписания
-        job = self.scheduler.get_job(job_id=str(schedule_data[0]))
+        job = self.scheduler.get_job(job_id=str(schedule_id))
         if job is not None:
-            logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_data[0])}")
-            self.scheduler.remove_job(job_id=str(schedule_data[0]))
+            logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_id)}")
+            self.scheduler.remove_job(job_id=str(schedule_id))
 
         # удалить (пометить) расписание из БД
-        schedule = Schedule.find([Schedule.id==schedule_data[0]], session)
         schedule.soft_delete(session)
 
         self.update_content_table_schedule()
-        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_data[0])}")
-        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_data[0])}")
+        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_id)}")
+        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_id)}")
 
         # удалить записи для расписания в history
-        soft_delete_records(schedule_data[0], session)
+        soft_delete_records(schedule_id, session)
 
         self.update_content_table_history()
-        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_data[0])}")
+        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_id)}")
 
         # Device.find([Schedule.id==schedule_data[0]], session).soft_delete(session)
         # Object.find([Object.id==schedule_data[0]], session).soft_delete(session)
@@ -346,14 +402,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         device_id = schedule_data.device.id
         device_name = schedule_data.device.ble_name
 
-        dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
-        self.ble_manager.signal_data_received.connect(dlg.accept_signal)
-        dlg.exec()
+        if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
+            dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
+            self.ble_manager.signal_data_received.connect(dlg.accept_signal)
+            dlg.exec()
 
     def configuration_clicked(self):
         """ Активация окна настроек """
         dlg = DlgMainConfig()
+
+        # ToDo: устанавливать текущее максимальное кол-во одновременно подключенных устройств
+        dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
+        dlg.signals.archive_restored.connect(self.on_archive_restored)
+        dlg.signals.archive_deleted.connect(self.on_archive_deleted)
+
         ok = dlg.exec()
+
+    def on_max_devices_changed(self, max_devices):
+        """ Обработчик изменения количества одновременно подключенных устройств """
+        logger.info(f"Максимальное количество одновременно подключенных устройств: {max_devices=}")
+        # ToDo: ...
+
+    def on_archive_restored(self):
+        """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
+        logger.info(f"Восстановление архивных расписаний, объектов, устройств")
+        # ToDo: ...
+
+    def on_archive_deleted(self):
+        """ Обработчик сигнала удаления архивных расписаний, объектов, устройств """
+        logger.info(f"Удаление архивных расписаний, объектов, устройств")
+        # ToDo: ...
 
     def closeEvent(self, event, /):
         """ Обработка закрытия приложения """
@@ -378,7 +456,11 @@ if __name__ == "__main__":
     )
 
     app = QApplication([])
-    window = MainWindow()
-    window.showMaximized()
-    # window.show()
-    app.exec()
+    try:
+        window = MainWindow()
+        window.showMaximized()
+        # window.show()
+    except Exception as exc:
+        print(f"Возникла ошибка в работе программы: {exc}")
+    finally:
+        app.exec()

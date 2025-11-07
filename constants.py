@@ -5,9 +5,9 @@ from enum import Enum
 DESCRIPTION_COLUMN_SCHEDULE = [
     "id",
     "Эксперимент",
+    "Объект",
     "Дата начала",
     "Дата окончания",
-    "Объект",
     "Устройство",
     "Статус",
     "Периодичность\nзаписи",
@@ -56,7 +56,7 @@ class Formats(Enum):
 
 
 class Devices(Enum):
-    INRAT = {"InRat": "InRat-"}
+    # INRAT = {"InRat": "InRat-"}
     EMGSENS = {"EMGsens": "EMG-SENS-"}
 
 class RecordStatus(Enum):

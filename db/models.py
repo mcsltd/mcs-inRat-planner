@@ -1,11 +1,10 @@
 import datetime
-from typing import AnyStr, Any
+from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, select
+from sqlalchemy import ForeignKey, select, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr, relationship, class_mapper, Session
-from sqlalchemy.util import await_only
 
 from structure import ScheduleData, DeviceData, ObjectData, RecordData, ExperimentData
 
@@ -130,6 +129,15 @@ class Schedule(Base):
             file_format=schedule.file_format,
             sampling_rate=schedule.sampling_rate
         )
+
+    @classmethod
+    def get_deleted_count(cls, session) -> int:
+        """Получить количество удаленных расписаний"""
+        query = select(func.count(cls.id)).where(cls.is_deleted == True)
+        result = session.execute(query)
+        return result.scalar()
+
+
 
 class Object(Base):
     name: Mapped[str]

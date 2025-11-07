@@ -2,14 +2,13 @@ import datetime
 from uuid import UUID
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
+from PySide6.QtGui import QFont, QColor, QPen
+from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QStyledItemDelegate
 
-from constants import MONTHS
+from constants import MONTHS, RecordStatus, ScheduleState
 
 
 class _DataTableModel(QAbstractTableModel):
-
 
     def __init__(self, description: list, data: list,  parent=None, *args):
         super().__init__(parent=parent)
@@ -81,6 +80,8 @@ class GenericTableWidget(QTableView):
         self.headerFont = QFont()
         self.headerFont.setBold(True)
         self.horizontalHeader().setFont(self.headerFont)
+
+        self.setItemDelegate(_DataItemDelegate())
 
         # self.setSortingEnabled(True) # сортировка данных
         self.setShowGrid(True)
@@ -163,3 +164,45 @@ class GenericTableWidget(QTableView):
 
         return True
 
+
+class _DataItemDelegate(QStyledItemDelegate):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.border_color_rules = {
+            ScheduleState.CONNECTION.value: QColor(255, 165, 0),
+            ScheduleState.ACQUISITION.value: QColor(0, 255, 0),
+        }
+
+    def paint(self, painter, option, index, /):
+        super().paint(painter, option, index)
+
+        text = index.data(Qt.ItemDataRole.DisplayRole)
+        if text in list(self.border_color_rules.keys()):
+            painter.save()
+            pen = QPen(self.border_color_rules[text])
+            pen.setWidth(3)
+            painter.setPen(pen)
+
+            rect = option.rect
+            painter.drawRect(rect)
+
+            painter.restore()
+
+    # def createEditor(self, parent, option, index, /):
+    #     """ Возвращает виджет, используемый для изменения данных из модели,
+    #      и может быть повторно реализован для настройки поведения редактирования """
+    #     ...
+    #
+    # def setEditorData(self, editor, index, /):
+    #     """ Предоставляет данные виджету для работы """
+    #     ...
+    #
+    # def updateEditorGeometry(self, editor, option, index, /):
+    #     """ Обеспечивает корректное отображение редактора по отношению к представлению элемента """
+    #     ...
+    #
+    # def setModelData(self, editor, model, index, /):
+    #     """ Возвращает обновленные данные в модель """
+    #     ...

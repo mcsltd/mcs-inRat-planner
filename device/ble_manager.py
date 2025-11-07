@@ -3,14 +3,10 @@ import datetime
 import logging
 import threading
 import time
+
 from uuid import UUID
-from enum import Enum
 from threading import Thread
-from dataclasses import dataclass, field
-from typing import NewType
-
 from PySide6.QtCore import QObject, Signal
-
 from bleak import BLEDevice, BleakScanner
 
 from constants import RecordStatus, ScheduleState
@@ -30,11 +26,11 @@ SCAN_TIMEOUT = 0.1
 
 class BleManager(QObject):
 
-    # for main window
-    signal_record_result = Signal(RecordData)
+    # главное окно
+    signal_record_result = Signal(object)
     signal_schedule_state = Signal(UUID, object)
 
-    # for devices
+    # сигналы для устройства
     signal_start_acquisition = Signal(UUID)
     signal_data_received = Signal(UUID, dict)
     signal_stop_acquisition = Signal(UUID)
@@ -52,12 +48,28 @@ class BleManager(QObject):
         self.storage.signal_success_save.connect(self.handle_success_record_result)
 
         self._recording_tasks: list[RecordingTaskData] = []             # задачи для записи
-        self._acquisition_tasks: dict[UUID, asyncio.Task] = {}          # запущенные задачи на получение данных
         self._connected_devices: dict[UUID, EmgSens | InRat] = {}       # словарь с подключенными устройствами
+        self._acquisition_tasks: dict[UUID, asyncio.Task] = {}          # запущенные задачи на получение данных
         self._device_queues: dict[UUID, asyncio.Queue] = {}             # очередь для получения данных с устройства
 
         self._work_thread: None | Thread  = None
         self._async_loop: None | asyncio.AbstractEventLoop = None
+
+    def get_device_status(self, device_id: UUID):
+        """ Узнать статус устройства """
+
+        # от статуса "Записи данных" к статусу "Отсоединено"
+        if device_id in self._acquisition_tasks:
+            return ScheduleState.ACQUISITION.value
+
+        if device_id in self._connected_devices:
+            return ScheduleState.CONNECT.value
+
+        for task in self._recording_tasks:
+            if device_id == task.device.id:
+                return ScheduleState.CONNECTION.value
+
+        return ScheduleState.DISCONNECT.value
 
     def start(self):
         """ Запуск BLE менеджера для работы с устройствами """
@@ -86,7 +98,6 @@ class BleManager(QObject):
         while self.is_running:
 
             await self._process_new_task()              # обработка новых задач записи
-
             await asyncio.sleep(0.1)
 
     async def _process_new_task(self) -> None:
@@ -101,9 +112,7 @@ class BleManager(QObject):
                 continue
 
             # запуск подключения и получения данных с устройства на фоне
-            asyncio.create_task(
-                self._device_connect_and_data_acquisition(recording_task)
-            )
+            asyncio.create_task(self._device_connect_and_data_acquisition(recording_task))
 
     async def _device_connect_and_data_acquisition(self, task: RecordingTaskData):
         """ Подключение к устройству и поддержание соединения """
@@ -111,8 +120,11 @@ class BleManager(QObject):
         device_name = task.device.ble_name
 
         self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECTION)
-
-        while self.is_running and device_id not in self._connected_devices:
+        while (
+                self.is_running
+                and device_id not in self._connected_devices
+                and datetime.datetime.now() < task.finish_time    # проверка на тайм-аут
+        ):
             try:
                 logger.info(f"Попытка подключения к устройству {device_name}")
                 ble_device = await self._find_device_by_name(device_name)
@@ -138,13 +150,17 @@ class BleManager(QObject):
                     acquisition_task = asyncio.create_task(self._start_data_acquisition(emg_sens, task))
                     self._acquisition_tasks[device_id] = acquisition_task
                     break
+
                 else:
                     logger.warning(f"Не удалось подключиться к устройству {device_name}")
+
             except Exception as exc:
                 logger.error(f"Ошибка при подключении к {device_name}: {exc}")
 
-                record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR) # ошибка записи
-                self.signal_record_result.emit(record_data)
+        if datetime.datetime.now() >= task.finish_time:
+            logger.warning(f"К устройству {device_name} не удалось подключиться.")
+            record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
+            self.signal_record_result.emit(record_data)
 
     async def _start_data_acquisition(self, emg_sens: EmgSens, task: RecordingTaskData):
         """ Запуск сбора данных с устройства и их обработка """
@@ -172,21 +188,15 @@ class BleManager(QObject):
                         data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
                         self.signal_data_received.emit(device_id, data)
                         data_queue.task_done()
-
                     except asyncio.TimeoutError:
                         continue
-
                     except Exception as exp:
                         logger.error(f"Ошибка обработки данных с устройства {task.device.ble_name}")
-
                         self.signal_stop_acquisition.emit(device_id)
-
                         break
         except Exception as e:
-
             record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
             self.signal_record_result.emit(record_data)
-
             logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {e}")
         finally:
             self.signal_schedule_state.emit(task.schedule_id, ScheduleState.DISCONNECT)
@@ -196,13 +206,13 @@ class BleManager(QObject):
     async def _cleanup_device(self, device_id: UUID):
         """ Очистка ресурсов устройства """
         try:
-
             # убрать device_id из словаря подключенных устройств
             if device_id in self._connected_devices:
                 emg_sens = self._connected_devices[device_id]
                 if emg_sens.is_connected:
                     await emg_sens.stop_acquisition()
                     await emg_sens.disconnect()
+
                 del self._connected_devices[device_id]
 
             # отмена задачи на получение данных
@@ -212,6 +222,7 @@ class BleManager(QObject):
                     await self._acquisition_tasks[device_id]
                 except asyncio.CancelledError:
                     pass
+
                 del self._acquisition_tasks[device_id]
 
             # удаление очереди для emgsens с device_id
@@ -229,6 +240,7 @@ class BleManager(QObject):
             devices = await BleakScanner.discover(timeout=SCAN_TIMEOUT)
 
             for d in devices:
+
                 if d.name and device_name in d.name:
                     logger.info(f"Найдено устройство: {d.name} ({d.address})")
                     return d
