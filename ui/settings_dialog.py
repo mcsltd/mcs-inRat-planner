@@ -3,6 +3,8 @@ from PySide6.QtGui import QFont, Qt, QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
     QSpacerItem, QSizePolicy, QPushButton
 
+from db.database import connection
+from db.models import Schedule
 from resources.v1.frm_localConfig import Ui_FrmMainConfig
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
@@ -114,11 +116,14 @@ class WidgetCfgGeneral(WidgetCfg):
 
         self.verticalLayout.addWidget(self.ble_connection_group)
 
-    def archive_recovery_ui(self):
+    @connection
+    def archive_recovery_ui(self, session):
         """ Интерфейс восстановления архивированных данных """
         self.restore_group = QGroupBox("Восстановление архивных расписаний и записей")
         restore_layout = QVBoxLayout(self.restore_group)
-        self.label_archive_info = QLabel("Всего архивированных расписаний: 0")
+
+        cnt_del_sched = Schedule.get_deleted_count(session)
+        self.label_archive_info = QLabel(f"Всего архивированных расписаний: {cnt_del_sched}")
 
         info_layout = QHBoxLayout()
         info_layout.addWidget(self.label_archive_info)
