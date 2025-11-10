@@ -50,7 +50,7 @@ class WidgetCfg(QWidget):
 class DlgMainConfig(QDialog, Ui_FrmMainConfig):
     """ Главное окно настроек """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, max_device, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowIcon(QIcon(PATH_TO_ICON))
@@ -58,7 +58,7 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
 
         self._idx_selected_widget = 0
         self.widgets = [
-            WidgetCfgGeneral(self),
+            WidgetCfgGeneral(self, max_device),
         ]
         self.set_widgets()
 
@@ -90,18 +90,18 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
 class WidgetCfgGeneral(WidgetCfg):
     """Виджет настроек конфигурации BLE устройств"""
 
-    def __init__(self, parent=None, *args, **kwargs):
+    def __init__(self, parent=None, max_device=2, *args, **kwargs):
         super().__init__( *args, **kwargs)
         self.parent_dialog: DlgMainConfig = parent
 
         self.name = "Общее"
         self.setup_ui()
-        self.setup_ble_settings()
+        self.setup_ble_settings(max_device)
         self.archive_recovery_ui()
         self.archive_remove_ui()
         self.verticalLayout.addStretch()  # Растягивающийся spacer
 
-    def setup_ble_settings(self):
+    def setup_ble_settings(self, max_device: int):
         """Настройка интерфейса для BLE настроек"""
         self.ble_connection_group = QGroupBox("Настройки подключения устройств")
         ble_connection_layout = QVBoxLayout(self.ble_connection_group)
@@ -110,7 +110,7 @@ class WidgetCfgGeneral(WidgetCfg):
         connection_limit_layout.addWidget(self.label_cnt_device)
         self.connection_spinbox = QSpinBox()
         self.connection_spinbox.setRange(1, 4)
-        self.connection_spinbox.setValue(2)
+        self.connection_spinbox.setValue(max_device)
         self.connection_spinbox.setSuffix(" устройств")
         self.connection_spinbox.setFixedWidth(120)
         connection_limit_layout.addWidget(self.connection_spinbox)

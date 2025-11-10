@@ -1,6 +1,8 @@
 import datetime
 import logging
+import os
 import uuid
+from configparser import ConfigParser
 from copy import copy
 
 from uuid import UUID
@@ -39,11 +41,15 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
+    preferences_file: str = "config.ini"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
         self.setWindowIcon(QIcon(PATH_TO_ICON))
+
+        self.max_connected_devices = 2
 
         # init ble manager
         self.ble_manager = BleManager()
@@ -91,6 +97,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_schedule()
         self.update_content_table_history()
 
+        # загрузка настроек
+        self.get_preferences()
+
+
+    def get_preferences(self):
+        """ Установка начальных настроек """
+        config = ConfigParser()
+
+        # проверка есть ли файл настроек
+        if not os.path.exists(self.preferences_file):
+            self.max_connected_devices = 2 # по умолчанию
+            return None
+
+        config.read(self.preferences_file)
+        # config.read_file(self.preferences)
+        if not (config.has_option("Settings", "max_connected_device")):
+            return
+
+        self.max_connected_devices = config.getint("Settings", "max_connected_device")
+        return
+
+    def save_preferences(self, max_connected_device: int):
+        """ Сохранение начальных настроек """
+        config = ConfigParser()
+
+        # проверка есть ли файл настроек и секция
+        if (os.path.exists(self.preferences_file) and config.has_option("Settings", "max_connected_device")):
+            config.set("Settings", "max_connected_device", str(max_connected_device))
+        else:
+            config.add_section("Settings")
+            config.set("Settings", "max_connected_device", str(max_connected_device))
+
+        with open(self.preferences_file, "w") as config_file:
+            config.write(config_file)
+
     @connection
     def init_jobs(self, session):
         """ Создать задачи записи ЭКГ при старте приложения """
@@ -127,12 +168,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
 
-    def fill_missed_records(
-            self,
-            template_missed_record: RecordData,
-            time_now: datetime.datetime, delta_time: datetime.timedelta,
-            session: Session
-    ) -> datetime.datetime:
+    def fill_missed_records(self, template_missed_record: RecordData, time_now: datetime.datetime, delta_time: datetime.timedelta, session: Session) -> datetime.datetime:
         """ Заполнение пропущенных записей в таблице Record и возврат следующего времени записи """
         next_record_time = template_missed_record.datetime_start
         while time_now > next_record_time:
@@ -448,7 +484,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         """ Активация окна настроек """
-        dlg = DlgMainConfig()
+        dlg = DlgMainConfig(max_device=self.max_connected_devices)
 
         # ToDo: устанавливать текущее максимальное кол-во одновременно подключенных устройств
         dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
@@ -460,7 +496,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_max_devices_changed(self, max_devices):
         """ Обработчик изменения количества одновременно подключенных устройств """
         logger.info(f"Максимальное количество одновременно подключенных устройств: {max_devices=}")
-        # ToDo: ...
+        self.max_connected_devices = max_devices
+        self.save_preferences(self.max_connected_devices)
 
     def on_archive_restored(self):
         """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
