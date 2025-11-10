@@ -6,6 +6,8 @@ from configparser import ConfigParser
 from copy import copy
 
 from uuid import UUID
+
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
 from PySide6.QtGui import QIcon
 
@@ -43,13 +45,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     preferences_file: str = "config.ini"
 
+    maxConnectDevicesChanged = Signal(int)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
         self.setWindowIcon(QIcon(PATH_TO_ICON))
-
-        self.max_connected_devices = 2
 
         # init ble manager
         self.ble_manager = BleManager()
@@ -76,6 +78,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # соединение сигналов с функциями
         self.ble_manager.signal_schedule_state.connect(self.handle_schedule_state)
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
+        self.maxConnectDevicesChanged.connect(self.ble_manager.set_max_connected_devices)
 
         # tables
         self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
@@ -107,7 +110,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # проверка есть ли файл настроек
         if not os.path.exists(self.preferences_file):
-            self.max_connected_devices = 2 # по умолчанию
+            self.maxConnectDevicesChanged.emit(2) # по умолчанию
             return None
 
         config.read(self.preferences_file)
@@ -115,19 +118,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if not (config.has_option("Settings", "max_connected_device")):
             return
 
-        self.max_connected_devices = config.getint("Settings", "max_connected_device")
+        cnt_devices = config.getint("Settings", "max_connected_device")
+        self.maxConnectDevicesChanged.emit(cnt_devices)
         return
 
-    def save_preferences(self, max_connected_device: int):
+    def save_preferences(self, cnt_device: int):
         """ Сохранение начальных настроек """
         config = ConfigParser()
 
         # проверка есть ли файл настроек и секция
         if (os.path.exists(self.preferences_file) and config.has_option("Settings", "max_connected_device")):
-            config.set("Settings", "max_connected_device", str(max_connected_device))
+            config.set("Settings", "max_connected_device", str(cnt_device))
         else:
             config.add_section("Settings")
-            config.set("Settings", "max_connected_device", str(max_connected_device))
+            config.set("Settings", "max_connected_device", str(cnt_device))
 
         with open(self.preferences_file, "w") as config_file:
             config.write(config_file)
@@ -484,7 +488,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         """ Активация окна настроек """
-        dlg = DlgMainConfig(max_device=self.max_connected_devices)
+        dlg = DlgMainConfig(cnt_device=self.ble_manager.max_connected_devices)
 
         # ToDo: устанавливать текущее максимальное кол-во одновременно подключенных устройств
         dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
@@ -493,11 +497,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         ok = dlg.exec()
 
-    def on_max_devices_changed(self, max_devices):
+    def on_max_devices_changed(self, cnt_device):
         """ Обработчик изменения количества одновременно подключенных устройств """
-        logger.info(f"Максимальное количество одновременно подключенных устройств: {max_devices=}")
-        self.max_connected_devices = max_devices
-        self.save_preferences(self.max_connected_devices)
+        logger.info(f"Максимальное количество одновременно подключенных устройств: {cnt_device=}")
+        self.save_preferences(cnt_device)
+        self.maxConnectDevicesChanged.emit(cnt_device)
 
     def on_archive_restored(self):
         """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
