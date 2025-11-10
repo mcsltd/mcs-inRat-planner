@@ -2,7 +2,7 @@ import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, select, func
+from sqlalchemy import ForeignKey, select, func, desc
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr, relationship, class_mapper, Session
 
@@ -103,6 +103,7 @@ class Schedule(Base):
             datetime_finish=self.datetime_finish,
             sampling_rate=self.sampling_rate,
             file_format=self.file_format,
+
             experiment=Experiment.find([Experiment.id == self.experiment_id], session).to_dataclass(),
             device=Device.find([Device.id == self.device_id], session).to_dataclass(),
             object=Object.find([Object.id == self.object_id], session).to_dataclass()
@@ -136,8 +137,6 @@ class Schedule(Base):
         query = select(func.count(cls.id)).where(cls.is_deleted == True)
         result = session.execute(query)
         return result.scalar()
-
-
 
 class Object(Base):
     name: Mapped[str]
@@ -226,6 +225,13 @@ class Record(Base):
             path=record.path,
             schedule_id=record.schedule_id
         )
+
+    @classmethod
+    def get_last_record(cls, schedule_id, session):
+        stmt = select(cls).where(Record.schedule_id == schedule_id).order_by(desc(Record.datetime_start)).limit(1)
+        result = session.execute(stmt)
+        records = result.scalars().first()
+        return records
 
 class Experiment(Base):
     name: Mapped[str] = mapped_column(unique=True, nullable=False)

@@ -1,6 +1,7 @@
 import datetime
 import logging
 import uuid
+from copy import copy
 
 from uuid import UUID
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
@@ -95,19 +96,57 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Создать задачи записи ЭКГ при старте приложения """
         logger.info("Инициализация задач записи ЭКГ...")
 
-        schedules: list[Schedule] = Schedule.get_all_schedules(session)
         cnt_job = 0
+        schedules: list[Schedule] = Schedule.get_all_schedules(session)
         for s in schedules:
-            job = s.to_dataclass(session)
+            now = datetime.datetime.now()
 
-            if datetime.datetime.now() >= job.datetime_finish:
-                logger.debug(f"Время действия расписания истекло: {job.datetime_finish} для {job.id}")
-                return
+            schedule = s.to_dataclass(session)
+            schedule_id = schedule.id
+            dt = datetime.timedelta(seconds=(schedule.sec_duration + schedule.sec_interval))
 
-            self.create_job(job, start_time=job.datetime_start)
+            if now >= schedule.datetime_finish:
+                logger.debug(f"Время действия расписания истекло: {schedule.datetime_finish} для {schedule.id}")
+                continue
+
+            last_record = Record.get_last_record(schedule_id, session).to_dataclass() # последняя запись в таблице Records
+            start_time = last_record.datetime_start + dt        # время следующей запланированной записи
+            if now > start_time: # проверка если запланированная запись отстаёт от текущего времени
+                logger.info(f"Запланированное время записи {str(start_time)} меньше чем текущее время {str(now)}")
+                template_missed_record = RecordData(
+                    schedule_id=schedule_id,
+                    datetime_start=start_time, sec_duration=0,
+                    file_format=schedule.file_format, sampling_rate=schedule.sampling_rate,
+                    status=RecordStatus.ERROR.value)
+
+                start_time = self.fill_missed_records(
+                    template_missed_record=template_missed_record, time_now=now, delta_time=dt, session=session)
+
+            self.create_job(schedule, start_time=start_time)
             cnt_job += 1
 
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
+
+    def fill_missed_records(
+            self,
+            template_missed_record: RecordData,
+            time_now: datetime.datetime, delta_time: datetime.timedelta,
+            session: Session
+    ) -> datetime.datetime:
+        """ Заполнение пропущенных записей в таблице Record и возврат следующего времени записи """
+        next_record_time = template_missed_record.datetime_start
+        while time_now > next_record_time:
+            # обновление шаблона
+            new_record = copy(template_missed_record)
+            new_record.id = uuid.uuid4()
+            new_record.datetime_start = next_record_time
+
+            logger.info(f"Была пропущена запись ЭКГ в момент времени {str(new_record.datetime_start)}")
+            Record.from_dataclass(new_record).create(session) # создать запись в базе данных
+            next_record_time += delta_time
+            logger.info(f"Запланирована запись в {str(next_record_time)}")
+
+        return next_record_time
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
