@@ -40,6 +40,7 @@ class BleManager(QObject):
         self.is_running = False
 
         self.storage = Storage()
+        self._max_connected_devices = 2 # по умолчанию
 
         # соединение сигналами Storage и BLEManager
         self.signal_start_acquisition.connect(self.storage.add_recording_task)
@@ -48,12 +49,22 @@ class BleManager(QObject):
         self.storage.signal_success_save.connect(self.handle_success_record_result)
 
         self._recording_tasks: list[RecordingTaskData] = []             # задачи для записи
+        self._active_tasks: list[RecordingTaskData] = []
         self._connected_devices: dict[UUID, EmgSens | InRat] = {}       # словарь с подключенными устройствами
         self._acquisition_tasks: dict[UUID, asyncio.Task] = {}          # запущенные задачи на получение данных
         self._device_queues: dict[UUID, asyncio.Queue] = {}             # очередь для получения данных с устройства
 
         self._work_thread: None | Thread  = None
         self._async_loop: None | asyncio.AbstractEventLoop = None
+
+    @property
+    def max_connected_devices(self) -> int:
+        return self._max_connected_devices
+
+    def set_max_connected_devices(self, cnt_device: int):
+        """ Установление максимального количества подключаемых устройств """
+        logger.info(f"Изменено кол-во подключаемых устройств: {cnt_device}")
+        self._max_connected_devices = cnt_device
 
     def get_device_status(self, device_id: UUID):
         """ Узнать статус устройства """
@@ -94,10 +105,8 @@ class BleManager(QObject):
         Главный цикл, в котором происходит обработка очереди из устройств.
         Обработка включает в себя: 1) поиск; 2) соединение; 3) получение данных; 4) отключение
         """
-
         while self.is_running:
-
-            await self._process_new_task()              # обработка новых задач записи
+            await self._process_new_task()     # обработка новых задач записи
             await asyncio.sleep(0.1)
 
     async def _process_new_task(self) -> None:
@@ -131,7 +140,7 @@ class BleManager(QObject):
 
                 if ble_device is None:
                     logger.debug(f"Устройство {device_name} не найдено")
-                    # нужен ли тут await asyncio.sleep(5)?
+                    # await asyncio.sleep(3)
                     continue
 
                 emg_sens = EmgSens(ble_device)
