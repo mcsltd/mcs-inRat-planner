@@ -77,7 +77,7 @@ class Storage(QObject):
 
         if path_to_file is not None:
             task = self._recording_task_property[device_id]
-            sec_duration = (task.finish_time - task.start_time).seconds
+            sec_duration = int(len(signal) / sampling_rate)
 
             record_data = task.get_result_record(duration=sec_duration, status=RecordStatus.OK, path=path_to_file)
             self.signal_success_save.emit(record_data)

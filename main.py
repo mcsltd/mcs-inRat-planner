@@ -516,16 +516,46 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Обработка закрытия приложения """
         self.ble_manager.stop()
 
-    @classmethod
-    def convert_seconds_to_str(cls, seconds: int) -> str | None:
+    @staticmethod
+    def convert_seconds_to_str(seconds: int) -> str | None:
+        # if not isinstance(seconds, int):
+        #     raise ValueError("Seconds is not int")
+        # if seconds / 3600 >= 1:
+        #     return f"{seconds // 3600} ч."
+        # if seconds / 60 >= 1:
+        #     return f"{seconds // 60} мин."
+        #
+        # return f"{seconds} с."
+
         if not isinstance(seconds, int):
             raise ValueError("Seconds is not int")
 
-        if seconds / 3600 >= 1:
-            return f"{seconds // 3600} ч."
-        if seconds / 60 >= 1:
-            return f"{seconds // 60} мин."
-        return f"{seconds} с."
+        if seconds >= 100 * 3600:  # 100 часов * 3600 секунд
+            print("больше 100 часов")
+            return
+
+        hour = seconds // 3600
+        minutes = seconds // 60 % 60
+        seconds = seconds % 60
+
+        return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
+
+def convert(seconds: int):
+    if not isinstance(seconds, int):
+        raise ValueError("Seconds is not int")
+
+    if seconds >= 100 * 3600:  # 100 часов * 3600 секунд
+        print("больше 100 часов")
+        return
+
+    hour = seconds // 3600
+    minutes = seconds // 60 % 60
+    seconds = seconds % 60
+
+    return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
+
+
+
 
 
 if __name__ == "__main__":

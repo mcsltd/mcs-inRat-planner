@@ -306,12 +306,15 @@ class BleManager(QObject):
                 while (self.is_running and
                        emg_sens.is_connected and
                        datetime.datetime.now() < task.finish_time):
+
                     try:
                         data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
                         self.signal_data_received.emit(device_id, data)
                         data_queue.task_done()
+
                     except asyncio.TimeoutError:
                         continue
+
                     except Exception as exp:
                         logger.error(f"Ошибка обработки данных с устройства {task.device.ble_name}")
                         self.signal_stop_acquisition.emit(device_id)
