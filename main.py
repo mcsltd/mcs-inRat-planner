@@ -540,23 +540,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
 
-def convert(seconds: int):
-    if not isinstance(seconds, int):
-        raise ValueError("Seconds is not int")
-
-    if seconds >= 100 * 3600:  # 100 часов * 3600 секунд
-        print("больше 100 часов")
-        return
-
-    hour = seconds // 3600
-    minutes = seconds // 60 % 60
-    seconds = seconds % 60
-
-    return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
-
-
-
-
 
 if __name__ == "__main__":
     logging.basicConfig(
