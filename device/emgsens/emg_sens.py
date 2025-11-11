@@ -139,9 +139,15 @@ class EmgSens:
             return False
 
         async def emg_handler(_, raw_data: bytearray):
+            nonlocal last_counter
             try:
                 sample_timestamp = time.time()
                 counter, emg = decoder.decode_emg(raw_data)
+
+                if counter != last_counter + 1:
+                    logger.warning(f"Пропущен пакет: текущий пакет - {counter}; прошлый пакет - {last_counter}")
+                last_counter = counter
+
                 # logger.debug(f"Device: {self.name}; get emg - counter: {counter}")
                 await emg_queue.put({"counter": counter, "emg": emg, "timestamp": sample_timestamp})
             except Exception as exp:
@@ -152,6 +158,7 @@ class EmgSens:
             if not success:
                 return False
 
+            last_counter = -1
             decoder = Decoder(settings)
             await self._client.start_notify(EmgSens.UUID_ACQUISITION_SERVICE, emg_handler)
             self._is_notifying = True
