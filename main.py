@@ -1,9 +1,13 @@
 import datetime
 import logging
+import os
 import uuid
+from configparser import ConfigParser
 from copy import copy
 
 from uuid import UUID
+
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
 from PySide6.QtGui import QIcon
 
@@ -39,6 +43,10 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
+    preferences_file: str = "config.ini"
+
+    maxConnectDevicesChanged = Signal(int)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
@@ -70,6 +78,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # соединение сигналов с функциями
         self.ble_manager.signal_schedule_state.connect(self.handle_schedule_state)
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
+        self.ble_manager.signal_device_error.connect(self.on_ble_manager_error)
+        self.maxConnectDevicesChanged.connect(self.ble_manager.set_max_connected_devices)
 
         # tables
         self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
@@ -90,6 +100,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # загрузить в таблицы данные
         self.update_content_table_schedule()
         self.update_content_table_history()
+
+        # загрузка настроек
+        self.get_preferences()
+
+    def get_preferences(self):
+        """ Установка начальных настроек """
+        config = ConfigParser()
+
+        # проверка есть ли файл настроек
+        if not os.path.exists(self.preferences_file):
+            self.maxConnectDevicesChanged.emit(2) # по умолчанию
+            return None
+
+        config.read(self.preferences_file)
+        # config.read_file(self.preferences)
+        if not (config.has_option("Settings", "max_connected_device")):
+            return
+
+        cnt_devices = config.getint("Settings", "max_connected_device")
+        self.maxConnectDevicesChanged.emit(cnt_devices)
+        return
+
+    def save_preferences(self, cnt_device: int):
+        """ Сохранение начальных настроек """
+        config = ConfigParser()
+
+        # проверка есть ли файл настроек и секция
+        if (os.path.exists(self.preferences_file) and config.has_option("Settings", "max_connected_device")):
+            config.set("Settings", "max_connected_device", str(cnt_device))
+        else:
+            config.add_section("Settings")
+            config.set("Settings", "max_connected_device", str(cnt_device))
+
+        with open(self.preferences_file, "w") as config_file:
+            config.write(config_file)
 
     @connection
     def init_jobs(self, session):
@@ -127,12 +172,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
 
-    def fill_missed_records(
-            self,
-            template_missed_record: RecordData,
-            time_now: datetime.datetime, delta_time: datetime.timedelta,
-            session: Session
-    ) -> datetime.datetime:
+    def fill_missed_records(self, template_missed_record: RecordData, time_now: datetime.datetime, delta_time: datetime.timedelta, session: Session) -> datetime.datetime:
         """ Заполнение пропущенных записей в таблице Record и возврат следующего времени записи """
         next_record_time = template_missed_record.datetime_start
         while time_now > next_record_time:
@@ -191,13 +231,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         record_id = Record.from_dataclass(record_data).create(session)
         logger.debug(f"Добавлена запись в базу данных: {record_id}")
 
-        if record_data.status == RecordStatus.ERROR.value:
-            schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
-            reply = QMessageBox.warning(
-                self, f"Ошибка записи ЭКГ",
-                f"Возникла ошибка записи с устройства {schedule_data.device.ble_name}.",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-            )
+        # if record_data.status == RecordStatus.ERROR.value:
+        #     schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
+        #     reply = QMessageBox.warning(
+        #         self, f"Ошибка записи ЭКГ",
+        #         f"Не удалось подключиться к устройству {schedule_data.device.ble_name}.",
+        #         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+        #     )
 
         # Todo: обновить информацию в таблице "Расписания" по schedule_id
         self.update_content_table_schedule()
@@ -205,7 +245,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
 
-    # Schedule
     @connection
     def add_schedule(self, session) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
@@ -448,7 +487,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def configuration_clicked(self):
         """ Активация окна настроек """
-        dlg = DlgMainConfig()
+        dlg = DlgMainConfig(cnt_device=self.ble_manager.max_connected_devices)
 
         # ToDo: устанавливать текущее максимальное кол-во одновременно подключенных устройств
         dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
@@ -457,10 +496,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         ok = dlg.exec()
 
-    def on_max_devices_changed(self, max_devices):
+    def on_max_devices_changed(self, cnt_device):
         """ Обработчик изменения количества одновременно подключенных устройств """
-        logger.info(f"Максимальное количество одновременно подключенных устройств: {max_devices=}")
-        # ToDo: ...
+        logger.info(f"Максимальное количество одновременно подключенных устройств: {cnt_device=}")
+        self.save_preferences(cnt_device)
+        self.maxConnectDevicesChanged.emit(cnt_device)
 
     def on_archive_restored(self):
         """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
@@ -472,21 +512,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info(f"Удаление архивных расписаний, объектов, устройств")
         # ToDo: ...
 
+    def on_ble_manager_error(self, device_id, description):
+        """ Обработчик выводящий сообщения о проблемах с устройством """
+        DialogHelper.show_confirmation_dialog(
+            self, title="Предупреждение", yes_text="Ок", icon=QMessageBox.Icon.Warning,
+            message=description, btn_no=False)
+
     def closeEvent(self, event, /):
         """ Обработка закрытия приложения """
         self.ble_manager.stop()
 
-    @classmethod
-    def convert_seconds_to_str(cls, seconds: int) -> str | None:
+    @staticmethod
+    def convert_seconds_to_str(seconds: int) -> str | None:
+        # if not isinstance(seconds, int):
+        #     raise ValueError("Seconds is not int")
+        # if seconds / 3600 >= 1:
+        #     return f"{seconds // 3600} ч."
+        # if seconds / 60 >= 1:
+        #     return f"{seconds // 60} мин."
+        #
+        # return f"{seconds} с."
+
         if not isinstance(seconds, int):
             raise ValueError("Seconds is not int")
 
-        if seconds / 3600 >= 1:
-            return f"{seconds // 3600} ч."
-        if seconds / 60 >= 1:
-            return f"{seconds // 60} мин."
-        return f"{seconds} с."
+        if seconds >= 100 * 3600:  # 100 часов * 3600 секунд
+            print("больше 100 часов")
+            return
 
+        hour = seconds // 3600
+        minutes = seconds // 60 % 60
+        seconds = seconds % 60
+
+        return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
 
 if __name__ == "__main__":
     logging.basicConfig(

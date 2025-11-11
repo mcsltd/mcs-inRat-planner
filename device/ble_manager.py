@@ -5,7 +5,8 @@ import threading
 import time
 
 from uuid import UUID
-from threading import Thread
+from threading import Thread, Lock
+
 from PySide6.QtCore import QObject, Signal
 from bleak import BLEDevice, BleakScanner
 
@@ -13,7 +14,6 @@ from constants import RecordStatus, ScheduleState
 from device.emgsens import EmgSens
 from device.emgsens.constants import EventType, Channel, ScaleGyro, ScaleAccel, SamplingRate
 from device.emgsens.structures import Settings
-from device.inrat.inrat import InRat
 from storage import Storage
 from structure import DeviceData, RecordingTaskData, RecordData
 
@@ -22,13 +22,14 @@ logger = logging.getLogger(__name__)
 # константы ограничения времени
 CONNECTION_TIMEOUT = 5
 SCAN_TIMEOUT = 0.1
-
+DEVICE_DISCOVERY_TIMEOUT = 60
 
 class BleManager(QObject):
 
     # главное окно
     signal_record_result = Signal(object)
     signal_schedule_state = Signal(UUID, object)
+    signal_device_error = Signal(UUID, str)
 
     # сигналы для устройства
     signal_start_acquisition = Signal(UUID)
@@ -40,6 +41,7 @@ class BleManager(QObject):
         self.is_running = False
 
         self.storage = Storage()
+        self._max_connected_devices = 2 # по умолчанию
 
         # соединение сигналами Storage и BLEManager
         self.signal_start_acquisition.connect(self.storage.add_recording_task)
@@ -48,26 +50,47 @@ class BleManager(QObject):
         self.storage.signal_success_save.connect(self.handle_success_record_result)
 
         self._recording_tasks: list[RecordingTaskData] = []             # задачи для записи
-        self._connected_devices: dict[UUID, EmgSens | InRat] = {}       # словарь с подключенными устройствами
+        self._connected_devices: dict[UUID, EmgSens] = {}       # словарь с подключенными устройствами
         self._acquisition_tasks: dict[UUID, asyncio.Task] = {}          # запущенные задачи на получение данных
         self._device_queues: dict[UUID, asyncio.Queue] = {}             # очередь для получения данных с устройства
+        self._pending_connections: set[UUID] = set()                     # id устройств в процессе подключения
+
+        # контроль выполняемых задач
+        self._active_tasks_count = 0
+        self._task_events: dict[UUID, asyncio.Event] = {}
+
+        # блокировки
+        self._tasks_lock = Lock()
+        self._devices_lock = Lock()
+        self._counters_lock = Lock()
 
         self._work_thread: None | Thread  = None
         self._async_loop: None | asyncio.AbstractEventLoop = None
 
+    @property
+    def max_connected_devices(self) -> int:
+        return self._max_connected_devices
+
+    def set_max_connected_devices(self, cnt_device: int):
+        """ Установление максимального количества подключаемых устройств """
+        logger.info(f"Изменено кол-во подключаемых устройств: {cnt_device}")
+        self._max_connected_devices = cnt_device
+
     def get_device_status(self, device_id: UUID):
         """ Узнать статус устройства """
 
-        # от статуса "Записи данных" к статусу "Отсоединено"
-        if device_id in self._acquisition_tasks:
-            return ScheduleState.ACQUISITION.value
+        with self._devices_lock:
+            # от статуса "Записи данных" к статусу "Отсоединено"
+            if device_id in self._acquisition_tasks:
+                return ScheduleState.ACQUISITION.value
 
-        if device_id in self._connected_devices:
-            return ScheduleState.CONNECT.value
+            if device_id in self._connected_devices:
+                return ScheduleState.CONNECT.value
 
-        for task in self._recording_tasks:
-            if device_id == task.device.id:
-                return ScheduleState.CONNECTION.value
+        with self._tasks_lock:
+            for task in self._recording_tasks:
+                if device_id == task.device.id:
+                    return ScheduleState.CONNECTION.value
 
         return ScheduleState.DISCONNECT.value
 
@@ -87,143 +110,251 @@ class BleManager(QObject):
         """ Создание асинхронного цикла событий и запуск в нём цикла обработки """
         self._async_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._async_loop)
-        self._async_loop.run_until_complete(self._processing_loop())
+
+        try:
+            self._async_loop.run_until_complete(self._processing_loop())
+        finally:
+            self._async_loop.close()
 
     async def _processing_loop(self):
         """
         Главный цикл, в котором происходит обработка очереди из устройств.
         Обработка включает в себя: 1) поиск; 2) соединение; 3) получение данных; 4) отключение
         """
-
         while self.is_running:
-
-            await self._process_new_task()              # обработка новых задач записи
+            await self._process_new_task()     # обработка новых задач записи
+            await self._cleanup_expired_tasks() # очистка просроченных задач
             await asyncio.sleep(0.1)
 
+    async def _cleanup_expired_tasks(self):
+        """ Очистка задач с просроченными временем выполнения """
+        current_time = datetime.datetime.now()
+        tasks_to_remove = []
+
+        with self._tasks_lock:
+            for i, task in enumerate(self._recording_tasks):
+                if current_time >= task.finish_time:    # проверка времени задачи
+                    tasks_to_remove.append((i, task))
+
+        for i, task in reversed(tasks_to_remove):
+            with self._tasks_lock:
+                if i < len(self._recording_tasks) and self._recording_tasks[i] == task:
+                    del self._recording_tasks[i]
+                    logger.warning(f"Задача для устройства {task.device.ble_name} удалена - истекло время ожидания")
+
+                    record_data = task.get_result_record(status=RecordStatus.ERROR, duration=0) # уведомление в главное окно
+                    self.signal_record_result.emit(record_data)
+
     async def _process_new_task(self) -> None:
-        """ Обработка новых задач на подключение """
-        while len(self._recording_tasks) != 0:
-            recording_task = self._recording_tasks.pop()
+        """ Обработка новых задач на подключение с учетом лимитов на подключение """
+        with self._tasks_lock:
+            if len(self._recording_tasks) == 0:
+                return
+
+            recording_task = self._recording_tasks[0]
+            # todo: recording_task = self._recording_tasks.pop() - протестировать на этой строке
             device_id = recording_task.device.id
 
-            # ToDo: обработка на случай уже подключенного или подключаемого устройства
-            if device_id in self._connected_devices:
-                logger.warning(f"Устройство {recording_task.device.ble_name} уже подключено или в процессе подключения")
-                continue
+            if (device_id in self._connected_devices or
+                device_id in self._pending_connections or
+                device_id in self._connected_devices):
 
-            # запуск подключения и получения данных с устройства на фоне
-            asyncio.create_task(self._device_connect_and_data_acquisition(recording_task))
+                self._recording_tasks.pop(0) # удалить задачу для устройств
+                logger.warning(f"Устройство {recording_task.device.ble_name} уже подключено или в процессе подключения")
+                return
+
+        # проверить доступность слотов
+        if not await self._wait_for_available_slot(device_id):
+            return
+
+        # если слот доступен, запускаем подключение
+        with self._tasks_lock:
+            if self._recording_tasks and self._recording_tasks[0].device.id == device_id:
+                recording_task = self._recording_tasks.pop(0)
+                await self._increment_active_counter()
+                # запуск подключения и получения данных с устройства на фоне
+                asyncio.create_task(self._device_connect_and_data_acquisition(recording_task))
+
+    async def _increment_active_counter(self):
+        """ Увеличить счетчик активных задач """
+        with self._counters_lock:
+            self._active_tasks_count += 1
+            logger.debug(f"Активных задач: {self._active_tasks_count}/{self._max_connected_devices}")
+
+    async def _decrement_active_counter(self):
+        """ Уменьшить число активных задачи """
+        with self._counters_lock:
+            self._active_tasks_count -= 1
+            logger.debug(f"Уменьшено активных задач: {self._active_tasks_count}/{self._max_connected_devices}")
+
+        # Будим ожидающие задачи
+        for event in self._task_events.values():
+            event.set()
+
+        # Очищаем установленные события
+        self._task_events.clear()
+
+    async def _wait_for_available_slot(self, device_id: UUID) -> bool:
+        """ Ожидание доступного слота для подключения """
+        with self._counters_lock:
+            current_count = self._active_tasks_count
+
+        if current_count < self._max_connected_devices:
+            return True
+
+        if device_id not in self._task_events:
+            self._task_events[device_id] = asyncio.Event()
+
+        logger.info(
+            f"Устройство {device_id} ожидает доступный слот. Активных задач: {current_count}/{self._max_connected_devices}")
+
+        try:
+            # ожидание освобождения слота с перерывом 1 секунда
+            await asyncio.wait_for(self._task_events[device_id].wait(), timeout=1.0)
+            return True
+        except asyncio.TimeoutError:
+            # проверка истекло ли время задачи
+            with self._tasks_lock:
+                for task in self._recording_tasks:
+                    if task.device.id == device_id:
+                        if datetime.datetime.now() >= task.finish_time:
+                            logger.warning(f"Устройство {device_id} не дождалось слота - истекло время")
+                            return False
+            return False
 
     async def _device_connect_and_data_acquisition(self, task: RecordingTaskData):
         """ Подключение к устройству и поддержание соединения """
         device_id = task.device.id
         device_name = task.device.ble_name
 
-        self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECTION)
-        while (
-                self.is_running
-                and device_id not in self._connected_devices
-                and datetime.datetime.now() < task.finish_time    # проверка на тайм-аут
-        ):
-            try:
-                logger.info(f"Попытка подключения к устройству {device_name}")
-                ble_device = await self._find_device_by_name(device_name)
+        try:
+            self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECTION)
+            discovery_start_time = time.time()
+            while (
+                    self.is_running and device_id not in self._connected_devices
+                    and datetime.datetime.now() < task.finish_time
+                    and time.time() - discovery_start_time < DEVICE_DISCOVERY_TIMEOUT
+            ):
+                try:
+                    self._pending_connections.add(device_id)
 
-                if ble_device is None:
-                    logger.debug(f"Устройство {device_name} не найдено")
-                    # нужен ли тут await asyncio.sleep(5)?
-                    continue
+                    logger.info(f"Попытка подключения к устройству {device_name}")
+                    ble_device = await self._find_device_by_name(device_name)
 
-                emg_sens = EmgSens(ble_device)
-                if await emg_sens.connect(CONNECTION_TIMEOUT):
-                    self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECT)
+                    if ble_device is None:
+                        logger.debug(f"Устройство {device_name} не найдено")
+                        continue
 
-                    logger.info(f"Успешное подключение к устройств {device_name}")
+                    emg_sens = EmgSens(ble_device)
+                    if await emg_sens.connect(CONNECTION_TIMEOUT):
+                        self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECT)
 
-                    # добавляем новое подключенное устройство
-                    self._connected_devices[device_id] = emg_sens
-                    self._device_queues[device_id] = asyncio.Queue()
+                        logger.info(f"Успешное подключение к устройств {device_name}")
 
-                    self.signal_start_acquisition.emit(task)   # сигнал о начале записи
+                        # добавляем новое подключенное устройство
+                        with self._devices_lock:
+                            self._connected_devices[device_id] = emg_sens
 
-                    # создание задачи на получение данных с устройства
-                    acquisition_task = asyncio.create_task(self._start_data_acquisition(emg_sens, task))
-                    self._acquisition_tasks[device_id] = acquisition_task
-                    break
+                        self._pending_connections.remove(device_id)
+                        self._device_queues[device_id] = asyncio.Queue()
 
-                else:
-                    logger.warning(f"Не удалось подключиться к устройству {device_name}")
+                        self.signal_start_acquisition.emit(task)   # сигнал о начале записи
 
-            except Exception as exc:
-                logger.error(f"Ошибка при подключении к {device_name}: {exc}")
+                        # создание задачи на получение данных с устройства
+                        acquisition_task = asyncio.create_task(self._start_data_acquisition(emg_sens, task))
 
-        if datetime.datetime.now() >= task.finish_time:
-            logger.warning(f"К устройству {device_name} не удалось подключиться.")
-            record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
-            self.signal_record_result.emit(record_data)
+                        while self._devices_lock:
+                            self._acquisition_tasks[device_id] = acquisition_task
+                            break
+                    else:
+                        logger.warning(f"Не удалось подключиться к устройству {device_name}")
+
+                except Exception as exc:
+                    logger.error(f"Ошибка при подключении к {device_name}: {exc}")
+
+            if datetime.datetime.now() >= task.finish_time or time.time() - discovery_start_time > DEVICE_DISCOVERY_TIMEOUT:
+                logger.warning(f"К устройству {device_name} не удалось подключиться.")
+                self._pending_connections.remove(device_id)
+                self.signal_device_error.emit(device_id, f"Не удалось найти устройство {task.device.ble_name}.")
+                record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
+                self.signal_record_result.emit(record_data)
+
+        finally:
+            await self._decrement_active_counter()    # уменьшаем счётчик задач
 
     async def _start_data_acquisition(self, emg_sens: EmgSens, task: RecordingTaskData):
         """ Запуск сбора данных с устройства и их обработка """
-
-        base_settings = Settings(
-            DataRateEMG=SamplingRate.HZ_1000.value,
-            AveragingWindowEMG=10,
-            FullScaleAccelerometer=ScaleAccel.G_0.value,
-            FullScaleGyroscope=ScaleGyro.DPS_125.value,
-            EnabledChannels=Channel.EMG,
-            EnabledEvents=EventType.DISABLE,
-            ActivityThreshold=1)
-
         device_id = task.device.id
-        data_queue = self._device_queues[device_id]
 
         try:
+            sampling_rate = self.set_sampling_rate(task.sampling_rate)
+            logger.debug(f"{emg_sens.name} установлен на частоту оцифровки {task.sampling_rate} Гц")
+
+            base_settings = Settings(
+                DataRateEMG=sampling_rate, AveragingWindowEMG=10, FullScaleAccelerometer=ScaleAccel.G_0.value,
+                FullScaleGyroscope=ScaleGyro.DPS_125.value, EnabledChannels=Channel.EMG, EnabledEvents=EventType.DISABLE,
+                ActivityThreshold=1)
+
+            data_queue = self._device_queues[device_id]
             if await emg_sens.start_emg_acquisition(settings=base_settings, emg_queue=data_queue):
+
                 logger.info(f"Сбор данных запущен для устройства {task.device.ble_name}")
-                self.signal_schedule_state.emit(task.schedule_id, ScheduleState.ACQUISITION)
+                self.signal_schedule_state.emit(task.schedule_id,
+                                                ScheduleState.ACQUISITION)  # извещение главного окна об изменении статуса расписания -> идёт запись ЭКГ
 
                 # обработка входящих данных
-                while self.is_running and emg_sens.is_connected and datetime.datetime.now() < task.finish_time:
+                while (self.is_running and
+                       emg_sens.is_connected and
+                       datetime.datetime.now() < task.finish_time):
+
                     try:
                         data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
                         self.signal_data_received.emit(device_id, data)
                         data_queue.task_done()
+
                     except asyncio.TimeoutError:
                         continue
+
                     except Exception as exp:
                         logger.error(f"Ошибка обработки данных с устройства {task.device.ble_name}")
                         self.signal_stop_acquisition.emit(device_id)
                         break
-        except Exception as e:
+
+        except Exception as exc:
             record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
             self.signal_record_result.emit(record_data)
-            logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {e}")
+            logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {exc}")
         finally:
+
+            if not emg_sens.is_connected:   # извещение о потере соединения с устройством
+                self.signal_device_error.emit(device_id,
+                                              f"Потеряно соединение с устройством {task.device.ble_name}."
+                                              "\nЗаписанный сигнал ЭКГ будет сохранен.")
+
             self.signal_schedule_state.emit(task.schedule_id, ScheduleState.DISCONNECT)
             self.signal_stop_acquisition.emit(device_id)
-            await self._cleanup_device(device_id)     # Очистка при завершении
+            await self._cleanup_device(device_id)  # Очистка при завершении
 
     async def _cleanup_device(self, device_id: UUID):
         """ Очистка ресурсов устройства """
         try:
-            # убрать device_id из словаря подключенных устройств
-            if device_id in self._connected_devices:
-                emg_sens = self._connected_devices[device_id]
-                if emg_sens.is_connected:
-                    await emg_sens.stop_acquisition()
-                    await emg_sens.disconnect()
+            with self._devices_lock:
+                # убрать device_id из словаря подключенных устройств
+                if device_id in self._connected_devices:
+                    emg_sens = self._connected_devices[device_id]
+                    if emg_sens.is_connected:
+                        await emg_sens.stop_acquisition()
+                        await emg_sens.disconnect()
+                    del self._connected_devices[device_id]
 
-                del self._connected_devices[device_id]
-
-            # отмена задачи на получение данных
-            if device_id in self._acquisition_tasks:
-                self._acquisition_tasks[device_id].cancel()
-                try:
-                    await self._acquisition_tasks[device_id]
-                except asyncio.CancelledError:
-                    pass
-
-                del self._acquisition_tasks[device_id]
+                # отмена задачи на получение данных
+                if device_id in self._acquisition_tasks:
+                    self._acquisition_tasks[device_id].cancel()
+                    try:
+                        await self._acquisition_tasks[device_id]
+                    except asyncio.CancelledError:
+                        pass
+                    del self._acquisition_tasks[device_id]
 
             # удаление очереди для emgsens с device_id
             if device_id in self._device_queues:
@@ -240,7 +371,6 @@ class BleManager(QObject):
             devices = await BleakScanner.discover(timeout=SCAN_TIMEOUT)
 
             for d in devices:
-
                 if d.name and device_name in d.name:
                     logger.info(f"Найдено устройство: {d.name} ({d.address})")
                     return d
@@ -280,6 +410,20 @@ class BleManager(QObject):
 
     def handle_success_record_result(self, record_data: RecordData):
         self.signal_record_result.emit(record_data)
+
+    @staticmethod
+    def set_sampling_rate(sampling_rate: int) -> None | int:
+        """ Установка частоты оцифровки """
+        if not isinstance(sampling_rate, int):
+            raise ValueError(f"sampling_rate have type {type(sampling_rate)}, must be int")
+
+        if sampling_rate == 1000:
+            return SamplingRate.HZ_1000.value
+        if sampling_rate == 2000:
+            return SamplingRate.HZ_2000.value
+        if sampling_rate == 5000:
+            return SamplingRate.HZ_5000.value
+        return None
 
 if __name__ == "__main__":
     # logging.basicConfig(

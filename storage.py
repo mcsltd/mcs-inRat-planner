@@ -1,6 +1,5 @@
 import logging
 import os
-import threading
 import numpy as np
 
 from uuid import UUID
@@ -25,7 +24,6 @@ class Storage(QObject):
         self._recording_task_data: dict[UUID, np.ndarray] = {}
         self._recording_task_property: dict[UUID, RecordingTaskData] = {}
 
-        # print(f"Объект Storage создан в потоке {threading.current_thread()}")
 
     def add_recording_task(self, task: RecordingTaskData) -> None:
         """ Начало записи данных, приходящих из BleManager """
@@ -79,7 +77,7 @@ class Storage(QObject):
 
         if path_to_file is not None:
             task = self._recording_task_property[device_id]
-            sec_duration = (task.finish_time - task.start_time).seconds
+            sec_duration = int(len(signal) / sampling_rate)
 
             record_data = task.get_result_record(duration=sec_duration, status=RecordStatus.OK, path=path_to_file)
             self.signal_success_save.emit(record_data)
