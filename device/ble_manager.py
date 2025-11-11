@@ -111,6 +111,7 @@ class BleManager(QObject):
 
     async def _process_new_task(self) -> None:
         """ Обработка новых задач на подключение """
+
         while len(self._recording_tasks) != 0:
             recording_task = self._recording_tasks.pop()
             device_id = recording_task.device.id
@@ -171,11 +172,26 @@ class BleManager(QObject):
             record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
             self.signal_record_result.emit(record_data)
 
+    @staticmethod
+    def set_sampling_rate(sampling_rate: int) -> None | int:
+        if sampling_rate == 1000:
+            return SamplingRate.HZ_1000.value
+        if sampling_rate == 2000:
+            return SamplingRate.HZ_2000.value
+        if sampling_rate == 5000:
+            return SamplingRate.HZ_5000.value
+        return None
+
     async def _start_data_acquisition(self, emg_sens: EmgSens, task: RecordingTaskData):
         """ Запуск сбора данных с устройства и их обработка """
 
+        sampling_rate = self.set_sampling_rate(task.sampling_rate)
+        logger.debug(f"{emg_sens.name} установлен на частоту оцифровки {task.sampling_rate} Гц")
+
         base_settings = Settings(
-            DataRateEMG=SamplingRate.HZ_1000.value,
+            # DataRateEMG=SamplingRate.HZ_1000.value,
+            DataRateEMG=sampling_rate,
+
             AveragingWindowEMG=10,
             FullScaleAccelerometer=ScaleAccel.G_0.value,
             FullScaleGyroscope=ScaleGyro.DPS_125.value,
@@ -189,7 +205,7 @@ class BleManager(QObject):
         try:
             if await emg_sens.start_emg_acquisition(settings=base_settings, emg_queue=data_queue):
                 logger.info(f"Сбор данных запущен для устройства {task.device.ble_name}")
-                self.signal_schedule_state.emit(task.schedule_id, ScheduleState.ACQUISITION)
+                self.signal_schedule_state.emit(task.schedule_id, ScheduleState.ACQUISITION)    # извещение главного окна об изменении статуса расписания
 
                 # обработка входящих данных
                 while self.is_running and emg_sens.is_connected and datetime.datetime.now() < task.finish_time:
@@ -203,6 +219,7 @@ class BleManager(QObject):
                         logger.error(f"Ошибка обработки данных с устройства {task.device.ble_name}")
                         self.signal_stop_acquisition.emit(device_id)
                         break
+
         except Exception as e:
             record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
             self.signal_record_result.emit(record_data)

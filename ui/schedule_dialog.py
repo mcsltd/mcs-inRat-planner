@@ -300,7 +300,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         sec_duration = self.convert_to_seconds_by_last_word(self.comboBoxDuration.currentText())
 
         file_format = list(self.comboBoxFormat.currentData().value.values())[0]
-        sampling_rate = self.comboBoxSamplingRate.currentText().split()[0]
+        sampling_rate = int(self.comboBoxSamplingRate.currentText().split()[0])
 
         if self.default_schedule is None:
             schedule_id = uuid.uuid4()

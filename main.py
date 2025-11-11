@@ -103,7 +103,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # загрузка настроек
         self.get_preferences()
 
-
     def get_preferences(self):
         """ Установка начальных настроек """
         config = ConfigParser()

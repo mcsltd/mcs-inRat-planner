@@ -1,6 +1,5 @@
 import logging
 import os
-import threading
 import numpy as np
 
 from uuid import UUID
@@ -25,7 +24,6 @@ class Storage(QObject):
         self._recording_task_data: dict[UUID, np.ndarray] = {}
         self._recording_task_property: dict[UUID, RecordingTaskData] = {}
 
-        # print(f"Объект Storage создан в потоке {threading.current_thread()}")
 
     def add_recording_task(self, task: RecordingTaskData) -> None:
         """ Начало записи данных, приходящих из BleManager """
