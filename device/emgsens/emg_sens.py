@@ -34,7 +34,7 @@ class EmgSens:
 
     @property
     def is_connected(self) -> bool:
-        return self._connection_state == ConnectionState.CONNECTED
+        return self._client.is_connected
 
     @property
     def address(self) -> str:
