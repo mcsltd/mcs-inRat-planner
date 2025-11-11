@@ -25,6 +25,7 @@ from structure import ScheduleData, RecordData
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
+from ui.about_dialog import AboutDialog
 from ui.helper_dialog import DialogHelper
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
@@ -84,7 +85,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # tables
         self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
-
         self.tableModelHistory.doubleClicked.connect(self.run_monitor)
 
         # buttons
@@ -92,6 +92,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonUpdateSchedule.clicked.connect(self.update_schedule)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
         self.actionSettings.triggered.connect(self.configuration_clicked)
+        self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
 
         self.pushButtonDownloadRecords.setDisabled(True)
@@ -135,6 +136,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         with open(self.preferences_file, "w") as config_file:
             config.write(config_file)
+
+    def about_clicked(self):
+        dlg = AboutDialog(self)
+        dlg.exec()
 
     @connection
     def init_jobs(self, session):
