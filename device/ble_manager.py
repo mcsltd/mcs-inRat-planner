@@ -22,13 +22,14 @@ logger = logging.getLogger(__name__)
 # константы ограничения времени
 CONNECTION_TIMEOUT = 5
 SCAN_TIMEOUT = 0.1
-
+DEVICE_DISCOVERY_TIMEOUT = 60
 
 class BleManager(QObject):
 
     # главное окно
     signal_record_result = Signal(object)
     signal_schedule_state = Signal(UUID, object)
+    signal_device_error = Signal(UUID, str)
 
     # сигналы для устройства
     signal_start_acquisition = Signal(UUID)
@@ -184,6 +185,7 @@ class BleManager(QObject):
         """ Уменьшить число активных задачи """
         with self._counters_lock:
             self._active_tasks_count -= 1
+            logger.debug(f"Уменьшено активных задач: {self._active_tasks_count}/{self._max_connected_devices}")
 
         # Будим ожидающие задачи
         for event in self._task_events.values():
@@ -227,9 +229,11 @@ class BleManager(QObject):
 
         try:
             self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECTION)
-
-            while (self.is_running and device_id not in self._connected_devices
-                   and datetime.datetime.now() < task.finish_time    # проверка на тайм-аут
+            discovery_start_time = time.time()
+            while (
+                    self.is_running and device_id not in self._connected_devices
+                    and datetime.datetime.now() < task.finish_time
+                    and time.time() - discovery_start_time < DEVICE_DISCOVERY_TIMEOUT
             ):
                 try:
                     self._pending_connections.add(device_id)
@@ -243,7 +247,6 @@ class BleManager(QObject):
 
                     emg_sens = EmgSens(ble_device)
                     if await emg_sens.connect(CONNECTION_TIMEOUT):
-                        print("connect to device")
                         self.signal_schedule_state.emit(task.schedule_id, ScheduleState.CONNECT)
 
                         logger.info(f"Успешное подключение к устройств {device_name}")
@@ -263,17 +266,19 @@ class BleManager(QObject):
                         while self._devices_lock:
                             self._acquisition_tasks[device_id] = acquisition_task
                             break
-
                     else:
                         logger.warning(f"Не удалось подключиться к устройству {device_name}")
 
                 except Exception as exc:
                     logger.error(f"Ошибка при подключении к {device_name}: {exc}")
 
-            if datetime.datetime.now() >= task.finish_time:
+            if datetime.datetime.now() >= task.finish_time or time.time() - discovery_start_time > DEVICE_DISCOVERY_TIMEOUT:
                 logger.warning(f"К устройству {device_name} не удалось подключиться.")
+                self._pending_connections.remove(device_id)
+                self.signal_device_error.emit(device_id, f"Не удалось найти устройство {task.device.ble_name}.")
                 record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)  # ошибка записи
                 self.signal_record_result.emit(record_data)
+
         finally:
             await self._decrement_active_counter()    # уменьшаем счётчик задач
 
@@ -286,21 +291,16 @@ class BleManager(QObject):
             logger.debug(f"{emg_sens.name} установлен на частоту оцифровки {task.sampling_rate} Гц")
 
             base_settings = Settings(
-                DataRateEMG=sampling_rate,
-                AveragingWindowEMG=10,
-                FullScaleAccelerometer=ScaleAccel.G_0.value,
-                FullScaleGyroscope=ScaleGyro.DPS_125.value,
-                EnabledChannels=Channel.EMG,
-                EnabledEvents=EventType.DISABLE,
+                DataRateEMG=sampling_rate, AveragingWindowEMG=10, FullScaleAccelerometer=ScaleAccel.G_0.value,
+                FullScaleGyroscope=ScaleGyro.DPS_125.value, EnabledChannels=Channel.EMG, EnabledEvents=EventType.DISABLE,
                 ActivityThreshold=1)
 
             data_queue = self._device_queues[device_id]
-
             if await emg_sens.start_emg_acquisition(settings=base_settings, emg_queue=data_queue):
 
                 logger.info(f"Сбор данных запущен для устройства {task.device.ble_name}")
                 self.signal_schedule_state.emit(task.schedule_id,
-                                                ScheduleState.ACQUISITION)  # извещение главного окна об изменении статуса расписания
+                                                ScheduleState.ACQUISITION)  # извещение главного окна об изменении статуса расписания -> идёт запись ЭКГ
 
                 # обработка входящих данных
                 while (self.is_running and
@@ -325,6 +325,12 @@ class BleManager(QObject):
             self.signal_record_result.emit(record_data)
             logger.error(f"Ошибка в задаче сбора данных для {task.device.ble_name}: {exc}")
         finally:
+
+            if not emg_sens.is_connected:   # извещение о потере соединения с устройством
+                self.signal_device_error.emit(device_id,
+                                              f"Потеряно соединение с устройством {task.device.ble_name}."
+                                              "\nЗаписанный сигнал ЭКГ будет сохранен.")
+
             self.signal_schedule_state.emit(task.schedule_id, ScheduleState.DISCONNECT)
             self.signal_stop_acquisition.emit(device_id)
             await self._cleanup_device(device_id)  # Очистка при завершении

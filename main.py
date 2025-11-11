@@ -78,6 +78,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # соединение сигналов с функциями
         self.ble_manager.signal_schedule_state.connect(self.handle_schedule_state)
         self.ble_manager.signal_record_result.connect(self.handle_record_result)
+        self.ble_manager.signal_device_error.connect(self.on_ble_manager_error)
         self.maxConnectDevicesChanged.connect(self.ble_manager.set_max_connected_devices)
 
         # tables
@@ -230,13 +231,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         record_id = Record.from_dataclass(record_data).create(session)
         logger.debug(f"Добавлена запись в базу данных: {record_id}")
 
-        if record_data.status == RecordStatus.ERROR.value:
-            schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
-            reply = QMessageBox.warning(
-                self, f"Ошибка записи ЭКГ",
-                f"Возникла ошибка записи с устройства {schedule_data.device.ble_name}.",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-            )
+        # if record_data.status == RecordStatus.ERROR.value:
+        #     schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
+        #     reply = QMessageBox.warning(
+        #         self, f"Ошибка записи ЭКГ",
+        #         f"Не удалось подключиться к устройству {schedule_data.device.ble_name}.",
+        #         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+        #     )
 
         # Todo: обновить информацию в таблице "Расписания" по schedule_id
         self.update_content_table_schedule()
@@ -244,7 +245,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # обновить отображение данных в таблице Records
         self.update_content_table_history()
 
-    # Schedule
     @connection
     def add_schedule(self, session) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
@@ -512,6 +512,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info(f"Удаление архивных расписаний, объектов, устройств")
         # ToDo: ...
 
+    def on_ble_manager_error(self, device_id, description):
+        """ Обработчик выводящий сообщения о проблемах с устройством """
+        DialogHelper.show_confirmation_dialog(
+            self, title="Предупреждение", yes_text="Ок", icon=QMessageBox.Icon.Warning,
+            message=description, btn_no=False)
+
     def closeEvent(self, event, /):
         """ Обработка закрытия приложения """
         self.ble_manager.stop()
@@ -539,7 +545,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         seconds = seconds % 60
 
         return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
-
 
 if __name__ == "__main__":
     logging.basicConfig(
