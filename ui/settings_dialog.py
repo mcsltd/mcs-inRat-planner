@@ -38,7 +38,7 @@ class WidgetCfg(QWidget):
         self.verticalLayout.addLayout(self.horizontalLayoutControlTable)
         self.setLayout(self.verticalLayout)
 
-    @classmethod
+    @staticmethod
     def convert_seconds_to_str(cls, seconds) -> str | None:
         if seconds / 3600 >= 1:
             return f"{seconds // 3600} ч."
@@ -63,7 +63,7 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
         self.set_widgets()
 
         self.listWidget.clicked.connect(self.setup_widget)
-        self.pushButtonCancel.clicked.connect(self.close)
+        # self.pushButtonCancel.clicked.connect(self.close)
 
     def setup_widget(self, index: QModelIndex):
         model_idx = self.listWidget.selectedIndexes()[0]
@@ -104,38 +104,55 @@ class WidgetCfgGeneral(WidgetCfg):
     def setup_ble_settings(self, cnt_device: int):
         """Настройка интерфейса для BLE настроек"""
         self.ble_connection_group = QGroupBox("Настройки подключения устройств")
+
         ble_connection_layout = QVBoxLayout(self.ble_connection_group)
         connection_limit_layout = QHBoxLayout()
+
         self.label_cnt_device = QLabel("Максимальное количество подключаемых устройств:")
         connection_limit_layout.addWidget(self.label_cnt_device)
+
         self.connection_spinbox = QSpinBox()
         self.connection_spinbox.setRange(1, 4)
         self.connection_spinbox.setValue(cnt_device)
         self.connection_spinbox.setSuffix(" устройств")
         self.connection_spinbox.setFixedWidth(120)
+
         connection_limit_layout.addWidget(self.connection_spinbox)
         connection_limit_layout.addStretch()
+
         ble_connection_layout.addLayout(connection_limit_layout)
-        self.v_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
         # Поясняющая надпись
         info_label = QLabel("• Увеличение количества может повлиять на стабильность работы")
         info_label.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
         ble_connection_layout.addWidget(info_label)
 
-        self.connection_spinbox.valueChanged.connect(self.on_max_devices_changed)
+        # Кнопка Применить под текстом слева
+        button_layout = QHBoxLayout()
+        self.pushButtonChangeCntDevice = QPushButton("Применить")
+        self.pushButtonChangeCntDevice.setFixedSize(110, 25)  # Фиксированный размер
+        button_layout.addWidget(self.pushButtonChangeCntDevice)
+        button_layout.addStretch()  # Растяжка справа, чтобы кнопка была слева
+
+        ble_connection_layout.addLayout(button_layout)
+
+        self.v_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.pushButtonChangeCntDevice.clicked.connect(self.on_max_devices_changed)
         self.verticalLayout.addWidget(self.ble_connection_group)
 
-    def on_max_devices_changed(self, value: int):
+    def on_max_devices_changed(self):
         """ Обработчик изменения максимального количества устройств """
+        value = int(self.connection_spinbox.value())
         if self.parent_dialog and hasattr(self.parent_dialog, "signals"):
             self.parent_dialog.signals.max_devices_changed.emit(value)
 
     def archive_recovery_ui(self):
-        """ Интерфейс восстановления архивированных данных """
+        """ Интерфейс восстановления архивных данных """
         self.restore_group = QGroupBox("Восстановление архивных расписаний и записей")
         restore_layout = QVBoxLayout(self.restore_group)
 
-        self.label_archive_info = QLabel(f"Всего архивированных расписаний: 0")
+        self.label_archive_info = QLabel(f"Всего архивных расписаний: 0")
         self.set_label_count_archived_schedule()
 
         info_layout = QHBoxLayout()
@@ -145,6 +162,7 @@ class WidgetCfgGeneral(WidgetCfg):
 
         button_layout = QHBoxLayout()
         self.btn_restore_all = QPushButton("Восстановить всё")
+        self.btn_restore_all.setFixedSize(110, 25)
         self.btn_restore_all.clicked.connect(self.on_restore_all)
 
         button_layout.addWidget(self.btn_restore_all)
@@ -173,7 +191,7 @@ class WidgetCfgGeneral(WidgetCfg):
 
         button_layout = QHBoxLayout()
         self.btn_delete = QPushButton("Удалить всё")
-
+        self.btn_delete.setFixedSize(110, 25)
         self.btn_delete.clicked.connect(self.on_delete_all)
 
         button_layout.addWidget(self.btn_delete)
@@ -308,6 +326,6 @@ if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication, QLabel, QWidget, QDialog
 
     app = QApplication([])
-    window = DlgMainConfig()
+    window = DlgMainConfig(cnt_device=2)
     window.show()
     app.exec()
