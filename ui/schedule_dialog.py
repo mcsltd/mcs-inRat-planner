@@ -1,9 +1,10 @@
+import datetime
 import logging
 import uuid
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QDateTime, Signal, QDate, QTime
+from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer
 from PySide6.QtGui import QIcon, QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox, QWidget
 
@@ -46,14 +47,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
         self.fill_combobox_experiment()
 
-        # fill combobox
-        # self.comboBoxExperiment.setEditable(True)
         self.fill_combobox(self.comboBoxModelDevice, Devices)
         self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
         self.fill_combobox(self.comboBoxFormat, Formats)
 
-        # self.comboBoxDuration.setPlaceholderText("[mm:ss]")
-        # self.comboBoxDuration.addItems(["01:00", "02:00", "03:00", "04:00", "05:00", "10:00", "15:00", "20:00"])
         self.comboBoxDuration.addItems(
             ["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
 
@@ -67,6 +64,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
         self.LineEditObject.textChanged.connect(self.on_form_changed)
         self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
+        self.dateTimeEditStartExperiment.dateTimeChanged.connect(self.on_start_datetime_changed)
 
         self.pushButtonByDefault.clicked.connect(self.setDefaults)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
@@ -74,6 +72,31 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
 
+        if schedule is None:
+            self.timer_update = QTimer()
+            self.timer_update.setInterval(1000)
+            self.timer_update.timeout.connect(self._update_time_edit)
+            self.timer_update.start()
+
+    def on_start_datetime_changed(self):
+        """ Обработка изменения даты со временем в окне ввода времени """
+        # обработка ошибки finish_time < start_time, finish_time всегда должен быть больше или равен start_time
+        start_time = self.dateTimeEditStartExperiment.dateTime()
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(start_time)
+
+    def _update_time_edit(self):
+        """ Установить в dateTimeEditStartExperiment время больше текущего времени на 1 минуту"""
+        current_time = datetime.datetime.now().replace(second=0, microsecond=0)
+        start_time = self.dateTimeEditStartExperiment.dateTime().toPython().replace(second=0, microsecond=0)
+
+        if current_time >= start_time:
+            start_time += datetime.timedelta(minutes=1)
+            self.dateTimeEditStartExperiment.setDateTime(
+                QDateTime(
+                    QDate(start_time.year, start_time.month, start_time.day),
+                    QTime(start_time.hour, start_time.minute, start_time.second))
+            )
+            logger.info(f"Изменено время начала записи ЭКГ: {str(start_time)}")
 
     def on_ok_clicked(self):
         """ Обработчик нажатия кнопки Ok """
@@ -113,6 +136,19 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             errors.append("В поле \"Серийный номер устройства\" должно быть введено 4 числа")
         else:
             self.clear_highlight(self.LineEditSnDevice)
+
+        # проверка времени старта и конца расписания
+        st = self.dateTimeEditFinishExperiment.dateTime().toPython()
+        ft = self.dateTimeEditStartExperiment.dateTime().toPython()
+        if st == ft:
+            logger.warning("Время старта равно времени конца записи")
+            self.highlight_field(self.dateTimeEditStartExperiment)
+            self.highlight_field(self.dateTimeEditFinishExperiment)
+            errors.append("\"Дата начала\" и \"дата окончания\" совпадают")
+        else:
+            self.clear_highlight(self.dateTimeEditStartExperiment)
+            self.clear_highlight(self.dateTimeEditFinishExperiment)
+
 
         if errors:
             self.show_error_message("\n".join(errors))
@@ -156,22 +192,21 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # schedule
         # start time
         st = schedule.datetime_start
-        self.dateTimeEditStartExperiment.setDateTime(
-            QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
-        )
+        q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
+        self.dateTimeEditStartExperiment.setDateTime(q_st)
+        self.dateTimeEditStartExperiment.setMinimumDateTime(q_st)
 
         # finish time
         ft = schedule.datetime_finish
-        self.dateTimeEditFinishExperiment.setDateTime(
-            QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
-        )
+        q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
+        self.dateTimeEditFinishExperiment.setDateTime(q_ft)
+
         # interval
         interval = self.convert_seconds_with_identifier(seconds=schedule.sec_interval)
         self.set_combobox_value(self.comboBoxInterval, interval)
 
         # param records
         # record duration
-        # duration = self.convert_seconds_to_str_by_format(seconds=schedule.sec_duration, time_format="[mm:ss]")
         duration = self.convert_seconds_with_identifier(seconds=schedule.sec_duration)
         self.set_combobox_value(self.comboBoxDuration, duration)
 
@@ -231,6 +266,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             logger.debug("Detected unsaved change...")
 
     def setDefaults(self):
+        """ Установка значений по умолчанию """
         if self.default_schedule is not None:
             logger.debug(f"Установка настроек по умолчанию из структуры расписания: {self.default_schedule}")
             self.has_unsaved_changes = False
@@ -241,11 +277,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # set text
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
-        # self.LineEditSnDevice.setText("")
-        # self.LineEditObject.setText("")
 
         # set index
-        # self.comboBoxExperiment.setCurrentIndex(-1)
         self.comboBoxFormat.setCurrentIndex(1)
         self.comboBoxModelDevice.setCurrentIndex(0) # set EMGsens
         self.comboBoxSamplingRate.setCurrentIndex(0)
@@ -253,8 +286,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxInterval.setCurrentIndex(0)
 
         crt_dt = QDateTime.currentDateTime()
+        # установка минимального времени для начала записи
         self.dateTimeEditStartExperiment.setMinimumDateTime(crt_dt.addSecs(60))
-        self.dateTimeEditFinishExperiment.setMinimumDateTime(crt_dt.addDays(1))
+        # установка минимального времени для конца записи
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(crt_dt.addSecs(60))
+        self.dateTimeEditFinishExperiment.setDateTime(crt_dt.addDays(1))
 
         if (self.LineEditSnDevice.text().strip() == ""
                 or self.LineEditObject.text().strip() == ""
@@ -290,12 +326,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             device_id = uuid.uuid4()
         else:
             device_id = self.default_schedule.device.id
+
         device_sn = self.LineEditSnDevice.text()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
         dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
-        start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0)
-        finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0)
+        start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0, second=0)
+        finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0, second=0)
         sec_interval = self.convert_to_seconds_by_last_word(self.comboBoxInterval.currentText())
         sec_duration = self.convert_to_seconds_by_last_word(self.comboBoxDuration.currentText())
 

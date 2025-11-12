@@ -28,7 +28,7 @@
          <widget class="QLabel" name="labelHistory">
           <property name="font">
            <font>
-            <family>Arial</family>
+            <family>Segoe UI</family>
             <pointsize>11</pointsize>
            </font>
           </property>
@@ -41,8 +41,8 @@
          <spacer name="horizontalSpacerDownloadRecords">
           <property name="font">
            <font>
-            <family>Arial</family>
-            <pointsize>10</pointsize>
+            <family>Segoe UI</family>
+            <pointsize>11</pointsize>
            </font>
           </property>
           <property name="orientation">
@@ -60,7 +60,7 @@
          <widget class="QPushButton" name="pushButtonDownloadRecords">
           <property name="font">
            <font>
-            <family>Arial</family>
+            <family>Segoe UI</family>
             <pointsize>11</pointsize>
            </font>
           </property>
@@ -81,7 +81,7 @@
          <widget class="QLabel" name="labelSchedule">
           <property name="font">
            <font>
-            <family>Arial</family>
+            <family>Segoe UI</family>
             <pointsize>11</pointsize>
            </font>
           </property>
@@ -94,8 +94,8 @@
          <spacer name="horizontalSpacer">
           <property name="font">
            <font>
-            <family>Arial</family>
-            <pointsize>10</pointsize>
+            <family>Segoe UI</family>
+            <pointsize>11</pointsize>
            </font>
           </property>
           <property name="orientation">
@@ -113,7 +113,7 @@
          <widget class="QPushButton" name="pushButtonAddSchedule">
           <property name="font">
            <font>
-            <family>Arial</family>
+            <family>Segoe UI</family>
             <pointsize>11</pointsize>
            </font>
           </property>
@@ -126,7 +126,7 @@
          <widget class="QPushButton" name="pushButtonUpdateSchedule">
           <property name="font">
            <font>
-            <family>Arial</family>
+            <family>Segoe UI</family>
             <pointsize>11</pointsize>
            </font>
           </property>
@@ -139,7 +139,7 @@
          <widget class="QPushButton" name="pushButtonDeleteSchedule">
           <property name="font">
            <font>
-            <family>Arial</family>
+            <family>Segoe UI</family>
             <pointsize>11</pointsize>
            </font>
           </property>
