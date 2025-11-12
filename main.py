@@ -367,18 +367,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def update_schedule(self, session) -> None:
         """ Обработчик кнопки изменения расписаний """
-        schedule_data = self.tableModelSchedule.get_selected_data()
-        if schedule_data is None:
+        row_data = self.tableModelSchedule.get_selected_data()
+        if row_data is None:
             return None
 
-        schedule_id = str(schedule_data[0])
+        schedule_id = row_data[0]
+        schedule: Schedule = Schedule.find([Schedule.id == schedule_id], session)
+        if not schedule:
+            return None
+        schedule: ScheduleData = schedule.to_dataclass(session)
+
+        if not DialogHelper.show_confirmation_dialog(
+            parent=self, title="Изменение расписания",
+            message=f"На текущий момент для объекта \"{schedule.object.name}\" ведётся регистрация ЭКГ.\n"
+                    f"Вы хотите остановить регистрацию ЭКГ и изменить расписание?"
+        ):
+            return None
+
         # остановить и удалить задачи из расписания
         job = self.scheduler.get_job(job_id=schedule_id)
         if job is not None:
             logger.debug(f"Удалено расписание из планировщика с индексом: {schedule_id}")
             self.scheduler.remove_job(job_id=schedule_id)
 
-        schedule = Schedule.find([Schedule.id == UUID(schedule_id)], session).to_dataclass(session)
         dlg = DlgCreateSchedule(schedule)
         code = dlg.exec()
 
@@ -429,10 +440,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule_id = schedule_data[0]
         schedule = Schedule.find([Schedule.id==schedule_id], session)
 
-        s = schedule.to_dataclass(session)
+        if not schedule:
+            return None
+
+        schedule_data = schedule.to_dataclass(session)
+        device_id = schedule_data.device.id
+
+        # # проверка есть ли для устройства активные задачи
+        # if self.ble_manager.has_recording_task(device_id=device_id):
+        #     ...
+
         if not DialogHelper.show_confirmation_dialog(
             parent=self, title="Удаление расписания",
-            message=f"Вы уверены что хотите удалить расписание для объекта \"{s.object.name}\"?"):
+            message=f"На текущий момент для объекта \"{schedule_data.object.name}\" ведётся регистрация ЭКГ.\n"
+                    f"Вы уверены что хотите остановить запись?"
+        ):
+            return None
+
+        if not DialogHelper.show_confirmation_dialog(
+            parent=self, title="Удаление расписания",
+            message=f"Вы уверены что хотите удалить расписание для объекта \"{schedule_data.object.name}\"?"):
             return None
 
         # остановить и удалить задачи из расписания
@@ -524,7 +551,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Обработка закрытия приложения """
         # ToDo: проверять ble manager на выполнение задач
         self.ble_manager.stop()
-
 
     @staticmethod
     def convert_seconds_to_str(seconds: int) -> str | None:
