@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowWsprJC.ui'
+## Form generated from reading UI file 'main_windowVEDhfD.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -46,7 +46,7 @@ class Ui_MainWindow(object):
         self.labelHistory = QLabel(self.centralwidget)
         self.labelHistory.setObjectName(u"labelHistory")
         font1 = QFont()
-        font1.setFamilies([u"Arial"])
+        font1.setFamilies([u"Segoe UI"])
         font1.setPointSize(11)
         self.labelHistory.setFont(font1)
 

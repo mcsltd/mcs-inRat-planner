@@ -275,10 +275,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             schedule_id = Schedule.from_dataclass(schedule).create(session)
             logger.info(f"Добавлено расписание: id={schedule_id}")
 
-            # ToDo: проверка времени должна быть внутри диалогового окна
-            # time = schedule.datetime_start
-            # if time <= datetime.datetime.now():
-            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=10)
+            time = schedule.datetime_start
             self.create_job(schedule, start_time=time)
 
             # fill table Schedule
@@ -525,7 +522,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event, /):
         """ Обработка закрытия приложения """
+        # ToDo: проверять ble manager на выполнение задач
         self.ble_manager.stop()
+
 
     @staticmethod
     def convert_seconds_to_str(seconds: int) -> str | None:
