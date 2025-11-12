@@ -224,8 +224,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
         )
 
-    def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState):
+    @connection
+    def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState, session):
         """ Обработчик сигнала (signal_schedule_state) состояния расписания определяемый BleManager """
+        schedule = Schedule.find([Schedule.id == schedule_id], session)
+        if schedule is None:
+            return
+
         if not self.tableModelSchedule.modify_value_by_id(row_id=schedule_id, column_name="Статус", value=status.value):
             raise ValueError(f"Не удалось обновить статус для расписания с индексом: {schedule_id}")
 
@@ -233,16 +238,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_record_result(self, record_data: RecordData, session):
         """ Обработка  сигнала (signal_record_result) из BleManager c результатом записи сигнала """
 
+        schedule_id = record_data.schedule_id
+        schedule = Schedule.find([Schedule.id == schedule_id], session)
+
+        if schedule is None:
+            record_id = Record.from_dataclass(record_data).create(session)
+            soft_delete_records(schedule_id, session)
+
         record_id = Record.from_dataclass(record_data).create(session)
         logger.debug(f"Добавлена запись в базу данных: {record_id}")
-
-        # if record_data.status == RecordStatus.ERROR.value:
-        #     schedule_data = Schedule.find([record_data.schedule_id == Schedule.id], session).to_dataclass(session)
-        #     reply = QMessageBox.warning(
-        #         self, f"Ошибка записи ЭКГ",
-        #         f"Не удалось подключиться к устройству {schedule_data.device.ble_name}.",
-        #         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-        #     )
 
         # Todo: обновить информацию в таблице "Расписания" по schedule_id
         self.update_content_table_schedule()
@@ -444,23 +448,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return None
 
         schedule_data = schedule.to_dataclass(session)
+        # проверка есть ли для устройства активные задачи
         device_id = schedule_data.device.id
-
-        # # проверка есть ли для устройства активные задачи
-        # if self.ble_manager.has_recording_task(device_id=device_id):
-        #     ...
-
-        if not DialogHelper.show_confirmation_dialog(
-            parent=self, title="Удаление расписания",
-            message=f"На текущий момент для объекта \"{schedule_data.object.name}\" ведётся регистрация ЭКГ.\n"
-                    f"Вы уверены что хотите остановить запись?"
-        ):
-            return None
-
-        if not DialogHelper.show_confirmation_dialog(
-            parent=self, title="Удаление расписания",
-            message=f"Вы уверены что хотите удалить расписание для объекта \"{schedule_data.object.name}\"?"):
-            return None
+        if self.ble_manager.has_recording_task(device_id=device_id):
+            if not DialogHelper.show_confirmation_dialog(
+                    parent=self, title="Удаление расписания",
+                    message=f"На текущий момент для объекта \"{schedule_data.object.name}\" ведётся регистрация ЭКГ.\n"
+                            f"Вы уверены что хотите остановить запись?"
+            ):
+                return None
+            else:
+                self.ble_manager.stop_and_remove_device_task(device_id)
+        else:
+            if not DialogHelper.show_confirmation_dialog(
+                parent=self, title="Удаление расписания",
+                message=f"Вы уверены что хотите удалить расписание для объекта \"{schedule_data.object.name}\"?"):
+                return None
 
         # остановить и удалить задачи из расписания
         job = self.scheduler.get_job(job_id=str(schedule_id))
