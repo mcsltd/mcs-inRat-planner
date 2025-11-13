@@ -183,7 +183,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             return True
 
         obj = Object.find([Object.name == name], session)
-        if obj:
+        archived_obj = Object.find([Object.name == name], session, is_deleted=True)
+        if obj or archived_obj:
             logger.info(f"Объект с именем {name} существует")
             return True
 
@@ -191,8 +192,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def _is_device_exists(self, name, session):
         """ Проверка существования устройства """
-        obj = Device.find([Device.ble_name == name], session)
-        if obj:
+        device = Device.find([Device.ble_name == name], session)
+        archived_device = Device.find([Device.ble_name == name], session, is_deleted=True)
+
+        if device or archived_device:
             logger.info(f"Устройство {name} уже существует")
             return True
 

@@ -435,9 +435,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 raise ValueError(f"В базе данных не найдено расписание с индексом: {schedule.id}")
             has_schedule.update(session, **schedule.to_dict_with_ids())
 
-            # ToDo: проверка времени должна быть внутри диалогового окна
-            # time = schedule.datetime_start
-            # if time <= datetime.datetime.now():
             time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=10)
             self.create_job(schedule, start_time=time)
 
