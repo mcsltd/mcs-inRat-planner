@@ -20,6 +20,21 @@ from resources.v1.wdt_monitor import Ui_FormMonitor
 logger = logging.getLogger(__name__ )
 
 
+def format_duration(seconds: int) -> str:
+    """ Преобразует секунды в читаемый формат (минуты, часы)."""
+    if seconds < 60:
+        return f"{seconds} с."
+    elif seconds < 3600:
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        return f"{minutes} мин. {remaining_seconds} с."
+    else:
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        remaining_seconds = seconds % 60
+        return f"{hours} ч. {minutes} мин. {remaining_seconds} с."
+
+
 class TimebaseControlWidget(QWidget):
     """Виджет для управления timebase (окном отображения сигнала)"""
 
@@ -187,8 +202,8 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
 
         if "timestamp" in data and "start_timestamp" in data:
             sec_duration = int(data["timestamp"] - data["start_timestamp"])
-
-            self.labelDurationValue.setText(f"{sec_duration} с.")
+            format_time = format_duration(sec_duration)
+            self.labelDurationValue.setText(format_time)
 
         self.plot.set_data(time_arr, ecg)
 
