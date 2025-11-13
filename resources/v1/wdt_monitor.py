@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'wdt_monitoruSVZsu.ui'
+## Form generated from reading UI file 'wdt_monitorfsZdon.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -25,11 +25,6 @@ class Ui_FormMonitor(object):
         FormMonitor.resize(1275, 612)
         self.gridLayout = QGridLayout(FormMonitor)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.verticalLayoutMonitor = QVBoxLayout()
-        self.verticalLayoutMonitor.setObjectName(u"verticalLayoutMonitor")
-
-        self.gridLayout.addLayout(self.verticalLayoutMonitor, 0, 0, 1, 1)
-
         self.verticalLayoutInfo = QVBoxLayout()
         self.verticalLayoutInfo.setObjectName(u"verticalLayoutInfo")
         self.labelInformation = QLabel(FormMonitor)
@@ -115,6 +110,13 @@ class Ui_FormMonitor(object):
 
         self.formLayout_5.setWidget(3, QFormLayout.ItemRole.LabelRole, self.labelStartTime)
 
+        self.labelStartTimeValue = QLabel(FormMonitor)
+        self.labelStartTimeValue.setObjectName(u"labelStartTimeValue")
+        self.labelStartTimeValue.setFont(font1)
+        self.labelStartTimeValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.formLayout_5.setWidget(3, QFormLayout.ItemRole.FieldRole, self.labelStartTimeValue)
+
         self.labelDuration = QLabel(FormMonitor)
         self.labelDuration.setObjectName(u"labelDuration")
         sizePolicy1.setHeightForWidth(self.labelDuration.sizePolicy().hasHeightForWidth())
@@ -129,13 +131,6 @@ class Ui_FormMonitor(object):
         self.labelDurationValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.formLayout_5.setWidget(4, QFormLayout.ItemRole.FieldRole, self.labelDurationValue)
-
-        self.labelStartTimeValue = QLabel(FormMonitor)
-        self.labelStartTimeValue.setObjectName(u"labelStartTimeValue")
-        self.labelStartTimeValue.setFont(font1)
-        self.labelStartTimeValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.formLayout_5.setWidget(3, QFormLayout.ItemRole.FieldRole, self.labelStartTimeValue)
 
         self.labelFormat = QLabel(FormMonitor)
         self.labelFormat.setObjectName(u"labelFormat")
@@ -158,6 +153,11 @@ class Ui_FormMonitor(object):
 
         self.gridLayout.addLayout(self.verticalLayoutInfo, 0, 1, 1, 1)
 
+        self.verticalLayoutMonitor = QVBoxLayout()
+        self.verticalLayoutMonitor.setObjectName(u"verticalLayoutMonitor")
+
+        self.gridLayout.addLayout(self.verticalLayoutMonitor, 0, 0, 1, 1)
+
 
         self.retranslateUi(FormMonitor)
 
@@ -173,10 +173,10 @@ class Ui_FormMonitor(object):
         self.labelDeviceValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
         self.labelSamplingRate.setText(QCoreApplication.translate("FormMonitor", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438:", None))
         self.labelSamplingRateValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
-        self.labelStartTime.setText(QCoreApplication.translate("FormMonitor", u"\u0412\u0440\u0435\u043c\u044f \u043d\u0430\u0447\u0430\u043b\u0430 \u0437\u0430\u043f\u0438\u0441\u0438:", None))
+        self.labelStartTime.setText(QCoreApplication.translate("FormMonitor", u"\u041d\u0430\u0447\u0430\u043b\u043e \u0437\u0430\u043f\u0438\u0441\u0438:", None))
+        self.labelStartTimeValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
         self.labelDuration.setText(QCoreApplication.translate("FormMonitor", u"\u0414\u043b\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u0438:", None))
         self.labelDurationValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
-        self.labelStartTimeValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
         self.labelFormat.setText(QCoreApplication.translate("FormMonitor", u"\u0424\u043e\u0440\u043c\u0430\u0442 \u0444\u0430\u0439\u043b\u0430:", None))
         self.labelFormatValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
     # retranslateUi

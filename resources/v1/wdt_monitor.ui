@@ -14,9 +14,6 @@
    <string>Мониторинг</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayoutMonitor"/>
-   </item>
    <item row="0" column="1">
     <layout class="QVBoxLayout" name="verticalLayoutInfo">
      <item>
@@ -164,7 +161,22 @@
           </font>
          </property>
          <property name="text">
-          <string>Время начала записи:</string>
+          <string>Начало записи:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="labelStartTimeValue">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>None</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -188,21 +200,6 @@
        </item>
        <item row="4" column="1">
         <widget class="QLabel" name="labelDurationValue">
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>None</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLabel" name="labelStartTimeValue">
          <property name="font">
           <font>
            <pointsize>10</pointsize>
@@ -252,6 +249,9 @@
       </layout>
      </item>
     </layout>
+   </item>
+   <item row="0" column="0">
+    <layout class="QVBoxLayout" name="verticalLayoutMonitor"/>
    </item>
   </layout>
  </widget>

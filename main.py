@@ -525,14 +525,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule_id = raw_data[0]
 
         # получение параметров запущенного устройства
-        schedule_data = Schedule.find([Schedule.id == schedule_id], session)
-
+        schedule = Schedule.find([Schedule.id == schedule_id], session)
+        if schedule is None:
+            DialogHelper.show_confirmation_dialog(
+                self,
+                title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
+                icon=QMessageBox.Icon.Critical, btn_no=False
+            )
+            return
+        schedule_data: ScheduleData = schedule.to_dataclass(session)
 
         device_id = schedule_data.device.id
-        device_name = schedule_data.device.ble_name
-
         if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
-            dlg = BLESignalViewer(device_id=device_id, device_name=device_name, fs=1000)
+            dlg = BLESignalViewer(schedule_data=schedule_data)
             self.ble_manager.signal_data_received.connect(dlg.accept_signal)
             dlg.exec()
 
