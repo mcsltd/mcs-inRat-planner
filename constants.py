@@ -50,7 +50,7 @@ EXAMPLE_DATA_HISTORY = [
 
 
 class Formats(Enum):
-    CSV = {"Comma Separate Value (CSV)": "CSV"}
+    # CSV = {"Comma Separate Value (CSV)": "CSV"}
     EDF = {"European Data Format (EDF)": "EDF"}
     WFDB = {"Waveform Database (WFDB)": "WFDB"}
 

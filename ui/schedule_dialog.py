@@ -215,7 +215,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # file format
         formats = {
-            "CSV" : "Comma Separate Value (CSV)",
+            # "CSV" : "Comma Separate Value (CSV)",
             "EDF" : "European Data Format (EDF)",
             "WFDB" : "Waveform Database (WFDB)"
         }
