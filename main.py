@@ -29,6 +29,8 @@ from ui.about_dialog import AboutDialog
 from ui.helper_dialog import DialogHelper
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
+from util import delete_file
+
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 # database
@@ -164,8 +166,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.debug(f"Время действия расписания истекло: {schedule.datetime_finish} для {schedule.id}")
                 continue
 
-            last_record = Record.get_last_record(schedule_id, session).to_dataclass() # последняя запись в таблице Records
-            start_time = last_record.datetime_start + dt        # время следующей запланированной записи
+            last_record = Record.get_last_record(schedule_id, session) # последняя запись в таблице Records
+            if last_record is None:
+                logger.debug(f"Для объекта {schedule.object.name} не было найдено записей!")
+                start_time = schedule.datetime_start
+            else:
+                last_record = last_record.to_dataclass()
+                start_time = last_record.datetime_start + dt  # время следующей запланированной записи
+
             if now > start_time: # проверка если запланированная запись отстаёт от текущего времени
                 logger.info(f"Запланированное время записи {str(start_time)} меньше чем текущее время {str(now)}")
                 template_missed_record = RecordData(
@@ -486,8 +494,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_history()
         logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_id)}")
 
-        # Device.find([Schedule.id==schedule_data[0]], session).soft_delete(session)
-        # Object.find([Object.id==schedule_data[0]], session).soft_delete(session)
+        Device.find([Device.id==schedule_data.device.id], session).soft_delete(session)
+        Object.find([Object.id==schedule_data.object.id], session).soft_delete(session)
         return None
 
     def run_monitor(self):
@@ -523,7 +531,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Активация окна настроек """
         dlg = DlgMainConfig(cnt_device=self.ble_manager.max_connected_devices)
 
-        # ToDo: устанавливать текущее максимальное кол-во одновременно подключенных устройств
         dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
         dlg.signals.archive_restored.connect(self.on_archive_restored)
         dlg.signals.archive_deleted.connect(self.on_archive_deleted)
@@ -546,9 +553,49 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_schedule()
         self.update_content_table_history()
 
-    def on_archive_deleted(self):
+    @connection
+    def on_archive_deleted(self, session):
         """ Обработчик сигнала удаления архивных расписаний, объектов, устройств """
         logger.info(f"Удаление архивных расписаний, объектов, устройств")
+
+        archived_schedules = Schedule.fetch_all_archived([], session)
+        for schedule in archived_schedules:
+            if schedule is None:
+                continue
+            schedule_data = schedule.to_dataclass(session, is_deleted=True)
+            schedule_id = schedule_data.id
+            device_data = schedule_data.device
+            object_data = schedule_data.object
+
+            # удалить расписания
+            schedule.delete(session)
+
+            # удаление записей
+            archived_records = Record.fetch_all_archived([Record.schedule_id == schedule_id], session)
+            for rec in archived_records:
+                if rec is not None:
+                    rec_data = rec.to_dataclass()
+                    if delete_file(file_path=rec_data.path):
+                        logger.debug(f"Файл записи ЭКГ для расписания {schedule_data.id} был удален")
+                    rec.delete(session)
+
+            # удалить объекты
+            if object_data is None:
+                logger.error(f"Объект для расписания {schedule_id} не был найден")
+            else:
+                archived_obj = Object.find_archived([Object.id == object_data.id], session)
+                if archived_obj is not None:
+                    logger.debug(f"Объект {object_data.name} был удален")
+                    archived_obj.delete(session)
+
+            # удалить устройства
+            if device_data is None:
+                logger.error(f"Устройство для расписания {schedule_id} не было найдено")
+            else:
+                archived_device = Device.find_archived([Device.id == device_data.id], session)
+                if archived_device is not None:
+                    logger.debug(f"Устройство {device_data.ble_name} было удалено")
+                    archived_device.delete(session)
 
     def on_ble_manager_error(self, device_id, description):
         """ Обработчик выводящий сообщения о проблемах с устройством """

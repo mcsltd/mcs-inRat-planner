@@ -217,6 +217,9 @@ class WidgetCfgGeneral(WidgetCfg):
                 self.parent_dialog.signals.archive_deleted.emit()
                 self.parent_dialog.signals.data_changed.emit()
 
+        self.set_count_archived_schedule()
+
+
 """class WidgetCfgDevice(WidgetCfg):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

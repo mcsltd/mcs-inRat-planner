@@ -46,11 +46,29 @@ class Base(DeclarativeBase):
         except Exception() as exc:
             return False
 
+    def delete(self, session: Session):
+        session.delete(self)
+        session.commit()
+        return True
+
+
     @classmethod
-    def find(cls, where_conditions: list[Any], session: Session):
-        stmt = select(cls).where(*where_conditions, cls.is_deleted==False)
+    def find(cls, where_conditions: list[Any], session: Session, is_deleted=False):
+        stmt = select(cls).where(*where_conditions, cls.is_deleted==is_deleted)
         result = session.execute(stmt)
         return result.scalars().first()
+
+    @classmethod
+    def find_archived(cls, where_conditions: list[Any], session: Session):
+        stmt = select(cls).where(*where_conditions, cls.is_deleted == True)
+        result = session.execute(stmt)
+        return result.scalars().first()
+
+    @classmethod
+    def fetch_all_archived(cls, where_conditions: list[Any], session: Session):
+        stmt = select(cls).where(*where_conditions, cls.is_deleted == True)
+        result = session.execute(stmt)
+        return result.scalars().all()
 
     @classmethod
     def fetch_all(cls, session):
@@ -94,7 +112,19 @@ class Schedule(Base):
         except SQLAlchemyError as ex:
             raise ValueError(ex)
 
-    def to_dataclass(self, session) -> ScheduleData:
+    def to_dataclass(self, session, is_deleted=False) -> ScheduleData:
+        experiment = Experiment.find([Experiment.id == self.experiment_id], session, is_deleted)
+        if experiment is not None:
+            experiment = experiment.to_dataclass()
+
+        device = Device.find([Device.id == self.device_id], session, is_deleted)
+        if device is not None:
+            device = device.to_dataclass()
+
+        object = Object.find([Object.id == self.object_id], session, is_deleted)
+        if object is not None:
+            object = object.to_dataclass()
+
         return ScheduleData(
             id=self.id,
             sec_duration=self.sec_duration,
@@ -104,10 +134,11 @@ class Schedule(Base):
             sampling_rate=self.sampling_rate,
             file_format=self.file_format,
 
-            experiment=Experiment.find([Experiment.id == self.experiment_id], session).to_dataclass(),
-            device=Device.find([Device.id == self.device_id], session).to_dataclass(),
-            object=Object.find([Object.id == self.object_id], session).to_dataclass()
+            experiment=experiment,
+            device=device,
+            object=object
         )
+
 
     @classmethod
     def get_all_schedules(cls, session):
@@ -116,12 +147,6 @@ class Schedule(Base):
         schedules = result.scalars().all()
         return schedules
 
-    @classmethod
-    def get_all_archived_schedules(cls, session):
-        query = select(cls).where(cls.is_deleted == True)
-        result = session.execute(query)
-        schedules = result.scalars().all()
-        return schedules
 
     @classmethod
     def from_dataclass(cls, schedule: ScheduleData) -> "Schedule":
