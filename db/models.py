@@ -228,6 +228,7 @@ class Record(Base):
             file_format=self.file_format,
             sampling_rate=int(self.sampling_rate),
             status=self.status,
+            path=self.path,
             schedule_id=self.schedule_id,
         )
 

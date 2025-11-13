@@ -87,7 +87,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # tables
         self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
-        self.tableModelHistory.doubleClicked.connect(self.run_monitor)
+        self.tableModelHistory.doubleClicked.connect(self.show_record_ecg)
 
         # buttons
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
@@ -487,17 +487,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         Object.find([Object.id==schedule_data.object.id], session).soft_delete(session)
         return None
 
-    def run_monitor(self):
+    @connection
+    def show_record_ecg(self, idx, session):
         """ Запустить монитор сигналов """
         data = self.tableModelHistory.get_selected_data()
         record_id = data[0]
-        path = get_path_by_record_id(record_id=record_id)
+        record = Record.find([Record.id==record_id], session)
 
-        if path is None:
-            raise ValueError(f"Path is {path}")
+        if record is None:
+            DialogHelper.show_confirmation_dialog(
+                self,
+                title="Ошибка", message="Не найдена запись ЭКГ", yes_text="Ok",
+                icon=QMessageBox.Icon.Critical, btn_no=False
+            )
+            return
+        record_data: RecordData = record.to_dataclass()
 
-        monitor = SignalMonitor()
-        monitor.load_data(path_to_file=path)
+        schedule = Schedule.find([Schedule.id == record_data.schedule_id], session)
+        if schedule is None:
+            DialogHelper.show_confirmation_dialog(
+                self,
+                title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
+                icon=QMessageBox.Icon.Critical, btn_no=False
+            )
+            return
+        schedule_data: ScheduleData = schedule.to_dataclass(session)
+
+        monitor = SignalMonitor(schedule_data=schedule_data)
+        monitor.load_record(record_data=record_data)
         monitor.exec()
 
     @connection
