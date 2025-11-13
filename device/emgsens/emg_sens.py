@@ -149,7 +149,8 @@ class EmgSens:
                 last_counter = counter
 
                 # logger.debug(f"Device: {self.name}; get emg - counter: {counter}")
-                await emg_queue.put({"counter": counter, "emg": emg, "timestamp": sample_timestamp})
+                await emg_queue.put({"counter": counter, "emg": emg,
+                                     "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
             except Exception as exp:
                 logger.error(f"Error processing EMG data: {exp}")
 
@@ -158,6 +159,7 @@ class EmgSens:
             if not success:
                 return False
 
+            start_timestamp = time.time()
             last_counter = -1
             decoder = Decoder(settings)
             await self._client.start_notify(EmgSens.UUID_ACQUISITION_SERVICE, emg_handler)
