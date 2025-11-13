@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QM
 
 from constants import Formats, Devices
 from db.database import connection
-from db.models import Experiment
+from db.models import Experiment, Object, Device
 from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
@@ -103,7 +103,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         if not self.validate_input():   # проверка если обязательные поля не были заполнены
             return
 
-        if not self.check_exists():
+        if self.check_exists():
             return
 
         self.accept()
@@ -152,29 +152,51 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.clear_highlight(self.dateTimeEditStartExperiment)
             self.clear_highlight(self.dateTimeEditFinishExperiment)
 
-
         if errors:
-            self.show_error_message("\n".join(errors))
+            self.show_error_message(message="Пожалуйста, заполните следующие поля:\n".join(errors), title="Ошибка ввода данных")
             return False
 
         return True
 
     @connection
-    def check_exists(self, session):
+    def check_exists(self, session) -> bool:
         """ Проверка существующих сущностей в базе данных """
-        if self._is_object_exists():
-            ...
 
-        if self._is_device_exists():
-            ...
+        name = self.LineEditObject.text().strip()
+        if self._is_object_exists(name, session):
+            self.show_error_message(title="Ошибка создания объекта", message=f"Объект с именем \"{name}\" уже существует")
+            return True
 
-    def _is_object_exists(self):
+        sn = self.LineEditSnDevice.text().strip()
+        model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        name = f"{model}{sn}"
+        if self._is_device_exists(name, session):
+            self.show_error_message(title="Ошибка создания устройства", message=f"Устройство {name} уже существует")
+            return True
+
+        return False
+
+    def _is_object_exists(self, name, session) -> bool:
         """ Проверка существования объекта """
-        ...
+        if not name:
+            logger.info(f"Имя объект не заполнено")
+            return True
 
-    def _is_device_exists(self):
+        obj = Object.find([Object.name == name], session)
+        if obj:
+            logger.info(f"Объект с именем {name} существует")
+            return True
+
+        return False
+
+    def _is_device_exists(self, name, session):
         """ Проверка существования устройства """
-        ...
+        obj = Device.find([Device.ble_name == name], session)
+        if obj:
+            logger.info(f"Устройство {name} уже существует")
+            return True
+
+        return False
 
     @staticmethod
     def highlight_field(field: QWidget):
@@ -186,12 +208,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         """ Убрать подсветку """
         field.setStyleSheet("")
 
-    def show_error_message(self, message):
-        """ Вывод окна с предупреждением о том что невозможно создать расписание """
+    def show_error_message(self, title, message):
+        """ Вывод окна с предупреждением """
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setWindowTitle("Заполните обязательные поля")
-        msg.setText("Пожалуйста, заполните следующие поля:")
+        msg.setWindowTitle(title)
         msg.setInformativeText(message)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
@@ -343,7 +364,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         else:
             object_id = self.default_schedule.object.id
 
-        obj = self.LineEditObject.text()
+        obj = self.LineEditObject.text().strip()
         obj_d: ObjectData = ObjectData(id=object_id, name=obj)
 
         # device
@@ -352,7 +373,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         else:
             device_id = self.default_schedule.device.id
 
-        device_sn = self.LineEditSnDevice.text()
+        device_sn = self.LineEditSnDevice.text().strip()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
         dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
