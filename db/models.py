@@ -117,6 +117,13 @@ class Schedule(Base):
         return schedules
 
     @classmethod
+    def get_all_archived_schedules(cls, session):
+        query = select(cls).where(cls.is_deleted == True)
+        result = session.execute(query)
+        schedules = result.scalars().all()
+        return schedules
+
+    @classmethod
     def from_dataclass(cls, schedule: ScheduleData) -> "Schedule":
         return cls(
             id=schedule.id,

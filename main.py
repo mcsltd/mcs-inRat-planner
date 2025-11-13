@@ -34,7 +34,7 @@ PATH_TO_ICON = "resources/v1/icon_app.svg"
 # database
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
-    get_path_by_record_id, soft_delete_records, get_all_record_time
+    get_path_by_record_id, soft_delete_records, get_all_record_time, all_restore
 from ui.settings_dialog import DlgMainConfig
 from ui.monitor_dialog import SignalMonitor
 from ui.stream_dialog import BLESignalViewer
@@ -154,6 +154,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             schedule = s.to_dataclass(session)
             schedule_id = schedule.id
             dt = datetime.timedelta(seconds=(schedule.sec_duration + schedule.sec_interval))
+
+            # проверка на случай уже созданного расписания
+            job = self.scheduler.get_job(job_id=str(schedule_id))
+            if job is not None:
+                logger.info(f"Задача для расписания с {schedule_id} уже создана")
 
             if now >= schedule.datetime_finish:
                 logger.debug(f"Время действия расписания истекло: {schedule.datetime_finish} для {schedule.id}")
@@ -534,12 +539,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_archive_restored(self):
         """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
         logger.info(f"Восстановление архивных расписаний, объектов, устройств")
-        # ToDo: ...
+
+        all_restore()               # восстановить записи в БД
+        self.init_jobs()            # создать задачи для восстановленных расписаний
+
+        self.update_content_table_schedule()
+        self.update_content_table_history()
 
     def on_archive_deleted(self):
         """ Обработчик сигнала удаления архивных расписаний, объектов, устройств """
         logger.info(f"Удаление архивных расписаний, объектов, устройств")
-        # ToDo: ...
 
     def on_ble_manager_error(self, device_id, description):
         """ Обработчик выводящий сообщения о проблемах с устройством """

@@ -184,8 +184,9 @@ def get_path_by_record_id(record_id, session):
     result = result.scalars().all()[0]
     return result
 
-def restore(session) -> bool:
-    # восстановление расписаний, устройств, объектов
+@connection
+def all_restore(session) -> bool:
+    """ Восстановление из архива всех данных: расписаний, устройств, объектов, записей"""
     stmt_schedule = update(Schedule).where(Schedule.is_deleted == True).values(is_deleted=False)
     session.execute(stmt_schedule)
 
