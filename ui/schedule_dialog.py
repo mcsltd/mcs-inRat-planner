@@ -91,6 +91,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         if current_time >= start_time:
             start_time += datetime.timedelta(minutes=1)
+
             self.dateTimeEditStartExperiment.setDateTime(
                 QDateTime(
                     QDate(start_time.year, start_time.month, start_time.day),
@@ -100,11 +101,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def on_ok_clicked(self):
         """ Обработчик нажатия кнопки Ok """
-        if not self.validate_input():   # проверка если обязательные поля не были заполнены
-            return
 
-        if self.check_exists():
-            return
+        if self.default_schedule is None:
+            if not self.validate_input():   # проверка если обязательные поля не были заполнены
+                return
+
+            if self.check_exists():
+                return
 
         self.accept()
 
@@ -240,7 +243,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         st = schedule.datetime_start
         q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
         self.dateTimeEditStartExperiment.setDateTime(q_st)
-        self.dateTimeEditStartExperiment.setMinimumDateTime(q_st)
+        min_st = datetime.datetime.now().replace(microsecond=0, second=0) + datetime.timedelta(minutes=1)
+        q_min_st = QDateTime(QDate(min_st.year, min_st.month, min_st.day), QTime(min_st.hour, min_st.minute, min_st.second))
+        self.dateTimeEditStartExperiment.setMinimumDateTime(q_min_st)
 
         # finish time
         ft = schedule.datetime_finish
@@ -266,6 +271,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             "WFDB" : "Waveform Database (WFDB)"
         }
         self.set_combobox_value(self.comboBoxFormat, formats[schedule.file_format])
+
+        self.comboBoxModelDevice.setDisabled(True)
+        self.LineEditObject.setDisabled(True)
+        self.LineEditSnDevice.setDisabled(True)
 
     def set_combobox_value(self, combobox: QComboBox, value: str) -> None:
         idx = combobox.findText(value)

@@ -401,47 +401,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             f"Нельзя изменить расписание. Дождитесь конца регистрации ЭКГ.", btn_no=False, yes_text="Ок")
             return
 
-        # остановить и удалить задачи из расписания
-        job = self.scheduler.get_job(job_id=schedule_id)
+        #  во время изменения расписания может начаться запись, надо остановить job
+        job = self.scheduler.get_job(job_id=str(schedule_id))
         if job is not None:
-            logger.debug(f"Удалено расписание из планировщика с индексом: {schedule_id}")
-            self.scheduler.remove_job(job_id=schedule_id)
+            logger.debug(f"Расписание поставлено на паузу: {schedule_id}")
+            self.scheduler.pause_job(job_id=str(schedule_id))
 
         dlg = DlgCreateSchedule(schedule_data)
         code = dlg.exec()
-
         if code == QDialog.DialogCode.Accepted:
-            schedule: ScheduleData = dlg.getSchedule()
+            schedule_data: ScheduleData = dlg.getSchedule()
 
-            if schedule is None:
+            if schedule_data is None:
                 logger.error("Возникла ошибка при обновлении расписания")
                 return
-
-            # проверка есть ли объект в бд
-            has_obj = Object.find([Object.id == schedule.object.id], session)
-            if has_obj is None:
-                obj_id = Object.from_dataclass(schedule.object).create(session)
-                logger.info(f"Добавлен новый объект: id={obj_id}")
-
-            # проверка есть ли устройство в бд
-            has_device = Device.find([Device.id == schedule.device.id], session)
-            if has_device is None:
-                device_id = Device.from_dataclass(schedule.device).create(session)
-                logger.info(f"Добавлено устройство: id={device_id}")
 
             # проверка есть ли расписание в бд
             has_schedule = Schedule.find([Schedule.id == schedule.id], session)
             if has_schedule is None:
                 raise ValueError(f"В базе данных не найдено расписание с индексом: {schedule.id}")
-            has_schedule.update(session, **schedule.to_dict_with_ids())
+            has_schedule.update(session, **schedule_data.to_dict_with_ids())
+            logger.info("Расписание было добавлено в базу данных и таблицу")
 
-            time = datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(seconds=10)
-            self.create_job(schedule, start_time=time)
+            start_time = schedule_data.datetime_start
+            job =  self.scheduler.get_job(str(schedule_id))
+            if job is not None:
+                self.scheduler.remove_job(job_id=str(schedule_id))
+            self.create_job(schedule_data, start_time=start_time)
 
             # fill table Schedule
             self.update_content_table_schedule()
-            logger.info("Расписание было добавлено в базу данных и таблицу")
+            return
 
+        self.scheduler.resume_job(job_id=str(schedule_id))
         return None
 
     @connection
@@ -644,3 +636,17 @@ if __name__ == "__main__":
         print(f"Возникла ошибка в работе программы: {exc}")
     finally:
         app.exec()
+
+
+
+# # проверка есть ли объект в бд
+# has_obj = Object.find([Object.id == schedule.object.id], session)
+# if has_obj is None:
+#     obj_id = Object.from_dataclass(schedule.object).create(session)
+#     logger.info(f"Добавлен новый объект: id={obj_id}")
+
+# # проверка есть ли устройство в бд
+# has_device = Device.find([Device.id == schedule.device.id], session)
+# if has_device is None:
+#     device_id = Device.from_dataclass(schedule.device).create(session)
+#     logger.info(f"Добавлено устройство: id={device_id}")
