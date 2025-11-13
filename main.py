@@ -379,14 +379,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule: Schedule = Schedule.find([Schedule.id == schedule_id], session)
         if not schedule:
             return None
-        schedule: ScheduleData = schedule.to_dataclass(session)
+        schedule_data: ScheduleData = schedule.to_dataclass(session)
 
-        if not DialogHelper.show_confirmation_dialog(
-            parent=self, title="Изменение расписания",
-            message=f"На текущий момент для объекта \"{schedule.object.name}\" ведётся регистрация ЭКГ.\n"
-                    f"Вы хотите остановить регистрацию ЭКГ и изменить расписание?"
-        ):
-            return None
+        device_id = schedule_data.device.id
+        if self.ble_manager.has_recording_task(device_id=device_id):
+            DialogHelper.show_confirmation_dialog( parent=self, title="Изменение расписания",
+                    message=f"На текущий момент для объекта \"{schedule.object.name}\" ведётся регистрация ЭКГ.\n"
+                            f"Нельзя изменить расписание. Дождитесь конца регистрации ЭКГ.", btn_no=False, yes_text="Ок")
+            return
 
         # остановить и удалить задачи из расписания
         job = self.scheduler.get_job(job_id=schedule_id)
@@ -394,7 +394,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             logger.debug(f"Удалено расписание из планировщика с индексом: {schedule_id}")
             self.scheduler.remove_job(job_id=schedule_id)
 
-        dlg = DlgCreateSchedule(schedule)
+        dlg = DlgCreateSchedule(schedule_data)
         code = dlg.exec()
 
         if code == QDialog.DialogCode.Accepted:
@@ -451,14 +451,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # проверка есть ли для устройства активные задачи
         device_id = schedule_data.device.id
         if self.ble_manager.has_recording_task(device_id=device_id):
-            if not DialogHelper.show_confirmation_dialog(
+            DialogHelper.show_confirmation_dialog(
                     parent=self, title="Удаление расписания",
                     message=f"На текущий момент для объекта \"{schedule_data.object.name}\" ведётся регистрация ЭКГ.\n"
-                            f"Вы уверены что хотите остановить запись?"
-            ):
-                return None
-            else:
-                self.ble_manager.stop_and_remove_device_task(device_id)
+                            f"Нельзя удалить расписание. Дождитесь конца регистрации ЭКГ.", btn_no=False, yes_text="Ok")
+            return None
         else:
             if not DialogHelper.show_confirmation_dialog(
                 parent=self, title="Удаление расписания",
