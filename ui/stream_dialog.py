@@ -57,7 +57,11 @@ class PlotSignal(PlotWidget):
             self.ecg = np.append(self.ecg[len(ecg):], ecg)
 
         self.plot_signal.setData(self.time, self.ecg)
-        self.setXRange(self.time[0], self.time[-1])
+
+        if self.time[-1] < 10:
+            self.setXRange(self.time[0],self.timebase_s)
+        else:
+            self.setXRange(self.time[0], self.time[-1])
 
     def clear_plot(self):
         """Очистка графика"""

@@ -521,10 +521,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
         # ToDo: обработка случаев: 1) произошел конец записи; 2) устройство ещё не записывает; 3) устройство записало сигнал; 4) возможность получения сигналов с неск. устр.
-        data = self.tableModelSchedule.get_selected_data()
+        raw_data = self.tableModelSchedule.get_selected_data()
+        schedule_id = raw_data[0]
 
         # получение параметров запущенного устройства
-        schedule_data = Schedule.find([Schedule.id == data[0]], session).to_dataclass(session)
+        schedule_data = Schedule.find([Schedule.id == schedule_id], session)
+
+
         device_id = schedule_data.device.id
         device_name = schedule_data.device.ble_name
 
