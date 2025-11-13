@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QM
 
 from constants import Formats, Devices
 from db.database import connection
-from db.models import Experiment
+from db.models import Experiment, Object, Device
 from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
@@ -91,6 +91,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         if current_time >= start_time:
             start_time += datetime.timedelta(minutes=1)
+
             self.dateTimeEditStartExperiment.setDateTime(
                 QDateTime(
                     QDate(start_time.year, start_time.month, start_time.day),
@@ -100,8 +101,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def on_ok_clicked(self):
         """ Обработчик нажатия кнопки Ok """
-        if not self.validate_input():   # проверка если обязательные поля не были заполнены
-            return
+
+        if self.default_schedule is None:
+            if not self.validate_input():   # проверка если обязательные поля не были заполнены
+                return
+
+            if self.check_exists():
+                return
 
         self.accept()
 
@@ -149,27 +155,70 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.clear_highlight(self.dateTimeEditStartExperiment)
             self.clear_highlight(self.dateTimeEditFinishExperiment)
 
-
         if errors:
-            self.show_error_message("\n".join(errors))
+            self.show_error_message(message="Пожалуйста, заполните следующие поля:\n".join(errors), title="Ошибка ввода данных")
             return False
 
         return True
 
-    def highlight_field(self, field: QWidget):
+    @connection
+    def check_exists(self, session) -> bool:
+        """ Проверка существующих сущностей в базе данных """
+
+        name = self.LineEditObject.text().strip()
+        if self._is_object_exists(name, session):
+            self.show_error_message(title="Ошибка создания объекта", message=f"Объект с именем \"{name}\" уже существует")
+            return True
+
+        sn = self.LineEditSnDevice.text().strip()
+        model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        name = f"{model}{sn}"
+        if self._is_device_exists(name, session):
+            self.show_error_message(title="Ошибка создания устройства", message=f"Устройство {name} уже существует")
+            return True
+
+        return False
+
+    def _is_object_exists(self, name, session) -> bool:
+        """ Проверка существования объекта """
+        if not name:
+            logger.info(f"Имя объект не заполнено")
+            return True
+
+        obj = Object.find([Object.name == name], session)
+        archived_obj = Object.find([Object.name == name], session, is_deleted=True)
+        if obj or archived_obj:
+            logger.info(f"Объект с именем {name} существует")
+            return True
+
+        return False
+
+    def _is_device_exists(self, name, session):
+        """ Проверка существования устройства """
+        device = Device.find([Device.ble_name == name], session)
+        archived_device = Device.find([Device.ble_name == name], session, is_deleted=True)
+
+        if device or archived_device:
+            logger.info(f"Устройство {name} уже существует")
+            return True
+
+        return False
+
+    @staticmethod
+    def highlight_field(field: QWidget):
         """ Подсветка поля с ошибкой """
         field.setStyleSheet("border: 1px solid red; background-color: #FFE6E6;")
 
-    def clear_highlight(self, field: QWidget):
+    @staticmethod
+    def clear_highlight(field: QWidget):
         """ Убрать подсветку """
         field.setStyleSheet("")
 
-    def show_error_message(self, message):
-        """ Вывод окна с предупреждением о том что невозможно создать расписание """
+    def show_error_message(self, title, message):
+        """ Вывод окна с предупреждением """
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setWindowTitle("Заполните обязательные поля")
-        msg.setText("Пожалуйста, заполните следующие поля:")
+        msg.setWindowTitle(title)
         msg.setInformativeText(message)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
@@ -194,7 +243,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         st = schedule.datetime_start
         q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
         self.dateTimeEditStartExperiment.setDateTime(q_st)
-        self.dateTimeEditStartExperiment.setMinimumDateTime(q_st)
+        min_st = datetime.datetime.now().replace(microsecond=0, second=0) + datetime.timedelta(minutes=1)
+        q_min_st = QDateTime(QDate(min_st.year, min_st.month, min_st.day), QTime(min_st.hour, min_st.minute, min_st.second))
+        self.dateTimeEditStartExperiment.setMinimumDateTime(q_min_st)
 
         # finish time
         ft = schedule.datetime_finish
@@ -221,6 +272,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         }
         self.set_combobox_value(self.comboBoxFormat, formats[schedule.file_format])
 
+        self.comboBoxModelDevice.setDisabled(True)
+        self.LineEditObject.setDisabled(True)
+        self.LineEditSnDevice.setDisabled(True)
+
     def set_combobox_value(self, combobox: QComboBox, value: str) -> None:
         idx = combobox.findText(value)
         if idx == -1:
@@ -239,12 +294,15 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         dlg = DlgCreateExperiment()
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
-            exp = dlg.getExperiment()
-            experiment_id = Experiment.from_dataclass(exp).create(session)
+            experiment_data = dlg.getExperiment()
+            if experiment_data is None:
+                return
+
+            experiment_id = Experiment.from_dataclass(experiment_data).create(session)
             logger.info(f"Add Experiment in DB: id={experiment_id}")
 
             # add experiment in db
-            self.comboBoxExperiment.addItem(exp.name, exp.id)
+            self.comboBoxExperiment.addItem(experiment_data.name, experiment_data.id)
             self.comboBoxExperiment.setCurrentIndex(0)
         return
 
@@ -279,7 +337,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
 
         # set index
-        self.comboBoxFormat.setCurrentIndex(1)
+        self.comboBoxFormat.setCurrentIndex(0) # set EDF
         self.comboBoxModelDevice.setCurrentIndex(0) # set EMGsens
         self.comboBoxSamplingRate.setCurrentIndex(0)
         self.comboBoxDuration.setCurrentIndex(0)
@@ -318,7 +376,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         else:
             object_id = self.default_schedule.object.id
 
-        obj = self.LineEditObject.text()
+        obj = self.LineEditObject.text().strip()
         obj_d: ObjectData = ObjectData(id=object_id, name=obj)
 
         # device
@@ -327,7 +385,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         else:
             device_id = self.default_schedule.device.id
 
-        device_sn = self.LineEditSnDevice.text()
+        device_sn = self.LineEditSnDevice.text().strip()
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
         dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
@@ -452,7 +510,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         event.accept()
 
 
-
 class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
 
     def __init__(self, *args, **kwargs):
@@ -460,7 +517,43 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
         self.setupUi(self)
         self.setWindowIcon(QIcon(PATH_TO_ICON))
 
+    @connection
+    def _is_experiment_exists(self, session) -> bool:
+        """ Проверка есть ли такой эксперимент в базе данных """
+        name = self.lineEditExperiment.text().strip()
+        if not name:  # Добавляем проверку на пустое имя
+            self.show_error_message(
+                title="Ошибка создания эксперимента",
+                message="Название эксперимента не может быть пустым."
+            )
+            return True
 
-    def getExperiment(self) -> ExperimentData:
-        exp_d = ExperimentData(name=self.lineEditExperiment.text())
+        experiment = Experiment.find([Experiment.name == name], session)
+        if experiment:
+            self.show_error_message(
+                title="Ошибка создания эксперимента",
+                message="Эксперимент с похожим названием уже существует.\n"
+                        "Выберите другое названием для эксперимента."
+            )
+            return True
+        return False
+
+    def show_error_message(self, title, message):
+        """ Вывод окна с предупреждением о том что невозможно создать расписание """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle(title)
+        msg.setInformativeText(message)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
+
+    def getExperiment(self) -> ExperimentData | None:
+        """ Возврат данные об эксперименте в формате dataclass """
+        if self._is_experiment_exists():
+            return None
+
+        name = self.lineEditExperiment.text().strip()
+        exp_d = ExperimentData(name)
         return exp_d
+
+

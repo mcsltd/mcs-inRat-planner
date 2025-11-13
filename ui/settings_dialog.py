@@ -153,7 +153,7 @@ class WidgetCfgGeneral(WidgetCfg):
         restore_layout = QVBoxLayout(self.restore_group)
 
         self.label_archive_info = QLabel(f"Всего архивных расписаний: 0")
-        self.set_label_count_archived_schedule()
+        self.set_count_archived_schedule()
 
         info_layout = QHBoxLayout()
         info_layout.addWidget(self.label_archive_info)
@@ -173,7 +173,7 @@ class WidgetCfgGeneral(WidgetCfg):
         self.verticalLayout.addWidget(self.restore_group)
 
     @connection
-    def set_label_count_archived_schedule(self, session):
+    def set_count_archived_schedule(self, session):
         cnt_del_schedule = Schedule.get_deleted_count(session)
         self.label_archive_info.setText(f"Всего архивированных расписаний: {cnt_del_schedule}")
 
@@ -182,6 +182,7 @@ class WidgetCfgGeneral(WidgetCfg):
         if self.parent_dialog and hasattr(self.parent_dialog, "signals"):
             self.parent_dialog.signals.archive_restored.emit()
             self.parent_dialog.signals.data_changed.emit()
+            self.set_count_archived_schedule()
 
     def archive_remove_ui(self):
         """ Интерфейс удаления архивированных данных """
@@ -215,6 +216,9 @@ class WidgetCfgGeneral(WidgetCfg):
             if self.parent_dialog and hasattr(self.parent_dialog, "signals"):
                 self.parent_dialog.signals.archive_deleted.emit()
                 self.parent_dialog.signals.data_changed.emit()
+
+        self.set_count_archived_schedule()
+
 
 """class WidgetCfgDevice(WidgetCfg):
     def __init__(self, *args, **kwargs):
