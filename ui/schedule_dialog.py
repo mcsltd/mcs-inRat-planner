@@ -466,6 +466,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
                 return "30 минут"
             elif 2 <= minutes <= 4:
                 return f"{minutes} минуты"
+            elif minutes == 5:
+                return "5 минут"
             elif minutes == 1:
                 return f"1 минута"
             else:

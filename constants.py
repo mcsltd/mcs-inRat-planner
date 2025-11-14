@@ -75,7 +75,7 @@ class ScheduleState(Enum):
     """ Класс, описывающий состояния """
     CONNECTION = "Идёт поиск..."
     CONNECT = "Соединение установлено"
-    ACQUISITION = "Запись ЭКГ"
+    ACQUISITION = "Регистрация ЭКГ"
     DISCONNECT = "Ожидание"
 
 MONTHS = {
