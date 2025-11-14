@@ -321,9 +321,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             status = self.ble_manager.get_device_status(device_id=schedule.device.id)
 
-            interval = self.convert_seconds_to_str(schedule.sec_interval)
-            duration = self.convert_seconds_to_str(schedule.sec_duration)
-            all_records_time = self.convert_seconds_to_str(get_all_record_time(schedule.id))
+            interval = self.convert_seconds_to_str(schedule.sec_interval, mode="short")
+            duration = self.convert_seconds_to_str(schedule.sec_duration, mode="short")
+            all_records_time = self.convert_seconds_to_str(get_all_record_time(schedule.id), mode="full")
             all_records = get_count_records(schedule.id)
             error_record = get_count_error_records(schedule.id)
             params = f"{schedule.file_format}; {schedule.sampling_rate} Гц"
@@ -365,7 +365,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             rec = rec.to_dataclass()
             start_time = rec.datetime_start
-            duration = self.convert_seconds_to_str(rec.sec_duration)
+            duration = self.convert_seconds_to_str(rec.sec_duration, mode="full")
             experiment = get_experiment_by_schedule_id(rec.schedule_id)
             obj = get_object_by_schedule_id(rec.schedule_id)
             file_format = rec.file_format
@@ -626,28 +626,54 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.ble_manager.stop()
 
     @staticmethod
-    def convert_seconds_to_str(seconds: int) -> str | None:
-        # if not isinstance(seconds, int):
-        #     raise ValueError("Seconds is not int")
-        # if seconds / 3600 >= 1:
-        #     return f"{seconds // 3600} ч."
-        # if seconds / 60 >= 1:
-        #     return f"{seconds // 60} мин."
-        #
-        # return f"{seconds} с."
-
+    def convert_seconds_to_str(seconds: int, mode: str = "smart") -> str:
+        """
+        Конвертирует секунды в строковое представление времени
+        """
         if not isinstance(seconds, int):
             raise ValueError("Seconds is not int")
 
-        if seconds >= 100 * 3600:  # 100 часов * 3600 секунд
-            print("больше 100 часов")
-            return
+        if seconds < 0:
+            return "00:00"
 
-        hour = seconds // 3600
-        minutes = seconds // 60 % 60
-        seconds = seconds % 60
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
 
-        return f"{hour:02d}:{minutes:02d}:{seconds:02d}"
+        if mode == "full":
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+        elif mode == "short":
+            if hours > 0:
+                if minutes == 0:
+                    return f"{hours} ч."
+                else:
+                    return f"{hours} ч. {minutes} мин."
+            elif minutes > 0:
+                if secs == 0:
+                    return f"{minutes} мин."
+                else:
+                    return f"{minutes} мин. {secs} с."
+            else:
+                return f"{secs} с."
+
+        elif mode == "compact":
+            if hours > 0:
+                return f"{hours}:{minutes:02d}" if secs == 0 else f"{hours}:{minutes:02d}:{secs:02d}"
+            elif minutes > 0:
+                return f"{minutes}:{secs:02d}"
+            else:
+                return f"0:{secs:02d}"
+
+        else:  # smart mode (по умолчанию)
+            if hours > 99:
+                return "99:59:59+"
+            elif hours > 0:
+                return f"{hours:02d}:{minutes:02d}" if secs == 0 else f"{hours:02d}:{minutes:02d}:{secs:02d}"
+            elif minutes > 0:
+                return f"{minutes:02d}" if secs == 0 else f"{minutes:02d}:{secs:02d}"
+            else:
+                return f"00:{secs:02d}"
 
 if __name__ == "__main__":
     logging.basicConfig(
