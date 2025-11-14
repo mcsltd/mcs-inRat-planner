@@ -551,10 +551,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             str_time = str(job.next_run_time).split("+")[0]
             DialogHelper.show_confirmation_dialog(
                 parent=self, title=f"Информация о расписании",
-                btn_no=False, yes_text="Ок", message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\".\n"
-                                                     f"Запланирована на {str_time}."
-            )
-
+                btn_no=False, yes_text="Ок", message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\""
+                                                     f"запланирована на {str_time}.")
 
     def configuration_clicked(self):
         """ Активация окна настроек """
