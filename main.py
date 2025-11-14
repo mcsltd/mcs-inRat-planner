@@ -107,6 +107,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # загрузка настроек
         self.get_preferences()
 
+        # hide
+        self.pushButtonDownloadRecords.hide()
+
     def get_preferences(self):
         """ Установка начальных настроек """
         config = ConfigParser()
