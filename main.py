@@ -536,6 +536,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 icon=QMessageBox.Icon.Critical, btn_no=False
             )
             return
+
         schedule_data: ScheduleData = schedule.to_dataclass(session)
 
         device_id = schedule_data.device.id
@@ -543,6 +544,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             dlg = BLESignalViewer(schedule_data=schedule_data)
             self.ble_manager.signal_data_received.connect(dlg.accept_signal)
             dlg.exec()
+            return
+
+        job = self.scheduler.get_job(job_id=str(schedule_id))
+        if job is not None:
+            str_time = str(job.next_run_time).split("+")[0]
+            DialogHelper.show_confirmation_dialog(
+                parent=self, title=f"Информация о расписании",
+                btn_no=False, yes_text="Ок", message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\".\n"
+                                                     f"Запланирована на {str_time}."
+            )
+
 
     def configuration_clicked(self):
         """ Активация окна настроек """
