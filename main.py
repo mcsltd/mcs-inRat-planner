@@ -211,6 +211,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
+
+        # ToDo: проблема с обработкой
+
         self.scheduler.add_job(
             self._create_record,
             args=(schedule, start_time),
@@ -552,7 +555,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             DialogHelper.show_confirmation_dialog(
                 parent=self, title=f"Информация о расписании",
                 btn_no=False, yes_text="Ок", message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\""
-                                                     f"запланирована на {str_time}.")
+                                                     f" запланирована на {str_time}.")
 
     def configuration_clicked(self):
         """ Активация окна настроек """
