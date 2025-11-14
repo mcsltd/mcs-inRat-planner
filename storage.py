@@ -1,6 +1,7 @@
 import logging
 import os
 import numpy as np
+import wfdb
 
 from uuid import UUID
 
@@ -65,15 +66,25 @@ class Storage(QObject):
         file_format = record_property.file_format
         sampling_rate = int(record_property.sampling_rate)
         signal = self._recording_task_data[device_id]
+        start_time = record_property.start_time
 
         write_dir = f".\\data\\{device_name}\\"
+
 
         path_to_file = None
         if file_format == list(Formats.EDF.value.values())[0]:
             write_dir += "EDF\\"
             # create dir for saving files with selected format
             os.makedirs(write_dir, exist_ok=True)
-            path_to_file = self.save_to_edf(record_id, write_dir, sampling_rate, signal)
+            path_to_file = self._save_to_edf(record_id, write_dir, sampling_rate, signal)
+
+        elif file_format == list(Formats.WFDB.value.values())[0]:
+            write_dir += "WFDB\\"
+            os.makedirs(write_dir, exist_ok=True)
+            path_to_file = self._save_to_wfdb(
+                record_id=record_id, write_dir=write_dir,
+                sampling_rate=sampling_rate, start_time=start_time, ecg_signal=signal
+            )
 
         if path_to_file is not None:
             task = self._recording_task_property[device_id]
@@ -82,11 +93,15 @@ class Storage(QObject):
             record_data = task.get_result_record(duration=sec_duration, status=RecordStatus.OK, path=path_to_file)
             self.signal_success_save.emit(record_data)
         else:
-            ...
+            logger.error(f"Сигнал ЭКГ не записан в формат {record_property.file_format}")
+            task = self._recording_task_property[device_id]
+            record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)
+            self.signal_success_save.emit(record_data)
+
         self._cleanup_task(device_id)
 
 
-    def save_to_edf(self, record_id: UUID, write_dir: str, sampling_rage: int, ecg_signal: np.ndarray) -> str | None:
+    def _save_to_edf(self, record_id: UUID, write_dir: str, sampling_rage: int, ecg_signal: np.ndarray) -> str | None:
         logger.debug("Save data to edf.")
 
         file_name = None
@@ -122,6 +137,25 @@ class Storage(QObject):
         else:
             logger.debug(f"Файл EDF успешно создан - {file_name}")
             return file_name
+
+    def _save_to_wfdb(
+            self, record_id: UUID, ecg_signal: np.ndarray, sampling_rate: int,
+            write_dir: str, start_time, units: list[str] = ["uV"]) -> str | None:
+        """ Сохранение данных в формате WFDB """
+        path_to_save = None
+        try:
+            wfdb.io.wrsamp(
+                record_name=str(record_id),
+                fs=sampling_rate, units=units, p_signal=ecg_signal[np.newaxis].T,
+                sig_name=["ECG"], write_dir=write_dir, base_datetime=start_time,
+            )
+            logger.debug("Сигнал ЭКГ сохранен в WFDB формате")
+            path_to_save = f"{write_dir}\\{record_id}.hea"
+        except Exception as exc:
+            logger.error("Ошибка записи сигнала ЭКГ в формат WFDB")
+        return path_to_save
+
+
 
     def _cleanup_task(self, device_id):
 

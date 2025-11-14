@@ -1,6 +1,8 @@
+import wfdb
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QWidget, QDialog
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMessageBox
 
 from structure import RecordData, ScheduleData
 
@@ -9,7 +11,7 @@ PATH_TO_ICON = "resources/v1/icon_app.svg"
 from pyqtgraph import PlotWidget, mkPen
 import pyedflib
 import numpy as np
-from typing import List, Optional
+from typing import List
 import os
 
 from resources.v1.wdt_monitor import Ui_FormMonitor
@@ -63,15 +65,13 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         self.schedule_data: ScheduleData = schedule_data
         self.record_data: RecordData | None = None
 
-        # Подключаем кнопки (если они есть в UI)
-        if hasattr(self, 'btnClose'):
-            self.btnClose.clicked.connect(self.close)
 
     def load_record(self, record_data: RecordData):
         """Загрузка сохраненных данных из EDF файла и отображение на графике"""
 
         if not os.path.exists(record_data.path):
             self._show_error(f"Файл не найден: {record_data.path}")
+            self.accept()
             return
 
         self.record_data = record_data
@@ -80,11 +80,22 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
             # загрузка информации о записи
             self._load_info()
 
-            # Чтение EDF файла
-            signals, signal_headers, header = self._read_edf_file(record_data.path)
+            if record_data.file_format == "WFDB":
+                # Чтение WFDB файла
+                signals, signal_headers, header = self._read_wfdb_file(record_data.path)
 
-            # Отображение сигналов
-            self._plot_signals(signals, signal_headers, header)
+                # Отображение сигналов
+                self._plot_signals(signals, signal_headers, header)
+
+            elif record_data.file_format == "EDF":
+                # Чтение EDF файла
+                signals, signal_headers, header = self._read_edf_file(record_data.path)
+
+                # Отображение сигналов
+                self._plot_signals(signals, signal_headers, header)
+
+            else:
+                raise ValueError("Не поддерживаемый формат файла!")
 
             # Обновление информации о файле
             # self._update_file_info(header, signal_headers)
@@ -130,6 +141,50 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
 
         return signals, signal_headers, header
 
+    def _read_wfdb_file(self, file_path: str):
+        """Чтение данных из WFDB файла"""
+        try:
+            # Убираем расширение .dat или .hea если есть
+            base_path = file_path
+            if file_path.endswith('.dat') or file_path.endswith('.hea'):
+                base_path = file_path[:-4]
+
+            # Читаем запись с помощью wfdb
+            record = wfdb.rdrecord(base_path)
+
+            # Получаем сигналы (уже в виде numpy array)
+            signals = record.p_signal.T if record.p_signal is not None else record.d_signal.T
+
+            # Если сигнал одноканальный, преобразуем в 2D массив для единообразия
+            if signals.ndim == 1:
+                signals = signals.reshape(1, -1)
+
+            # Создаем заголовок файла
+            header = {
+                'patient_name': getattr(record, 'patient_name', 'Неизвестно'),
+                'recording_date': getattr(record, 'base_date', 'Неизвестно'),
+                'duration': record.sig_len / record.fs if record.fs > 0 else 0,
+                'signals_count': record.n_sig,
+                'sample_rate': record.fs
+            }
+
+            # Создаем информацию о сигналах
+            signal_headers = []
+            for i in range(record.n_sig):
+                signal_headers.append({
+                    'label': record.sig_name[i] if i < len(record.sig_name) else f'Channel_{i + 1}',
+                    'sample_rate': record.fs,
+                    'physical_dim': record.units[i] if i < len(record.units) else 'uV',
+                    'samples_count': record.sig_len,
+                    'gain': record.adc_gain[i] if i < len(record.adc_gain) else 1,
+                    'baseline': record.baseline[i] if i < len(record.baseline) else 0
+                })
+
+            return signals, signal_headers, header
+
+        except Exception as e:
+            raise Exception(f"Ошибка чтения WFDB файла: {str(e)}")
+
     def _plot_signals(self, signals: List[np.ndarray],
                       signal_headers: List[dict], header: dict):
         """Отображение сигналов на графике"""
@@ -137,12 +192,9 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         self.plots.clear()
 
         # Определяем масштабирование для отображения
-        max_signals_to_show = min(6, len(signals))  # Ограничиваем количество сигналов
         vertical_offset = self._calculate_vertical_offset(signals)
 
-        for i, (signal, header_info) in enumerate(zip(signals, signal_headers)):
-            if i >= max_signals_to_show:
-                break
+        for signal, header_info in zip(signals, signal_headers):
 
             # Создаем временную ось
             sample_rate = header_info['sample_rate']
@@ -150,10 +202,10 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
 
             # Нормализуем и смещаем сигнал для лучшего отображения
             normalized_signal = self._normalize_signal(signal)
-            display_signal = normalized_signal + (i * vertical_offset)
+            display_signal = normalized_signal
 
             # Выбираем цвет
-            color = self.signal_colors[i % len(self.signal_colors)]
+            color = self.signal_colors[0]
 
             # Строим график
             plot = self.display.plot(
@@ -169,8 +221,6 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
 
     def _calculate_vertical_offset(self, signals: List[np.ndarray]) -> float:
         """Вычисление вертикального смещения между сигналами"""
-        if not signals:
-            return 100
 
         # Используем стандартное отклонение для определения смещения
         all_std = np.std(np.concatenate([sig - np.mean(sig) for sig in signals]))
@@ -193,8 +243,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
     def _configure_plot_display(self, signals: List[np.ndarray],
                                 signal_headers: List[dict], vertical_offset: float):
         """Настройка отображения графика"""
-        if not signals:
-            return
+
 
         # Автоматическое масштабирование
         self.display.enableAutoRange()
@@ -208,40 +257,8 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         # Добавляем сетку
         self.display.showGrid(x=True, y=True, alpha=0.3)
 
-    # def _update_file_info(self, header: dict, signal_headers: List[dict]):
-    #     """Обновление информации о файле в UI"""
-    #     try:
-    #         # Если в UI есть элементы для отображения информации
-    #         if hasattr(self, 'labelPatientName'):
-    #             self.labelPatientName.setText(f"Пациент: {header.get('patient_name', 'N/A')}")
-    #
-    #         if hasattr(self, 'labelRecordingDate'):
-    #             date = header.get('recording_date', 'N/A')
-    #             self.labelRecordingDate.setText(f"Дата записи: {date}")
-    #
-    #         if hasattr(self, 'labelDuration'):
-    #             duration = header.get('duration', 0)
-    #             self.labelDuration.setText(f"Длительность: {duration:.1f} сек")
-    #
-    #         if hasattr(self, 'labelSignalsCount'):
-    #             count = header.get('signals_count', 0)
-    #             self.labelSignalsCount.setText(f"Сигналов: {count}")
-    #
-    #         # Обновление информации о каналах
-    #         if hasattr(self, 'listChannels'):
-    #             self.listChannels.clear()
-    #             for i, sh in enumerate(signal_headers):
-    #                 channel_info = (f"{i + 1}. {sh.get('label', 'Unknown')} "
-    #                                 f"({sh.get('sample_rate', 0)} Hz)")
-    #                 self.listChannels.addItem(channel_info)
-    #
-    #     except Exception as e:
-    #         print(f"Ошибка обновления информации: {e}")
-
     def _show_error(self, message: str):
         """Отображение ошибки"""
-        # Можно добавить QMessageBox для показа ошибок пользователю
-        from PySide6.QtWidgets import QMessageBox
         QMessageBox.critical(self, "Ошибка загрузки", message)
 
     def clear_display(self):
