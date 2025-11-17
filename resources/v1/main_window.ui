@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>819</width>
-    <height>584</height>
+    <width>815</width>
+    <height>576</height>
    </rect>
   </property>
   <property name="font">
@@ -65,7 +65,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Скачать</string>
+           <string>Выгрузить</string>
           </property>
          </widget>
         </item>
@@ -159,7 +159,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>819</width>
+     <width>815</width>
      <height>22</height>
     </rect>
    </property>

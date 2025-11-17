@@ -6,6 +6,9 @@ from PySide6.QtGui import QFont, QColor, QPen
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QStyledItemDelegate
 
 from constants import MONTHS, RecordStatus, ScheduleState
+from db.database import connection
+from db.models import Record
+from structure import RecordData
 
 
 class _DataTableModel(QAbstractTableModel):
@@ -164,6 +167,54 @@ class GenericTableWidget(QTableView):
 
         return True
 
+    # def get_selected_records_id(self) -> list | None:
+    #     """ Возврат выбранных индексов в таблице Records """
+    #     record_ids = []
+    #
+    #     if not hasattr(self.model(), "columns"):
+    #         return None
+    #
+    #     column_id = self.model().columns.index("id")
+    #     selected_ids = self.selectedIndexes()
+    #     for idx in selected_ids:
+    #
+    #         row = idx.row()
+    #         print(row)
+    #         # if idx.column() == column_id:
+    #         #     record_ids.append(self.model().data(idx, role=Qt.ItemDataRole.DisplayRole))
+    #     return record_ids
+
+    def get_selected_records_id(self) -> list | None:
+        """Возврат выбранных ID в таблице Records"""
+        if not hasattr(self.model(), "columns") or "id" not in self.model().columns:
+            return None
+
+        column_id = self.model().columns.index("id")
+
+        selected_rows = {idx.row() for idx in self.selectedIndexes()}
+
+        record_ids = []
+        for row in selected_rows:
+            index = self.model().index(row, column_id)
+            record_id = self.model().data(index, Qt.ItemDataRole.DisplayRole)
+            if record_id is not None:
+                record_ids.append(record_id)
+
+        return record_ids
+
+    @connection
+    def get_selected_records(self, session) -> list[RecordData]:
+        """ Возврат путей выбранных записей """
+        records = []
+
+        record_ids = self.get_selected_records_id()
+        for idx in record_ids:
+            record = Record.find([Record.id == idx], session)
+            if record is not None:
+                record_data = record.to_dataclass()
+                records.append(record_data)
+
+        return records
 
 class _DataItemDelegate(QStyledItemDelegate):
 

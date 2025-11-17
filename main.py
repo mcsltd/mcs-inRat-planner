@@ -8,7 +8,7 @@ from copy import copy
 from uuid import UUID
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog
 from PySide6.QtGui import QIcon
 
 # scheduler
@@ -29,7 +29,7 @@ from ui.about_dialog import AboutDialog
 from ui.helper_dialog import DialogHelper
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
-from util import delete_file
+from util import delete_file, copy_file
 
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
@@ -93,12 +93,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         self.pushButtonUpdateSchedule.clicked.connect(self.update_schedule)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
+        self.pushButtonDownloadRecords.clicked.connect(self.copy_records)
         self.actionSettings.triggered.connect(self.configuration_clicked)
         self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
-
-        self.pushButtonDownloadRecords.setDisabled(True)
-        self.pushButtonUpdateSchedule.setDisabled(False)
 
         # загрузить в таблицы данные
         self.update_content_table_schedule()
@@ -107,8 +105,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # загрузка настроек
         self.get_preferences()
 
-        # hide
-        self.pushButtonDownloadRecords.hide()
+    def copy_records(self):
+        """ Скопировать выбранные пользователем файлы в выбранную директорию """
+        records = self.tableModelHistory.get_selected_records()
+
+        if not records:
+            DialogHelper.show_confirmation_dialog(
+                self,
+                title="Не выбраны записи для копирования",
+                message="Пожалуйста, выберите записи, которые Вы хотите скопировать.",
+                btn_no=False,
+                icon=QMessageBox.Icon.Information
+            )
+            return
+
+        path_to_copy = QFileDialog.getExistingDirectory(
+            self, "Выберите папку для копирования записей", "",
+            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks, )
+
+        for rec in records:
+            err = copy_file(path_to_copy, rec)
+            if err:
+                DialogHelper.show_confirmation_dialog(
+                    self,
+                    title="Ошибка копирования",
+                    message=err,
+                    btn_no=False,
+                    icon=QMessageBox.Icon.Warning
+                )
+                continue
+            logger.info(f"Файл {rec.path} был скопирован в папку: {path_to_copy}")
 
     def get_preferences(self):
         """ Установка начальных настроек """
