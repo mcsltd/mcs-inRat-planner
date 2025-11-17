@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'wdt_monitorfsZdon.ui'
+## Form generated from reading UI file 'wdt_monitorLYphHD.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -22,7 +22,7 @@ class Ui_FormMonitor(object):
     def setupUi(self, FormMonitor):
         if not FormMonitor.objectName():
             FormMonitor.setObjectName(u"FormMonitor")
-        FormMonitor.resize(1275, 612)
+        FormMonitor.resize(1271, 604)
         self.gridLayout = QGridLayout(FormMonitor)
         self.gridLayout.setObjectName(u"gridLayout")
         self.verticalLayoutInfo = QVBoxLayout()
@@ -63,14 +63,14 @@ class Ui_FormMonitor(object):
         font1.setPointSize(10)
         self.labelObject.setFont(font1)
 
-        self.formLayout_5.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelObject)
+        self.formLayout_5.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelObject)
 
         self.labelObjectValue = QLabel(FormMonitor)
         self.labelObjectValue.setObjectName(u"labelObjectValue")
         self.labelObjectValue.setFont(font1)
         self.labelObjectValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayout_5.setWidget(0, QFormLayout.ItemRole.FieldRole, self.labelObjectValue)
+        self.formLayout_5.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labelObjectValue)
 
         self.labelDevice = QLabel(FormMonitor)
         self.labelDevice.setObjectName(u"labelDevice")
@@ -78,14 +78,14 @@ class Ui_FormMonitor(object):
         self.labelDevice.setSizePolicy(sizePolicy1)
         self.labelDevice.setFont(font1)
 
-        self.formLayout_5.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelDevice)
+        self.formLayout_5.setWidget(2, QFormLayout.ItemRole.LabelRole, self.labelDevice)
 
         self.labelDeviceValue = QLabel(FormMonitor)
         self.labelDeviceValue.setObjectName(u"labelDeviceValue")
         self.labelDeviceValue.setFont(font1)
         self.labelDeviceValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayout_5.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labelDeviceValue)
+        self.formLayout_5.setWidget(2, QFormLayout.ItemRole.FieldRole, self.labelDeviceValue)
 
         self.labelSamplingRate = QLabel(FormMonitor)
         self.labelSamplingRate.setObjectName(u"labelSamplingRate")
@@ -93,14 +93,14 @@ class Ui_FormMonitor(object):
         self.labelSamplingRate.setSizePolicy(sizePolicy1)
         self.labelSamplingRate.setFont(font1)
 
-        self.formLayout_5.setWidget(2, QFormLayout.ItemRole.LabelRole, self.labelSamplingRate)
+        self.formLayout_5.setWidget(3, QFormLayout.ItemRole.LabelRole, self.labelSamplingRate)
 
         self.labelSamplingRateValue = QLabel(FormMonitor)
         self.labelSamplingRateValue.setObjectName(u"labelSamplingRateValue")
         self.labelSamplingRateValue.setFont(font1)
         self.labelSamplingRateValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayout_5.setWidget(2, QFormLayout.ItemRole.FieldRole, self.labelSamplingRateValue)
+        self.formLayout_5.setWidget(3, QFormLayout.ItemRole.FieldRole, self.labelSamplingRateValue)
 
         self.labelStartTime = QLabel(FormMonitor)
         self.labelStartTime.setObjectName(u"labelStartTime")
@@ -108,14 +108,14 @@ class Ui_FormMonitor(object):
         self.labelStartTime.setSizePolicy(sizePolicy1)
         self.labelStartTime.setFont(font1)
 
-        self.formLayout_5.setWidget(3, QFormLayout.ItemRole.LabelRole, self.labelStartTime)
+        self.formLayout_5.setWidget(4, QFormLayout.ItemRole.LabelRole, self.labelStartTime)
 
         self.labelStartTimeValue = QLabel(FormMonitor)
         self.labelStartTimeValue.setObjectName(u"labelStartTimeValue")
         self.labelStartTimeValue.setFont(font1)
         self.labelStartTimeValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayout_5.setWidget(3, QFormLayout.ItemRole.FieldRole, self.labelStartTimeValue)
+        self.formLayout_5.setWidget(4, QFormLayout.ItemRole.FieldRole, self.labelStartTimeValue)
 
         self.labelDuration = QLabel(FormMonitor)
         self.labelDuration.setObjectName(u"labelDuration")
@@ -123,14 +123,14 @@ class Ui_FormMonitor(object):
         self.labelDuration.setSizePolicy(sizePolicy1)
         self.labelDuration.setFont(font1)
 
-        self.formLayout_5.setWidget(4, QFormLayout.ItemRole.LabelRole, self.labelDuration)
+        self.formLayout_5.setWidget(5, QFormLayout.ItemRole.LabelRole, self.labelDuration)
 
         self.labelDurationValue = QLabel(FormMonitor)
         self.labelDurationValue.setObjectName(u"labelDurationValue")
         self.labelDurationValue.setFont(font1)
         self.labelDurationValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayout_5.setWidget(4, QFormLayout.ItemRole.FieldRole, self.labelDurationValue)
+        self.formLayout_5.setWidget(5, QFormLayout.ItemRole.FieldRole, self.labelDurationValue)
 
         self.labelFormat = QLabel(FormMonitor)
         self.labelFormat.setObjectName(u"labelFormat")
@@ -138,14 +138,27 @@ class Ui_FormMonitor(object):
         self.labelFormat.setSizePolicy(sizePolicy1)
         self.labelFormat.setFont(font1)
 
-        self.formLayout_5.setWidget(5, QFormLayout.ItemRole.LabelRole, self.labelFormat)
+        self.formLayout_5.setWidget(6, QFormLayout.ItemRole.LabelRole, self.labelFormat)
 
         self.labelFormatValue = QLabel(FormMonitor)
         self.labelFormatValue.setObjectName(u"labelFormatValue")
         self.labelFormatValue.setFont(font1)
         self.labelFormatValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayout_5.setWidget(5, QFormLayout.ItemRole.FieldRole, self.labelFormatValue)
+        self.formLayout_5.setWidget(6, QFormLayout.ItemRole.FieldRole, self.labelFormatValue)
+
+        self.labelExperiment = QLabel(FormMonitor)
+        self.labelExperiment.setObjectName(u"labelExperiment")
+        self.labelExperiment.setFont(font1)
+
+        self.formLayout_5.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelExperiment)
+
+        self.labelExperimentValue = QLabel(FormMonitor)
+        self.labelExperimentValue.setObjectName(u"labelExperimentValue")
+        self.labelExperimentValue.setFont(font1)
+        self.labelExperimentValue.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.formLayout_5.setWidget(0, QFormLayout.ItemRole.FieldRole, self.labelExperimentValue)
 
 
         self.verticalLayoutInfo.addLayout(self.formLayout_5)
@@ -179,5 +192,7 @@ class Ui_FormMonitor(object):
         self.labelDurationValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
         self.labelFormat.setText(QCoreApplication.translate("FormMonitor", u"\u0424\u043e\u0440\u043c\u0430\u0442 \u0444\u0430\u0439\u043b\u0430:", None))
         self.labelFormatValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
+        self.labelExperiment.setText(QCoreApplication.translate("FormMonitor", u"\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442:", None))
+        self.labelExperimentValue.setText(QCoreApplication.translate("FormMonitor", u"None", None))
     # retranslateUi
 

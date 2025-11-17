@@ -105,6 +105,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
 
     def _load_info(self):
         """ Отображение информации о записи """
+        self.labelExperimentValue.setText(self.schedule_data.experiment.name)
         self.labelDeviceValue.setText(self.schedule_data.device.ble_name)
         self.labelObjectValue.setText(self.schedule_data.object.name)
         self.labelFormatValue.setText(self.record_data.file_format)
