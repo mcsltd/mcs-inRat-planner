@@ -131,6 +131,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     title="Ошибка копирования",
                     message=err,
                     btn_no=False,
+                    yes_text="Ok",
                     icon=QMessageBox.Icon.Warning
                 )
                 continue
