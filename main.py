@@ -439,7 +439,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.update_content_table_schedule()
             return
 
-        self.scheduler.resume_job(job_id=str(schedule_id))
+        if schedule is not None:
+            self.scheduler.resume_job(job_id=str(schedule_id))
         return None
 
     @connection
