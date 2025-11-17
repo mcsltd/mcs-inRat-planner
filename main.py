@@ -8,7 +8,8 @@ from copy import copy
 from uuid import UUID
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog, QAbstractItemView, \
+    QTableView
 from PySide6.QtGui import QIcon
 
 # scheduler
@@ -68,6 +69,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=[])
+        self.tableModelSchedule.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.labelSchedule.setText(f"Расписание (всего: 0)")
 
         self.tableModelHistory = GenericTableWidget()
@@ -86,6 +88,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # tables
         self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
+        self.tableModelSchedule.clicked.connect(self.on_selection_changed)
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
         self.tableModelHistory.doubleClicked.connect(self.show_record_ecg)
 
@@ -98,12 +101,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
 
+        self.installEventFilter(self)
+
         # загрузить в таблицы данные
         self.update_content_table_schedule()
         self.update_content_table_history()
 
+        # деактивация кнопок
+        self.pushButtonUpdateSchedule.setEnabled(False)
+        self.pushButtonDeleteSchedule.setEnabled(False)
+
         # загрузка настроек
         self.get_preferences()
+
+    def on_selection_changed(self):
+        """ Обработка нажатия на строки в таблице Schedule """
+        current_index = self.tableModelSchedule.currentIndex()
+        if current_index.isValid():
+            self.pushButtonUpdateSchedule.setEnabled(True)
+            self.pushButtonDeleteSchedule.setEnabled(True)
+
+    def eventFilter(self, watched, event, /):
+        """ Фильтр событий для обработки кликов вне таблицы """
+        if event.type() == event.Type.MouseButtonPress:
+
+            if not self.tableModelSchedule.geometry().contains(event.scenePosition().toPoint()):
+                self.tableModelSchedule.clearSelection()
+                self.pushButtonUpdateSchedule.setEnabled(False)
+                self.pushButtonDeleteSchedule.setEnabled(False)
+
+                self.update_content_table_history()
+
+        return super().eventFilter(watched, event)
 
     def copy_records(self):
         """ Скопировать выбранные пользователем файлы в выбранную директорию """
@@ -466,7 +495,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.update_content_table_schedule()
             return
 
-        if schedule is not None:
+        if job is not None:
             self.scheduler.resume_job(job_id=str(schedule_id))
         return None
 

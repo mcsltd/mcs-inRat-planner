@@ -86,11 +86,12 @@ class GenericTableWidget(QTableView):
 
         self.setItemDelegate(_DataItemDelegate())
 
-        # self.setSortingEnabled(True) # сортировка данных
         self.setShowGrid(True)
-        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # выбирать только строки
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+
+        self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+
 
         self.setStyleSheet("""
             QHeaderView::section {
@@ -120,7 +121,8 @@ class GenericTableWidget(QTableView):
 
         return row_data
 
-    def setData(self, data, description) -> None:
+    def setData(self,
+                data: list, description: list) -> None:
         """ Установка колонок (description) и строк (data) в таблицу"""
         self.data = data
         self.description = description
@@ -166,23 +168,6 @@ class GenericTableWidget(QTableView):
         self.data_model.dataChanged.emit(model_index, model_index, [Qt.ItemDataRole.DisplayRole])
 
         return True
-
-    # def get_selected_records_id(self) -> list | None:
-    #     """ Возврат выбранных индексов в таблице Records """
-    #     record_ids = []
-    #
-    #     if not hasattr(self.model(), "columns"):
-    #         return None
-    #
-    #     column_id = self.model().columns.index("id")
-    #     selected_ids = self.selectedIndexes()
-    #     for idx in selected_ids:
-    #
-    #         row = idx.row()
-    #         print(row)
-    #         # if idx.column() == column_id:
-    #         #     record_ids.append(self.model().data(idx, role=Qt.ItemDataRole.DisplayRole))
-    #     return record_ids
 
     def get_selected_records_id(self) -> list | None:
         """Возврат выбранных ID в таблице Records"""
