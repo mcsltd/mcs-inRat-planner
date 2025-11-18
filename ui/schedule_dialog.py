@@ -14,7 +14,7 @@ from db.models import Experiment, Object, Device
 from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 
-from resources.v1.dlg_input_schedule__new import Ui_DlgCreateNewSchedule
+from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
@@ -22,8 +22,11 @@ logger = logging.getLogger(__name__)
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     signal_add_experiment = Signal()
-    def __init__(self, schedule: Optional[ScheduleData | set] = None, *args, **kwargs):
+    def __init__(self, schedule: ScheduleData | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if schedule is not None:
+            self.setWindowTitle("Изменение расписания")
 
         self.setupUi(self)
         self.setWindowIcon(QIcon(PATH_TO_ICON))
@@ -31,9 +34,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         self.default_schedule: ScheduleData = schedule
         self.has_unsaved_changes = False
-
-        if schedule is not None:
-            self.setWindowTitle("Изменение расписания")
 
         # настройка поля ввода серийного номера
         validator = QIntValidator(0, 9999, self)
@@ -57,7 +57,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # self.comboBoxInterval.setPlaceholderText("[hh:mm]")
         self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
 
-        # rename buttons
+        # установка настроек по умолчанию
         self.setDefaults()
 
         # monitoring the has_unsaved_change flag
@@ -66,7 +66,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
         self.dateTimeEditStartExperiment.dateTimeChanged.connect(self.on_start_datetime_changed)
 
+        # соединение кнопок с со слотами
         self.pushButtonByDefault.clicked.connect(self.setDefaults)
+        self.pushButtonResetTime.clicked.connect(self.reset_time)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
         self.pushButtonCancel.clicked.connect(self.close)
 
@@ -193,7 +195,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         return False
 
-    def _is_device_exists(self, name, session):
+    def _is_device_exists(self, name, session) -> bool:
         """ Проверка существования устройства """
         device = Device.find([Device.ble_name == name], session)
         archived_device = Device.find([Device.ble_name == name], session, is_deleted=True)
@@ -237,20 +239,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # serial number
         self.LineEditSnDevice.setText(str(schedule.device.serial_number))
-
-        # schedule
-        # start time
-        st = schedule.datetime_start
-        q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
-        self.dateTimeEditStartExperiment.setDateTime(q_st)
-        min_st = datetime.datetime.now().replace(microsecond=0, second=0) + datetime.timedelta(minutes=1)
-        q_min_st = QDateTime(QDate(min_st.year, min_st.month, min_st.day), QTime(min_st.hour, min_st.minute, min_st.second))
-        self.dateTimeEditStartExperiment.setMinimumDateTime(q_min_st)
-
-        # finish time
-        ft = schedule.datetime_finish
-        q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
-        self.dateTimeEditFinishExperiment.setDateTime(q_ft)
 
         # interval
         interval = self.convert_seconds_with_identifier(seconds=schedule.sec_interval)
@@ -312,6 +300,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             combobox.addItem(list(field.value.keys())[0], userData=field)
 
     def on_form_changed(self) -> None:
+        """ Отслеживание ввода изменение пользователя """
         if self.has_unsaved_changes:
             return
 
@@ -325,6 +314,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def setDefaults(self):
         """ Установка значений по умолчанию """
+        self.reset_time()
+
         if self.default_schedule is not None:
             logger.debug(f"Установка настроек по умолчанию из структуры расписания: {self.default_schedule}")
             self.has_unsaved_changes = False
@@ -343,17 +334,38 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxDuration.setCurrentIndex(0)
         self.comboBoxInterval.setCurrentIndex(0)
 
-        crt_dt = QDateTime.currentDateTime()
-        # установка минимального времени для начала записи
-        self.dateTimeEditStartExperiment.setMinimumDateTime(crt_dt.addSecs(60))
-        # установка минимального времени для конца записи
-        self.dateTimeEditFinishExperiment.setMinimumDateTime(crt_dt.addSecs(60))
-        self.dateTimeEditFinishExperiment.setDateTime(crt_dt.addDays(1))
-
         if (self.LineEditSnDevice.text().strip() == ""
                 or self.LineEditObject.text().strip() == ""
                 or self.comboBoxExperiment.currentIndex() == -1):
             self.has_unsaved_changes = False
+
+    def reset_time(self):
+        """ Сброс времени расписания """
+        if self.default_schedule is not None:
+            # start time
+            st = self.default_schedule.datetime_start
+            q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
+            self.dateTimeEditStartExperiment.setDateTime(q_st)
+
+            # min_st = datetime.datetime.now().replace(microsecond=0, second=0) + datetime.timedelta(minutes=1)
+            # q_min_st = QDateTime(QDate(min_st.year, min_st.month, min_st.day),
+            #                      QTime(min_st.hour, min_st.minute, min_st.second))
+            # self.dateTimeEditStartExperiment.setMinimumDateTime(q_min_st)
+
+            # finish time
+            ft = self.default_schedule.datetime_finish
+            q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
+            self.dateTimeEditFinishExperiment.setDateTime(q_ft)
+            return
+
+        crt_dt = QDateTime.currentDateTime().addSecs(60)
+        # сброс времени начала записи
+        self.dateTimeEditStartExperiment.setMinimumDateTime(crt_dt)
+        self.dateTimeEditStartExperiment.setDateTime(crt_dt)
+
+        # сброс времени конца записи
+        self.dateTimeEditFinishExperiment.setMinimumDateTime(crt_dt)
+        self.dateTimeEditFinishExperiment.setDateTime(crt_dt.addDays(1))
 
     def getSchedule(self) -> Optional[ScheduleData]:
         """ Формирование структуры данных с описанием Расписания """
@@ -391,6 +403,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0, second=0)
         finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0, second=0)
+
         sec_interval = self.convert_to_seconds_by_last_word(self.comboBoxInterval.currentText())
         sec_duration = self.convert_to_seconds_by_last_word(self.comboBoxDuration.currentText())
 
@@ -502,7 +515,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             reply = QMessageBox.question(
                 self,"Подтверждение выхода",
                 "У вас есть несохраненные изменения. Вы уверены, что хотите выйти?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No,
             )
 
             if reply == QMessageBox.StandardButton.No:
