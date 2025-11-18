@@ -11,10 +11,14 @@ PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, experiment_data: ExperimentData | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowIcon(QIcon(PATH_TO_ICON))
+
+        self.default_experiment = experiment_data
+        if self.default_experiment is not None:
+            self.lineEditExperiment.setText(self.default_experiment.name)
 
     @connection
     def _is_experiment_exists(self, session) -> bool:
@@ -32,7 +36,7 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
             self.show_error_message(
                 title="Ошибка создания эксперимента",
                 message="Эксперимент с похожим названием уже существует.\n"
-                        "Выберите другое названием для эксперимента."
+                        "Выберите другое название для эксперимента."
             )
             return True
         return False
@@ -52,5 +56,9 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
             return None
 
         name = self.lineEditExperiment.text().strip()
+        if self.default_experiment is not None:
+            self.default_experiment.name = name
+            return self.default_experiment
+
         exp_d = ExperimentData(name)
         return exp_d

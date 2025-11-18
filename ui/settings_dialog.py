@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from PySide6.QtCore import QModelIndex, QObject, Signal
 from PySide6.QtGui import QFont, Qt, QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
@@ -60,7 +62,7 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
 
         self._idx_selected_widget = 0
         self.widgets = [
-            WidgetCfgGeneral(self, cnt_device), WidgetCfgExperiment()
+            WidgetCfgGeneral(self, cnt_device), WidgetCfgExperiment(self)
         ]
         self.set_widgets()
 
@@ -221,17 +223,21 @@ class WidgetCfgGeneral(WidgetCfg):
         self.set_count_archived_schedule()
 
 class WidgetCfgExperiment(WidgetCfg):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, parent = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.parent_dialog: DlgMainConfig | None = parent
         self.name = "Эксперименты"
         self.setup_ui()
         self.add_ui_table()
+
+        self.installEventFilter(self)
 
     def add_ui_table(self):
         """ Настройка графического интерфейса таблицы """
         self.tableModelExperiments = GenericTableWidget()
         self.tableModelExperiments.setData(
-            description=["№", "Название"],
+            description=["id", "№", "Название"],
             data=self.get_experiment_data()
         )
         self.tableModelExperiments.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -245,13 +251,22 @@ class WidgetCfgExperiment(WidgetCfg):
         self.pushButtonDelete.setEnabled(False)
 
         self.pushButtonAdd.clicked.connect(self._add_experiment)
-        # self.pushButtonUpdate.clicked.connect(...)
-        # self.pushButtonDelete.clicked.connect(...)
+        self.pushButtonUpdate.clicked.connect(self._update_experiment)
+        self.pushButtonDelete.clicked.connect(self._delete_experiment)
+
+        self.tableModelExperiments.clicked.connect(self.on_selection_changed)
 
         self.horizontalLayoutControlTable.addWidget(self.pushButtonAdd)
         self.horizontalLayoutControlTable.addWidget(self.pushButtonUpdate)
         self.horizontalLayoutControlTable.addWidget(self.pushButtonDelete)
         self.horizontalLayoutControlTable.addStretch()
+
+    def on_selection_changed(self):
+        """ Обработка нажатия на строки в таблице Experiments """
+        current_index = self.tableModelExperiments.currentIndex()
+        if current_index.isValid():
+            self.pushButtonUpdate.setEnabled(True)
+            self.pushButtonDelete.setEnabled(True)
 
     @connection
     def _add_experiment(self, session):
@@ -262,12 +277,67 @@ class WidgetCfgExperiment(WidgetCfg):
             experiment_data = dlg.getExperiment()
             if experiment_data is None:
                 return
-            experiment_id = Experiment.from_dataclass(experiment_data).create(session)
-            self.tableModelExperiments.setData(
-                description=["№", "Название"],
-                data=self.get_experiment_data()
-            )
+            Experiment.from_dataclass(experiment_data).create(session)
+            self.tableModelExperiments.setData(description=["id", "№", "Название"], data=self.get_experiment_data())
         return
+
+    @connection
+    def _update_experiment(self, session):
+        """ Обновление данных об эксперименте """
+        exp_id = self.tableModelExperiments.get_selected_data()[0]
+        if not isinstance(exp_id, UUID):
+            return
+
+        exp = Experiment.find([Experiment.id == exp_id], session)
+        if exp is None:
+            return
+
+        dlg = DlgCreateExperiment(exp.to_dataclass(), self)
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            experiment_data = dlg.getExperiment()
+            if experiment_data is None:
+                return
+            exp.update(session, **{"name": experiment_data.name})
+            self.tableModelExperiments.clearSelection()
+            self.tableModelExperiments.setData(description=["id", "№", "Название"], data=self.get_experiment_data())
+            self.pushButtonUpdate.setEnabled(False)
+            self.pushButtonDelete.setEnabled(False)
+
+        if self.parent_dialog is not None:
+            self.parent_dialog.signals.data_changed.emit()
+
+        return
+
+    @connection
+    def _delete_experiment(self, session):
+        """ Обновление данных об эксперименте """
+        exp_id = self.tableModelExperiments.get_selected_data()[0]
+        if not isinstance(exp_id, UUID):
+            return
+
+        exp = Experiment.find([Experiment.id == exp_id], session)
+        if exp is None:
+            return
+
+        schedule = Schedule.find([Schedule.experiment_id == exp_id], session)
+        schedule_archived = Schedule.find([Schedule.experiment_id == exp_id], session, is_deleted=True)
+        if schedule is not None or schedule_archived is not None:
+            DialogHelper.show_confirmation_dialog(
+                self, title=f"Предупреждение об удалении эксперимента",
+                message=f"Нельзя удалить \"{exp.name}\", потому что с этим экспериментом связаны расписания!",
+                btn_no=False, yes_text="Ok"
+            )
+            return
+
+        if DialogHelper.show_confirmation_dialog( self, title=f"Предупреждение об удалении эксперимента",
+                message=f"Вы точно уверены что хотите удалить эксперимент \"{exp.name}\"?"):
+            exp.delete(session)
+            self.tableModelExperiments.clearSelection()
+            self.tableModelExperiments.setData(description=["id", "№", "Название"], data=self.get_experiment_data())
+            self.pushButtonUpdate.setEnabled(False)
+            self.pushButtonDelete.setEnabled(False)
+
 
     @connection
     def get_experiment_data(self, session) -> list:
@@ -275,8 +345,19 @@ class WidgetCfgExperiment(WidgetCfg):
         experiments = Experiment.fetch_all(session)
         for idx, exp in enumerate(experiments):
             exp = exp.to_dataclass()
-            data.append([idx + 1, exp.name])
+            data.append([exp.id, idx + 1, exp.name])
         return data
+
+    def eventFilter(self, watched, event, /):
+        if event.type() == event.Type.MouseButtonPress:
+
+            if hasattr(self, "tableModelExperiments"):
+                if not self.tableModelExperiments.geometry().contains(event.scenePosition().toPoint()):
+                    self.tableModelExperiments.clearSelection()
+                    self.pushButtonUpdate.setEnabled(False)
+                    self.pushButtonDelete.setEnabled(False)
+
+        return super().eventFilter(watched, event)
 
 
 

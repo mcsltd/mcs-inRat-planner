@@ -51,6 +51,10 @@ class Base(DeclarativeBase):
         session.commit()
         return True
 
+    def update(self, session: Session, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        return session.commit()
 
     @classmethod
     def find(cls, where_conditions: list[Any], session: Session, is_deleted=False):
@@ -79,7 +83,6 @@ class Base(DeclarativeBase):
     @declared_attr.directive
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
-
 
 class Schedule(Base):
 

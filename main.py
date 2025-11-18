@@ -621,6 +621,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
         dlg.signals.archive_restored.connect(self.on_archive_restored)
         dlg.signals.archive_deleted.connect(self.on_archive_deleted)
+        dlg.signals.data_changed.connect(self.update_data)
 
         ok = dlg.exec()
 
@@ -629,6 +630,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info(f"Максимальное количество одновременно подключенных устройств: {cnt_device=}")
         self.save_preferences(cnt_device)
         self.maxConnectDevicesChanged.emit(cnt_device)
+
+    def update_data(self):
+        """ Обновление данных в таблице """
+        self.update_content_table_history()
+        self.update_content_table_schedule()
 
     def on_archive_restored(self):
         """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """
