@@ -142,7 +142,6 @@ class PlotSignal(PlotWidget):
         self.clear()
 
 
-
 class BLESignalViewer(QDialog, Ui_FormMonitor):
 
     def __init__(self, schedule_data: ScheduleData, *args, **kwargs):
@@ -209,6 +208,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
 
     def _load_info(self):
         """ Отображение информации о записи """
+        self.labelExperimentValue.setText(self.schedule_data.experiment.name)
         self.labelDeviceValue.setText(self.schedule_data.device.ble_name)
         self.labelObjectValue.setText(self.schedule_data.object.name)
         self.labelDurationValue.setText(f"{self.schedule_data.sec_duration} с.")

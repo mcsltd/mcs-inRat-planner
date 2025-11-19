@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowVEDhfD.ui'
+## Form generated from reading UI file 'main_windowiTluAi.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(819, 584)
+        MainWindow.resize(815, 576)
         font = QFont()
         font.setFamilies([u"Segoe UI"])
         MainWindow.setFont(font)
@@ -109,7 +109,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 819, 22))
+        self.menubar.setGeometry(QRect(0, 0, 815, 22))
         self.file = QMenu(self.menubar)
         self.file.setObjectName(u"file")
         self.help = QMenu(self.menubar)
@@ -137,7 +137,7 @@ class Ui_MainWindow(object):
         self.actionSettings.setText(QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"\u041e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435...", None))
         self.labelHistory.setText(QCoreApplication.translate("MainWindow", u"\u0410\u0440\u0445\u0438\u0432 \u0437\u0430\u043f\u0438\u0441\u0435\u0439", None))
-        self.pushButtonDownloadRecords.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043a\u0430\u0447\u0430\u0442\u044c", None))
+        self.pushButtonDownloadRecords.setText(QCoreApplication.translate("MainWindow", u"\u0412\u044b\u0433\u0440\u0443\u0437\u0438\u0442\u044c", None))
         self.labelSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435", None))
         self.pushButtonAddSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
         self.pushButtonUpdateSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0437\u043c\u0435\u043d\u0438\u0442\u044c", None))

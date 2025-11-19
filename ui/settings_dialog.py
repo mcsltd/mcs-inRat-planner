@@ -1,11 +1,15 @@
+from uuid import UUID
+
 from PySide6.QtCore import QModelIndex, QObject, Signal
 from PySide6.QtGui import QFont, Qt, QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
-    QSpacerItem, QSizePolicy, QPushButton, QMessageBox
+    QSpacerItem, QSizePolicy, QPushButton, QMessageBox, QTableView
 
 from db.database import connection
-from db.models import Schedule
+from db.models import Schedule, Experiment
 from resources.v1.frm_localConfig import Ui_FrmMainConfig
+from tools.modview import GenericTableWidget
+from ui.experiment_dialog import DlgCreateExperiment
 from ui.helper_dialog import DialogHelper
 
 PATH_TO_ICON = "resources/v1/icon_app.svg"
@@ -34,7 +38,7 @@ class WidgetCfg(QWidget):
         self.label.setFont(self.font)
 
         self.verticalLayout.addWidget(self.label)
-        # self.verticalLayout.addWidget(self.table)
+
         self.verticalLayout.addLayout(self.horizontalLayoutControlTable)
         self.setLayout(self.verticalLayout)
 
@@ -58,7 +62,7 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
 
         self._idx_selected_widget = 0
         self.widgets = [
-            WidgetCfgGeneral(self, cnt_device),
+            WidgetCfgGeneral(self, cnt_device), WidgetCfgExperiment(self)
         ]
         self.set_widgets()
 
@@ -85,7 +89,6 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
             self.listWidget.addItem(widget.name)
             if self._idx_selected_widget == idx:
                 self.horizontalLayoutMainConfig.addWidget(widget)
-
 
 class WidgetCfgGeneral(WidgetCfg):
     """Виджет настроек конфигурации BLE устройств"""
@@ -219,6 +222,144 @@ class WidgetCfgGeneral(WidgetCfg):
 
         self.set_count_archived_schedule()
 
+class WidgetCfgExperiment(WidgetCfg):
+    def __init__(self, parent = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.parent_dialog: DlgMainConfig | None = parent
+        self.name = "Эксперименты"
+        self.setup_ui()
+        self.add_ui_table()
+
+        self.installEventFilter(self)
+
+    def add_ui_table(self):
+        """ Настройка графического интерфейса таблицы """
+        self.tableModelExperiments = GenericTableWidget()
+        self.tableModelExperiments.setData(
+            description=["id", "№", "Название"],
+            data=self.get_experiment_data()
+        )
+        self.tableModelExperiments.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+        self.verticalLayout.insertWidget(1, self.tableModelExperiments,)
+
+        self.pushButtonUpdate = QPushButton("Изменить")
+        self.pushButtonAdd = QPushButton("Добавить")
+        self.pushButtonDelete = QPushButton("Удалить")
+
+        self.pushButtonUpdate.setEnabled(False)
+        self.pushButtonDelete.setEnabled(False)
+
+        self.pushButtonAdd.clicked.connect(self._add_experiment)
+        self.pushButtonUpdate.clicked.connect(self._update_experiment)
+        self.pushButtonDelete.clicked.connect(self._delete_experiment)
+
+        self.tableModelExperiments.clicked.connect(self.on_selection_changed)
+
+        self.horizontalLayoutControlTable.addWidget(self.pushButtonAdd)
+        self.horizontalLayoutControlTable.addWidget(self.pushButtonUpdate)
+        self.horizontalLayoutControlTable.addWidget(self.pushButtonDelete)
+        self.horizontalLayoutControlTable.addStretch()
+
+    def on_selection_changed(self):
+        """ Обработка нажатия на строки в таблице Experiments """
+        current_index = self.tableModelExperiments.currentIndex()
+        if current_index.isValid():
+            self.pushButtonUpdate.setEnabled(True)
+            self.pushButtonDelete.setEnabled(True)
+
+    @connection
+    def _add_experiment(self, session):
+        """ Добавление эксперимента в базу данных """
+        dlg = DlgCreateExperiment()
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            experiment_data = dlg.getExperiment()
+            if experiment_data is None:
+                return
+            Experiment.from_dataclass(experiment_data).create(session)
+            self.tableModelExperiments.setData(description=["id", "№", "Название"], data=self.get_experiment_data())
+        return
+
+    @connection
+    def _update_experiment(self, session):
+        """ Обновление данных об эксперименте """
+        exp_id = self.tableModelExperiments.get_selected_data()[0]
+        if not isinstance(exp_id, UUID):
+            return
+
+        exp = Experiment.find([Experiment.id == exp_id], session)
+        if exp is None:
+            return
+
+        dlg = DlgCreateExperiment(exp.to_dataclass(), self)
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            experiment_data = dlg.getExperiment()
+            if experiment_data is None:
+                return
+            exp.update(session, **{"name": experiment_data.name})
+            self.tableModelExperiments.clearSelection()
+            self.tableModelExperiments.setData(description=["id", "№", "Название"], data=self.get_experiment_data())
+            self.pushButtonUpdate.setEnabled(False)
+            self.pushButtonDelete.setEnabled(False)
+
+        if self.parent_dialog is not None:
+            self.parent_dialog.signals.data_changed.emit()
+
+        return
+
+    @connection
+    def _delete_experiment(self, session):
+        """ Обновление данных об эксперименте """
+        exp_id = self.tableModelExperiments.get_selected_data()[0]
+        if not isinstance(exp_id, UUID):
+            return
+
+        exp = Experiment.find([Experiment.id == exp_id], session)
+        if exp is None:
+            return
+
+        schedule = Schedule.find([Schedule.experiment_id == exp_id], session)
+        schedule_archived = Schedule.find([Schedule.experiment_id == exp_id], session, is_deleted=True)
+        if schedule is not None or schedule_archived is not None:
+            DialogHelper.show_confirmation_dialog(
+                self, title=f"Предупреждение об удалении эксперимента",
+                message=f"Нельзя удалить \"{exp.name}\", потому что с этим экспериментом связаны расписания!",
+                btn_no=False, yes_text="Ok"
+            )
+            return
+
+        if DialogHelper.show_confirmation_dialog( self, title=f"Предупреждение об удалении эксперимента",
+                message=f"Вы точно уверены что хотите удалить эксперимент \"{exp.name}\"?"):
+            exp.delete(session)
+            self.tableModelExperiments.clearSelection()
+            self.tableModelExperiments.setData(description=["id", "№", "Название"], data=self.get_experiment_data())
+            self.pushButtonUpdate.setEnabled(False)
+            self.pushButtonDelete.setEnabled(False)
+
+
+    @connection
+    def get_experiment_data(self, session) -> list:
+        data = []
+        experiments = Experiment.fetch_all(session)
+        for idx, exp in enumerate(experiments):
+            exp = exp.to_dataclass()
+            data.append([exp.id, idx + 1, exp.name])
+        return data
+
+    def eventFilter(self, watched, event, /):
+        if event.type() == event.Type.MouseButtonPress:
+
+            if hasattr(self, "tableModelExperiments"):
+                if not self.tableModelExperiments.geometry().contains(event.scenePosition().toPoint()):
+                    self.tableModelExperiments.clearSelection()
+                    self.pushButtonUpdate.setEnabled(False)
+                    self.pushButtonDelete.setEnabled(False)
+
+        return super().eventFilter(watched, event)
+
+
 
 """class WidgetCfgDevice(WidgetCfg):
     def __init__(self, *args, **kwargs):
@@ -267,6 +408,7 @@ class WidgetCfgGeneral(WidgetCfg):
 
         self.verticalLayout.insertWidget(1, self.ble_connection_group)
         self.verticalLayout.insertItem(2, self.v_spacer)"""
+
 """class WidgetCfgSchedule(WidgetCfg):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -305,24 +447,6 @@ class WidgetCfgObject(WidgetCfg):
         for idx, obj in enumerate(objs):
             obj = obj.to_dataclass()
             data.append([idx + 1, obj.name])
-        # self.table.setData(data=data, description=columns)
-"""
-"""
-class WidgetCfgExperiment(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Эксперименты"
-        self.setup_ui()
-        self.set_data_table()
-
-    @connection
-    def set_data_table(self, session):
-        data = []
-        columns = ["№", "Название"]
-        experiments = Experiment.fetch_all(session)
-        for idx, exp in enumerate(experiments):
-            exp = exp.to_dataclass()
-            data.append([idx + 1, exp.name])
         # self.table.setData(data=data, description=columns)
 """
 

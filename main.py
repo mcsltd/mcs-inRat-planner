@@ -8,7 +8,8 @@ from copy import copy
 from uuid import UUID
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog, QAbstractItemView, \
+    QTableView
 from PySide6.QtGui import QIcon
 
 # scheduler
@@ -29,7 +30,7 @@ from ui.about_dialog import AboutDialog
 from ui.helper_dialog import DialogHelper
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
-from util import delete_file
+from util import delete_file, copy_file
 
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 
@@ -68,6 +69,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # create view for table Schedule and History
         self.tableModelSchedule = GenericTableWidget()
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=[])
+        self.tableModelSchedule.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.labelSchedule.setText(f"Расписание (всего: 0)")
 
         self.tableModelHistory = GenericTableWidget()
@@ -86,6 +88,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # tables
         self.tableModelSchedule.clicked.connect(self.sort_records_by_schedule_id)
+        self.tableModelSchedule.clicked.connect(self.on_selection_changed)
         self.tableModelSchedule.doubleClicked.connect(self.clicked_schedule)
         self.tableModelHistory.doubleClicked.connect(self.show_record_ecg)
 
@@ -93,22 +96,75 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         self.pushButtonUpdateSchedule.clicked.connect(self.update_schedule)
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
+        self.pushButtonDownloadRecords.clicked.connect(self.copy_records)
         self.actionSettings.triggered.connect(self.configuration_clicked)
         self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
 
-        self.pushButtonDownloadRecords.setDisabled(True)
-        self.pushButtonUpdateSchedule.setDisabled(False)
+        self.installEventFilter(self)
 
         # загрузить в таблицы данные
         self.update_content_table_schedule()
         self.update_content_table_history()
 
+        # деактивация кнопок
+        self.pushButtonUpdateSchedule.setEnabled(False)
+        self.pushButtonDeleteSchedule.setEnabled(False)
+
         # загрузка настроек
         self.get_preferences()
 
-        # hide
-        self.pushButtonDownloadRecords.hide()
+    def on_selection_changed(self):
+        """ Обработка нажатия на строки в таблице Schedule """
+        current_index = self.tableModelSchedule.currentIndex()
+        if current_index.isValid():
+            self.pushButtonUpdateSchedule.setEnabled(True)
+            self.pushButtonDeleteSchedule.setEnabled(True)
+
+    def eventFilter(self, watched, event, /):
+        """ Фильтр событий для обработки кликов вне таблицы """
+        if event.type() == event.Type.MouseButtonPress:
+
+            if not self.tableModelSchedule.geometry().contains(event.scenePosition().toPoint()):
+                self.tableModelSchedule.clearSelection()
+                self.pushButtonUpdateSchedule.setEnabled(False)
+                self.pushButtonDeleteSchedule.setEnabled(False)
+
+                self.update_content_table_history()
+
+        return super().eventFilter(watched, event)
+
+    def copy_records(self):
+        """ Скопировать выбранные пользователем файлы в выбранную директорию """
+        records = self.tableModelHistory.get_selected_records()
+
+        if not records:
+            DialogHelper.show_confirmation_dialog(
+                self,
+                title="Не выбраны записи для копирования",
+                message="Пожалуйста, выберите записи, которые Вы хотите скопировать.",
+                btn_no=False,
+                icon=QMessageBox.Icon.Information
+            )
+            return
+
+        path_to_copy = QFileDialog.getExistingDirectory(
+            self, "Выберите папку для копирования записей", "",
+            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks, )
+
+        for rec in records:
+            err = copy_file(path_to_copy, rec)
+            if err:
+                DialogHelper.show_confirmation_dialog(
+                    self,
+                    title="Ошибка копирования",
+                    message=err,
+                    btn_no=False,
+                    yes_text="Ok",
+                    icon=QMessageBox.Icon.Warning
+                )
+                continue
+            logger.info(f"Файл {rec.path} был скопирован в папку: {path_to_copy}")
 
     def get_preferences(self):
         """ Установка начальных настроек """
@@ -439,7 +495,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.update_content_table_schedule()
             return
 
-        self.scheduler.resume_job(job_id=str(schedule_id))
+        if job is not None:
+            self.scheduler.resume_job(job_id=str(schedule_id))
         return None
 
     @connection
@@ -564,6 +621,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dlg.signals.max_devices_changed.connect(self.on_max_devices_changed)
         dlg.signals.archive_restored.connect(self.on_archive_restored)
         dlg.signals.archive_deleted.connect(self.on_archive_deleted)
+        dlg.signals.data_changed.connect(self.update_data)
 
         ok = dlg.exec()
 
@@ -572,6 +630,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logger.info(f"Максимальное количество одновременно подключенных устройств: {cnt_device=}")
         self.save_preferences(cnt_device)
         self.maxConnectDevicesChanged.emit(cnt_device)
+
+    def update_data(self):
+        """ Обновление данных в таблице """
+        self.update_content_table_history()
+        self.update_content_table_schedule()
 
     def on_archive_restored(self):
         """ Обработчик сигнала восстановления архивных расписаний, объектов, устройств """

@@ -23,22 +23,17 @@ class AboutDialog(QDialog):
         main_layout.setSpacing(20)
         main_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Левая часть - изображение
         left_widget = QWidget()
         left_layout = QVBoxLayout()
         left_layout.setAlignment(Qt.AlignCenter)
 
-        # Изображение (замените путь на свой)
         image_label = QLabel()
         try:
-            # Замените путь на актуальный путь к вашему изображению
             pixmap = QPixmap(PATH_TO_ICON_MCS)
             if pixmap.isNull():
-                # Если изображение не загружено, создаем заглушку
                 pixmap = QPixmap(200, 200)
                 pixmap.fill(Qt.lightGray)
         except:
-            # В случае ошибки создаем заглушку
             pixmap = QPixmap(200, 200)
             pixmap.fill(Qt.lightGray)
 
@@ -91,16 +86,22 @@ class AboutDialog(QDialog):
         company_label.setFont(company_font)
         # company_label.setStyleSheet("color: #7f8c8d; margin-top: 20px;")
 
-        # Добавляем все элементы в правый layout
+        email_label = QLabel("<a href='https://mks.ru/ru'>https://mks.ru/ru</a>")
+        email_label.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        email_label.setOpenExternalLinks(True)
+        email_font = QFont(FONT)
+        email_font.setPointSize(9)
+        email_label.setFont(company_font)
+
         right_layout.addWidget(title_label)
         right_layout.addWidget(description_label)
         right_layout.addWidget(version_label)
-        right_layout.addStretch()  # Добавляем отступ перед названием компании
+        right_layout.addStretch()
         right_layout.addWidget(company_label)
+        right_layout.addWidget(email_label)
 
         right_widget.setLayout(right_layout)
 
-        # Добавляем обе части в основной layout
         main_layout.addWidget(left_widget)
         main_layout.addWidget(right_widget)
 

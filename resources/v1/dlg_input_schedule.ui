@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>486</width>
-    <height>492</height>
+    <width>492</width>
+    <height>537</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,35 +25,13 @@
   <property name="sizeGripEnabled">
    <bool>false</bool>
   </property>
-  <widget class="QDialogButtonBox" name="buttonBoxSchedule">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>430</y>
-     <width>301</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="layoutDirection">
-    <enum>Qt::LayoutDirection::LeftToRight</enum>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Orientation::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok|QDialogButtonBox::StandardButton::RestoreDefaults</set>
-   </property>
-   <property name="centerButtons">
-    <bool>true</bool>
-   </property>
-  </widget>
   <widget class="QGroupBox" name="groupBoxRecords">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>290</y>
      <width>451</width>
-     <height>131</height>
+     <height>191</height>
     </rect>
    </property>
    <property name="title">
@@ -65,50 +43,139 @@
       <x>10</x>
       <y>30</y>
       <width>431</width>
-      <height>81</height>
+      <height>116</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayoutRecords">
      <item row="0" column="0">
+      <widget class="QLabel" name="labelIntervalRecord">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Периодичность записи</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboBoxInterval"/>
+     </item>
+     <item row="1" column="0">
       <widget class="QLabel" name="labelDuration">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Длительность записи</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
+     <item row="1" column="1">
+      <widget class="QComboBox" name="comboBoxDuration"/>
+     </item>
+     <item row="2" column="0">
       <widget class="QLabel" name="labelSamplingRate">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Частота оцифровки</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="2" column="1">
       <widget class="QComboBox" name="comboBoxSamplingRate"/>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="labelFormat">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Формат</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="3" column="1">
       <widget class="QComboBox" name="comboBoxFormat"/>
      </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="comboBoxDuration"/>
-     </item>
     </layout>
+   </widget>
+   <widget class="QPushButton" name="pushButtonByDefault">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>150</y>
+      <width>100</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>100</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>100</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>По умолчанию</string>
+    </property>
    </widget>
   </widget>
   <widget class="QGroupBox" name="groupBoxSchedule">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>160</y>
+     <y>150</y>
      <width>451</width>
-     <height>121</height>
+     <height>131</height>
     </rect>
    </property>
    <property name="title">
@@ -120,21 +187,26 @@
       <x>10</x>
       <y>30</y>
       <width>431</width>
-      <height>77</height>
+      <height>51</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayoutSchedule">
      <item row="0" column="0">
       <widget class="QLabel" name="labelStarTime">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Дата начала</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="labelIntervalRecord">
-       <property name="text">
-        <string>Периодичность записи</string>
        </property>
       </widget>
      </item>
@@ -143,6 +215,18 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labeFinishTime">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Дата окончания</string>
        </property>
@@ -151,10 +235,38 @@
      <item row="1" column="1">
       <widget class="QDateTimeEdit" name="dateTimeEditFinishExperiment"/>
      </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="comboBoxInterval"/>
-     </item>
     </layout>
+   </widget>
+   <widget class="QPushButton" name="pushButtonResetTime">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>90</y>
+      <width>100</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>100</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>100</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Сбросить время</string>
+    </property>
    </widget>
   </widget>
   <widget class="QWidget" name="formLayoutWidget">
@@ -169,6 +281,18 @@
    <layout class="QFormLayout" name="formLayoutInformation">
     <item row="0" column="0">
      <widget class="QLabel" name="LabelExperiment">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Эксперимент</string>
       </property>
@@ -176,6 +300,18 @@
     </item>
     <item row="1" column="0">
      <widget class="QLabel" name="LabelObject">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Объект</string>
       </property>
@@ -186,6 +322,18 @@
     </item>
     <item row="2" column="0">
      <widget class="QLabel" name="LabelModelDevice">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Модель устройства</string>
       </property>
@@ -199,6 +347,18 @@
     </item>
     <item row="3" column="0">
      <widget class="QLabel" name="LabelSnDevice">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Серийный номер устройства</string>
       </property>
@@ -236,40 +396,46 @@
     </item>
    </layout>
   </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>490</y>
+     <width>431</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButtonOk">
+      <property name="text">
+       <string>Ok</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButtonCancel">
+      <property name="text">
+       <string>Отменить</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBoxSchedule</sender>
-   <signal>accepted()</signal>
-   <receiver>DlgCreateNewSchedule</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBoxSchedule</sender>
-   <signal>rejected()</signal>
-   <receiver>DlgCreateNewSchedule</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
