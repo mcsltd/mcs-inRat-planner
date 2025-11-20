@@ -157,6 +157,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self._device_id: UUID | None = self.schedule_data.device.id
         self.fs = schedule_data.sampling_rate
         self.mock_time = None
+        self._last_data_timestamp = None
 
         # Создаем график и виджет управления timebase
         self.plot = PlotSignal(parent=self, fs=self.fs)
@@ -184,7 +185,10 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
             return
 
         if self.mock_time is None:
-            self.mock_time = time.time()
+            self.mock_time = data["start_timestamp"]
+
+        if self._last_data_timestamp is None:
+            self._last_data_timestamp = data["start_timestamp"]
 
         time_arr, signal = None, None
         if "signal" in data:
@@ -193,7 +197,9 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
             raise ValueError("No signal recording")
 
         if "timestamp" in data:
-            time_arr = np.linspace(data["timestamp"], data["timestamp"] + len(signal) / self.fs, len(signal)) - self.mock_time
+            # time_arr = np.linspace(data["timestamp"], data["timestamp"] + len(signal) / self.fs, len(signal)) - self.mock_time
+            time_arr = np.linspace(self._last_data_timestamp, self._last_data_timestamp + len(signal) / self.fs, len(signal)) - self.mock_time
+            self._last_data_timestamp = self._last_data_timestamp + len(signal) / self.fs
         else:
             raise ValueError("No time recording")
 
