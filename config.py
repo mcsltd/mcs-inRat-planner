@@ -15,6 +15,7 @@ def parse_ble_key(key: str):
     return bytearray([int(b, 16) for b in hex_values])
 
 
-BLE_KEY = parse_ble_key(os.getenv('BLE_KEY'))
+BLE_KEY_EMGSENS = parse_ble_key(os.getenv('BLE_KEY_EMG_SENS'))
+BLE_KEY_IN_RAT = parse_ble_key(os.getenv('BLE_KEY_IN_RAT'))
 DB_PATH = os.getenv('DB_PATH')
 DB_NAME = os.getenv('DB_NAME')

@@ -332,7 +332,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def add_schedule(self, session) -> None:
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
-        # experiments = get_experiments()
         dlg = DlgCreateSchedule()
         code = dlg.exec()
 
