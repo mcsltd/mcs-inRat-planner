@@ -42,7 +42,7 @@ class Pkt:
     ChannelsCountEcg = 1
 
 
-class DataRateEcg(Enum):
+class InRatDataRateEcg(Enum):
     HZ_500 = 0
     HZ_1000 = 1
     HZ_2000 = 2

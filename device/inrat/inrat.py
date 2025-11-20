@@ -8,9 +8,9 @@ from bleak import BleakClient, BLEDevice, BleakScanner
 from config import BLE_KEY_IN_RAT
 # from constants import ConnectionState
 from device.crypt import get_control_sum
-from device.inrat.constants import Command, DataRateEcg, ScaleAccelerometer, EnabledChannels, EventType
+from device.inrat.constants import Command, InRatDataRateEcg, ScaleAccelerometer, EnabledChannels, EventType
 from device.inrat.decoder import Decoder
-from device.inrat.structures import Settings
+from device.inrat.structures import InRatSettings
 
 logger = logging.getLogger(__name__)
 
@@ -41,20 +41,35 @@ class InRat:
     def is_connected(self) -> bool:
         return self._client.is_connected
 
+    @property
+    def address(self) -> str:
+        return self._client.address
+
+    @property
+    def name(self) -> str:
+        return self._client.name
+
     async def connect(self, timeout: float) -> bool:
         """ Подключение к устройству с таймаутом """
         if self.is_connected:
+            logger.warning(f"Устройство {self.address} уже соединено")
             return True
 
         self._connection_state = ConnectionState.CONNECTING
         try:
             await asyncio.wait_for(self._client.connect(), timeout=timeout)
             self._connection_state = ConnectionState.CONNECTED
+            logger.info(f"Соединение с устройством {self.address} прошло успешно")
+
         except asyncio.TimeoutError:
             self._connection_state = ConnectionState.DISCONNECTED
+            logger.info(f"Истекло время {self.address} соединения с устройством")
+
             return False
         except Exception as exp:
             self._connection_state = ConnectionState.DISCONNECTED
+            logger.info(f"Ошибка соединения с устройством {self.address} ")
+
             return False
         return True
 
@@ -94,7 +109,7 @@ class InRat:
             return False
         return True
 
-    async def setup(self, cmd: Command, settings: Settings = b'') -> bool:
+    async def setup(self, cmd: Command, settings: InRatSettings = b'') -> bool:
         if not self.is_connected:
             return False
 
@@ -109,7 +124,7 @@ class InRat:
         except Exception as exp:
             return False
 
-    async def start_signal_acquisition(self, signal_queue: asyncio.Queue, settings: Settings):
+    async def start_signal_acquisition(self, signal_queue: asyncio.Queue, settings: InRatSettings):
         if self._is_notifying:
             return False
 
@@ -136,39 +151,23 @@ class InRat:
         except Exception as exp:
             return False
 
-    # async def start_event_acquisition(self, event_queue: asyncio.Queue, settings: Settings):
-    #     if self._is_notifying:
-    #         return False
-    #
-    #     async def event_handler(_, raw_data: bytearray):
-    #         ...
-    #
-    #     try:
-    #         success = await self.setup(cmd=Command., settings=settings)
-    #         if not success:
-    #             return False
-    #
-    #         start_timestamp = time.time()
-    #         decoder = Decoder()
-    #
-    #         await self._client.start_notify(self.UUID_EVENT_SERVICE, event_handler)
-    #         self._is_notifying = True
-    #         return True
-    #
-    #     except Exception as exp:
-    #         return False
+
 
 async def start():
 
     ble_device = await BleakScanner.find_device_by_name(name="inRat-1-1016")
+    print(ble_device.name)
     inrat = InRat(ble_device)
     print(f"{inrat=}")
     if await inrat.connect(timeout=10):
+        print(f"{inrat.name=}")
+        print(f"{inrat.address=}")
+
         queue = asyncio.Queue()
         await inrat.start_signal_acquisition(
             signal_queue=queue,
-            settings=Settings(
-                DataRateEcg=DataRateEcg.HZ_500.value,
+            settings=InRatSettings(
+                DataRateEcg=InRatDataRateEcg.HZ_500.value,
                 HighPassFilterEcg=0,
                 FullScaleAccelerometer=ScaleAccelerometer.G_2.value,
                 EnabledChannels=EnabledChannels.ECG,

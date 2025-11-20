@@ -1,7 +1,7 @@
 import ctypes
 
 
-class Settings(ctypes.Structure):
+class InRatSettings(ctypes.Structure):
     _pack_ = 1
     _fields_ = [
         ("DataRateEcg", ctypes.c_uint8),
@@ -20,7 +20,7 @@ class Acceleration(ctypes.Structure):
         ("Z", ctypes.c_int16)
     ]
 
-class Event(ctypes.Structure):
+class InRatEvent(ctypes.Structure):
     _pack_ = 1
     _fields_ = [
         ("Type", ctypes.c_uint8),

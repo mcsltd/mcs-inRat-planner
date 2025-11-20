@@ -11,7 +11,7 @@ from device.emgsens.constants import Command
 from device.emgsens.decoder import Decoder
 from device.emgsens.structures import Settings
 
-from config import BLE_KEY
+from config import BLE_KEY_EMGSENS
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ class EmgSens:
 
         try:
             data = cmd.value.to_bytes() + bytes(settings)
-            data += get_control_sum(data=data, key=BLE_KEY)
+            data += get_control_sum(data=data, key=BLE_KEY_EMGSENS)
             await self._client.write_gatt_char(
                 EmgSens.UUID_CHARACTERISTIC_CONTROL,
                 data, response=True
@@ -130,8 +130,8 @@ class EmgSens:
             logger.error(f"Failed to setup device {self.address}: {exp}")
             return False
 
-    async def start_emg_acquisition(
-            self, emg_queue: asyncio.Queue, settings: Settings
+    async def start_signal_acquisition(
+            self, signal_queue: asyncio.Queue, settings: Settings
     ) -> bool:
         """ Запуск получения ЭМГ данных """
         if self.is_notifying:
@@ -149,7 +149,7 @@ class EmgSens:
                 last_counter = counter
 
                 # logger.debug(f"Device: {self.name}; get emg - counter: {counter}")
-                await emg_queue.put({"counter": counter, "emg": emg,
+                await signal_queue.put({"counter": counter, "signal": emg,
                                      "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
             except Exception as exp:
                 logger.error(f"Error processing EMG data: {exp}")

@@ -47,7 +47,7 @@ class Command(Enum):
     Vibro = 5
 
 
-class SamplingRate(Enum):
+class EmgSensSamplingRate(Enum):
     HZ_1000 = 0
     HZ_2000 = 1
     HZ_5000 = 2
