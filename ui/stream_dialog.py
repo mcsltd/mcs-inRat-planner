@@ -186,16 +186,14 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         if self.mock_time is None:
             self.mock_time = time.time()
 
-        time_arr, ecg = None, None
-        if "emg" in data:
-            ecg = np.array(data["emg"])
-        elif "ecg" in data:
-            ecg = np.array(data["ecg"])
+        time_arr, signal = None, None
+        if "signal" in data:
+            signal = np.array(data["signal"])
         else:
-            raise ValueError("No ECG recording")
+            raise ValueError("No signal recording")
 
         if "timestamp" in data:
-            time_arr = np.linspace(data["timestamp"], data["timestamp"] + len(ecg) / self.fs, len(ecg)) - self.mock_time
+            time_arr = np.linspace(data["timestamp"], data["timestamp"] + len(signal) / self.fs, len(signal)) - self.mock_time
         else:
             raise ValueError("No time recording")
 
@@ -204,7 +202,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
             format_time = format_duration(sec_duration)
             self.labelDurationValue.setText(format_time)
 
-        self.plot.set_data(time_arr, ecg)
+        self.plot.set_data(time_arr, signal)
 
     def _load_info(self):
         """ Отображение информации о записи """
@@ -250,7 +248,7 @@ class DeviceMockup(QWidget):
                 time_array = np.linspace(timestamp, timestamp + self.sample_size / self.fs, self.sample_size)
                 ecg_array = np.sin(2 * np.pi * 3 * time_array)
 
-                data = {"timestamp": timestamp, "emg": ecg_array.tolist()}
+                data = {"timestamp": timestamp, "signal": ecg_array.tolist()}
                 self.signal_data_received.emit(self._id, data)
                 time.sleep(1 / self.fs * self.sample_size)
         except KeyboardInterrupt:

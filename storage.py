@@ -40,7 +40,7 @@ class Storage(QObject):
     def accept_data(self, device_id: UUID, data: dict) -> None:
         """ Получение данных от устройства с device_id и сохранение их в _data """
         logger.debug(f"Получены данные от устройства с индексом: {device_id}")
-        signal = np.array(data["emg"])
+        signal = np.array(data["signal"])
         self._recording_task_data[device_id] = np.append(self._recording_task_data[device_id], signal)
 
     def stop_recording_task(self, device_id: UUID) -> None:
