@@ -6,13 +6,14 @@ from typing import Optional
 
 from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer
 from PySide6.QtGui import QIcon, QIntValidator
-from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QDialogButtonBox, QMessageBox, QWidget
+from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QMessageBox, QWidget
 
-from constants import Formats, Devices
 from db.database import connection
 from db.models import Experiment, Object, Device
 from db.queries import get_experiments
+
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+from constants import Formats, Devices
 
 from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from ui.experiment_dialog import DlgCreateExperiment
@@ -49,7 +50,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.fill_combobox_experiment()
 
         self.fill_combobox(self.comboBoxModelDevice, Devices)
-        self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
         self.fill_combobox(self.comboBoxFormat, Formats)
 
         self.comboBoxDuration.addItems(
@@ -58,28 +58,45 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # self.comboBoxInterval.setPlaceholderText("[hh:mm]")
         self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
 
-        # установка настроек по умолчанию
-        self.setDefaults()
-
         # monitoring the has_unsaved_change flag
         self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
         self.LineEditObject.textChanged.connect(self.on_form_changed)
         self.LineEditSnDevice.textChanged.connect(self.on_form_changed)
         self.dateTimeEditStartExperiment.dateTimeChanged.connect(self.on_start_datetime_changed)
 
-        # соединение кнопок с со слотами
+        # соединение кнопок со слотами
         self.pushButtonByDefault.clicked.connect(self.setDefaults)
         self.pushButtonResetTime.clicked.connect(self.reset_time)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
         self.pushButtonCancel.clicked.connect(self.close)
+        self.comboBoxModelDevice.currentIndexChanged.connect(self._on_device_model_changed)
 
-        self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
+        # self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
+        self.pushButtonAddExperiment.hide()
+
+        # установка настроек по умолчанию
+        self.setDefaults()
 
         if schedule is None:
             self.timer_update = QTimer()
             self.timer_update.setInterval(1000)
             self.timer_update.timeout.connect(self._update_time_edit)
             self.timer_update.start()
+
+    def _on_device_model_changed(self):
+        """ Обработчик изменения модели устройства """
+        device_name = self.comboBoxModelDevice.currentText()
+        logger.info(f"Изменена модель устройства: {device_name}")
+
+        if device_name == "InRat":
+            logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
+            self.comboBoxSamplingRate.clear()
+            self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
+
+        elif device_name == "EMGsens":
+            logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
+            self.comboBoxSamplingRate.clear()
+            self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
 
     def on_start_datetime_changed(self):
         """ Обработка изменения даты со временем в окне ввода времени """
@@ -235,8 +252,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.LineEditObject.setText(schedule.object.name)
 
         # model
-        models = {"EMG-SENS-": "EMGsens"}
+        models = {"EMG-SENS-": "EMGsens", "inRat-1-": "InRat"}
         self.set_combobox_value(self.comboBoxModelDevice, models[schedule.device.model])
+        self.comboBoxModelDevice.currentIndexChanged.emit(-1)
 
         # serial number
         self.LineEditSnDevice.setText(str(schedule.device.serial_number))
@@ -330,8 +348,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # set index
         self.comboBoxFormat.setCurrentIndex(0) # set EDF
-        self.comboBoxModelDevice.setCurrentIndex(0) # set EMGsens
+        self.comboBoxModelDevice.setCurrentIndex(0) # set InRat
+        self.comboBoxModelDevice.currentIndexChanged.emit(0)
+
         self.comboBoxSamplingRate.setCurrentIndex(0)
+
         self.comboBoxDuration.setCurrentIndex(0)
         self.comboBoxInterval.setCurrentIndex(0)
 
