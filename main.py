@@ -28,6 +28,7 @@ from structure import ScheduleData, RecordData
 from resources.v1.main_window import Ui_MainWindow
 from ui.about_dialog import AboutDialog
 from ui.helper_dialog import DialogHelper
+from ui.inrat_controller_dialog import InRatControllerDialog
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
@@ -620,7 +621,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if DialogHelper.show_action_dialog(parent=self, title=f"Информация о расписании",
            message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\""
                                                  f" запланирована на {str_time}."):
-            logger.debug("Запущен ручной режим")
+            dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
+            dlg.exec()
 
 
     def configuration_clicked(self):
