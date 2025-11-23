@@ -598,6 +598,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         schedule_data: ScheduleData = schedule.to_dataclass(session)
 
+        # запуск просмотра стрима сигнала с устройства, если с устройства записывается сигнал
         device_id = schedule_data.device.id
         if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
             dlg = BLESignalViewer(schedule_data=schedule_data)
@@ -606,12 +607,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         job = self.scheduler.get_job(job_id=str(schedule_id))
-        if job is not None:
-            str_time = str(job.next_run_time).split("+")[0]
+        if job is None:
             DialogHelper.show_confirmation_dialog(
-                parent=self, title=f"Информация о расписании",
-                btn_no=False, yes_text="Ок", message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\""
-                                                     f" запланирована на {str_time}.")
+                self,
+                title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
+                icon=QMessageBox.Icon.Critical, btn_no=False
+            )
+            return
+
+        str_time = str(job.next_run_time).split("+")[0]
+
+        if DialogHelper.show_action_dialog(parent=self, title=f"Информация о расписании",
+           message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\""
+                                                 f" запланирована на {str_time}."):
+            logger.debug("Запущен ручной режим")
+
 
     def configuration_clicked(self):
         """ Активация окна настроек """

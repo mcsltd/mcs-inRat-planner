@@ -14,7 +14,6 @@ class DialogHelper(QObject):
         msg_box.setText(message)
         msg_box.setIcon(icon)
 
-        # Создаем кастомные кнопки
         yes_button = msg_box.addButton(yes_text, QMessageBox.ButtonRole.YesRole)
         no_button = msg_box.addButton(no_text, QMessageBox.ButtonRole.NoRole)
 
@@ -22,7 +21,24 @@ class DialogHelper(QObject):
             msg_box.removeButton(no_button)
 
         msg_box.setDefaultButton(yes_button)
+        msg_box.exec()
+        return msg_box.clickedButton() == yes_button
+
+    @staticmethod
+    def show_action_dialog(
+            parent, title, message, yes_text="Ok", action_text="Ручной режим",
+            icon: QMessageBox.Icon = QMessageBox.Icon.Information,
+    ):
+        msg_box = QMessageBox(parent)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(icon)
+
+        action_button = msg_box.addButton(action_text, QMessageBox.ButtonRole.ActionRole)
+        yes_button = msg_box.addButton(yes_text, QMessageBox.ButtonRole.YesRole)
+
+        msg_box.setDefaultButton(yes_button)
+        msg_box.setDefaultButton(action_button)
 
         msg_box.exec()
-
-        return msg_box.clickedButton() == yes_button
+        return msg_box.clickedButton() == action_button
