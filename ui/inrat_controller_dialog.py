@@ -9,9 +9,18 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner
 from pyqtgraph import PlotWidget, mkPen
 
+from device.inrat.constants import InRatDataRateEcg, Command
 from device.inrat.inrat import InRat
 from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
+
+SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
+                ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
+                ("2000 Гц", InRatDataRateEcg.HZ_1000.value), ]
+
+MODE = [("Деактивация", Command.Deactivate.value),
+        ("Активация", Command.Activate.value)]
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +62,21 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._loop = None
         self.plot = DisplaySignal(parent=self)
 
+        self.setup_combobox()
+
         self.verticalLayoutPlot.addWidget(self.plot)
 
         self.pushButtonStart.clicked.connect(self._connect_and_start_data_acquisition)
         self.pushButtonStop.clicked.connect(self._stop_data_acquisition)
+
+    def setup_combobox(self):
+        """ Настройка выпадающих списков """
+        for data in SAMPLE_RATES:
+            self.comboBoxSampleFreq.addItem(*data)
+
+        for data in MODE:
+            self.comboBoxMode.addItem(*data)
+
 
     def _run_async_loop(self):
         """ Создание цикла событий для работы с устройством"""
@@ -82,12 +102,13 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _connect_and_start_data_acquisition_impl(self):
         await self._connect_device()
-        await asyncio.sleep(3)
+        await asyncio.sleep(10)
         await self._disconnect_device()
 
     async def _connect_device(self):
         """ Поиск и соединение с устройством """
         logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
+        # поиск
         ble_device = None
         try:
             ble_device = await asyncio.wait_for(BleakScanner.find_device_by_name(self.schedule_data.device.ble_name), timeout=10)
@@ -99,8 +120,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if ble_device is None:
             return
 
+        # соединение
         self.device = InRat(ble_device=ble_device)
-
         if await self.device.connect(timeout=10):
             self.pushButtonStop.setEnabled(True)
             logger.debug(f"Выполнено соединение с устройством: {self.device.name}, {self.device.address}")
