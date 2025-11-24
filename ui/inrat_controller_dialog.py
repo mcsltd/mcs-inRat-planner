@@ -7,7 +7,7 @@ from PySide6.QtCore import Signal
 
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
-from bleak import BleakScanner
+from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen
 from sqlalchemy.util import await_only
 
@@ -80,9 +80,12 @@ class DisplaySignal(PlotWidget):
 
     def clear_plot(self):
         """Очистка графика"""
+        logger.debug("Очистка графика")
         self.time = np.array([])
         self.ecg = np.array([])
-        self.clear()
+
+        self.plot_signal.clear()
+        # self.clear()
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
@@ -112,8 +115,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.verticalLayoutPlot.addWidget(self.display)
 
         # signals
-        self.pushButtonStart.clicked.connect(self._connect_and_start_data_acquisition)
+        self.pushButtonConnection.clicked.connect(self._device_connection)
+        self.pushButtonStart.clicked.connect(self._start_data_acquisition)
         self.pushButtonStop.clicked.connect(self._stop_data_acquisition)
+        self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
         self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
 
@@ -124,9 +129,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         for data in MODE:
             self.comboBoxMode.addItem(*data)
-
-        self.comboBoxMode.setEnabled(False)
-        self.comboBoxSampleFreq.setEnabled(False)
 
     def _on_samplerate_changed(self):
         """ Обработчик изменения частоты оцифровки """
@@ -151,53 +153,109 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._loop_thread.start()
         logger.debug(f"Создан цикл событий: {self._loop}")
 
-    def _connect_and_start_data_acquisition(self):
+    # соединение с устройством
+    def _device_connection(self):
+        """ Соединение с устройством через асинхронную задачу """
+        logger.debug("Выполняется соединение с устройством")
+        if self._loop is None:
+            self._run_async_loop()
+
+        future = asyncio.run_coroutine_threadsafe(
+            self._device_connection_impl(),
+            self._loop
+        )
+
+    async def _device_connection_impl(self):
+        """ Соединение с устройством  """
+        self.pushButtonConnection.setEnabled(False)
+        device = await self._find_device()
+
+        if device is None:
+            logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено")
+            self.pushButtonConnection.setEnabled(True)
+            return
+
+        if await self._connect_device(device):
+            # активация при подключении устройства
+            self.pushButtonStart.setEnabled(True)
+            self.pushButtonDisconnect.setEnabled(True)
+            # деактивация при подключении устройства
+            self.comboBoxMode.setEnabled(True)
+            self.comboBoxSampleFreq.setEnabled(True)
+            self.pushButtonDisconnect.setEnabled(True)
+        else:
+            self.pushButtonConnection.setEnabled(True)
+
+    async def _find_device(self) -> BLEDevice | None:
+        """ Поиск устройства """
+        logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
+        ble_device = await BleakScanner.find_device_by_name(self.schedule_data.device.ble_name, timeout=5)
+
+        if ble_device is None:
+            return None
+
+        logger.debug(f"Найдено устройство: {ble_device}")
+        return ble_device
+
+    async def _connect_device(self, device: BLEDevice) -> bool:
+        """ Соединение с устройством """
+        # соединение
+        self.device = InRat(ble_device=device)
+        if await self.device.connect(timeout=10):
+            logger.debug(f"Выполнено соединение с устройством: {self.device.name}, {self.device.address}")
+            return True
+        return False
+
+    # отключение устройства
+    def _device_disconnection(self):
+        """ Отсоединение от устройства через асинхронную задачу """
+        logger.debug("Отсоединение от устройства")
+        if self._loop is None:
+            self._run_async_loop()
+
+        future = asyncio.run_coroutine_threadsafe(
+            self._disconnect_device(),
+            self._loop
+        )
+
+    async def _disconnect_device(self):
+        """ Отсоединение от устройства """
+        if self.device is None:
+            logger.error("В device установлено None")
+            return
+
+        if not self.device.is_connected:
+            logger.warning("Устройство уже отключено")
+            return
+
+        await self.device.disconnect()
+
+        # активация
+        self.pushButtonConnection.setEnabled(True)
+        # деактивация
+        self.pushButtonDisconnect.setEnabled(False)
+        self.pushButtonStart.setEnabled(False)
+        self.pushButtonStop.setEnabled(False)
+        self.comboBoxSampleFreq.setEnabled(False)
+        self.comboBoxMode.setEnabled(False)
+
+
+    def _start_data_acquisition(self):
         """ Соединение и запуск устройства через асинхронную задачу"""
         logger.debug("Запущено соединение и запуск устройства")
         if self._loop is None:
             self._run_async_loop()
 
-        # self.display.clear_plot()
-
+        self.display.clear_plot()
         future = asyncio.run_coroutine_threadsafe(
-            self._connect_and_start_data_acquisition_impl(),
+            self._start_data_acquisition_impl(),
             self._loop
         )
 
-    async def _connect_and_start_data_acquisition_impl(self):
+    async def _start_data_acquisition_impl(self):
         self.pushButtonStart.setEnabled(False)
 
-        await self._connect_device()
         await self._start_data_acquisition_device()
-
-    async def _connect_device(self):
-        """ Поиск и соединение с устройством """
-        if self.device is not None and self.device.is_connected:
-            logger.info(f"Устройство {self.schedule_data.device.ble_name} уже подключено")
-            return
-
-        logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
-
-        # поиск
-        ble_device = None
-        try:
-            ble_device = await asyncio.wait_for(BleakScanner.find_device_by_name(self.schedule_data.device.ble_name), timeout=10)
-        except asyncio.TimeoutError:
-            self.pushButtonStart.setEnabled(True)
-            return
-        logger.debug(f"Найдено устройство: {ble_device}")
-
-        if ble_device is None:
-            return
-
-        # соединение
-        self.device = InRat(ble_device=ble_device)
-        if await self.device.connect(timeout=10):
-            self.pushButtonStop.setEnabled(True)
-            logger.debug(f"Выполнено соединение с устройством: {self.device.name}, {self.device.address}")
-            return
-
-        self.pushButtonStart.setEnabled(True)
 
     async def _start_data_acquisition_device(self):
         """ Остановка получения данны"""
@@ -208,16 +266,16 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         data_queue = asyncio.Queue()
         if await self.device.start_signal_acquisition(signal_queue=data_queue, settings=self._settings):
             self.is_running = True
+            self.pushButtonStop.setEnabled(True) # активация кнопки остановки
+            self.comboBoxSampleFreq.setEnabled(False)
 
             while self.is_running:
                 try:
                     data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
 
                     if (
-                            "signal" in data and
-                            "timestamp" in data and
-                            "start_timestamp" in data and
-                            "counter" in data
+                            "signal" in data and "timestamp" in data and
+                            "start_timestamp" in data and "counter" in data
                     ):
                         start_time = data["start_timestamp"]
                         signal = data["signal"]
@@ -259,18 +317,14 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.is_running = False
             logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
             self.pushButtonStart.setEnabled(True)
+            self.comboBoxSampleFreq.setEnabled(True)
+
+            # деактивация
             self.pushButtonStop.setEnabled(False)
+
             return
 
-    async def _disconnect_device(self):
-        """ Отсоединение от устройства """
-        if self.device is None or not self.device.is_connected:
-            return
 
-        await self.device.disconnect()
-        self.pushButtonStop.setEnabled(False)
-        self.pushButtonStart.setEnabled(True)
-        logger.debug("Выполнено отсоединение от устройства")
 
 
     def closeEvent(self, arg__1, /):
