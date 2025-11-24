@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controlleriGihWl.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerVQpVLD.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -23,10 +23,10 @@ class Ui_DlgInRatController(object):
     def setupUi(self, DlgInRatController):
         if not DlgInRatController.objectName():
             DlgInRatController.setObjectName(u"DlgInRatController")
-        DlgInRatController.resize(1005, 568)
+        DlgInRatController.resize(1136, 570)
         self.verticalLayoutWidget = QWidget(DlgInRatController)
         self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(QRect(700, 20, 291, 541))
+        self.verticalLayoutWidget.setGeometry(QRect(830, 10, 291, 551))
         self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -34,6 +34,7 @@ class Ui_DlgInRatController(object):
         self.formLayoutInfo.setObjectName(u"formLayoutInfo")
         self.labelDevice = QLabel(self.verticalLayoutWidget)
         self.labelDevice.setObjectName(u"labelDevice")
+        self.labelDevice.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelDevice)
 
@@ -47,17 +48,27 @@ class Ui_DlgInRatController(object):
 
         self.pushButtonStart = QPushButton(self.verticalLayoutWidget)
         self.pushButtonStart.setObjectName(u"pushButtonStart")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButtonStart.sizePolicy().hasHeightForWidth())
+        self.pushButtonStart.setSizePolicy(sizePolicy)
+        self.pushButtonStart.setMinimumSize(QSize(100, 0))
 
         self.verticalLayout.addWidget(self.pushButtonStart)
 
         self.pushButtonStop = QPushButton(self.verticalLayoutWidget)
         self.pushButtonStop.setObjectName(u"pushButtonStop")
         self.pushButtonStop.setEnabled(False)
+        sizePolicy.setHeightForWidth(self.pushButtonStop.sizePolicy().hasHeightForWidth())
+        self.pushButtonStop.setSizePolicy(sizePolicy)
+        self.pushButtonStop.setMinimumSize(QSize(100, 0))
 
         self.verticalLayout.addWidget(self.pushButtonStop)
 
         self.labelSettingDevice = QLabel(self.verticalLayoutWidget)
         self.labelSettingDevice.setObjectName(u"labelSettingDevice")
+        self.labelSettingDevice.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.verticalLayout.addWidget(self.labelSettingDevice)
 
@@ -92,7 +103,7 @@ class Ui_DlgInRatController(object):
 
         self.verticalLayoutWidget_2 = QWidget(DlgInRatController)
         self.verticalLayoutWidget_2.setObjectName(u"verticalLayoutWidget_2")
-        self.verticalLayoutWidget_2.setGeometry(QRect(10, 10, 681, 551))
+        self.verticalLayoutWidget_2.setGeometry(QRect(10, 10, 811, 551))
         self.verticalLayoutPlot = QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayoutPlot.setObjectName(u"verticalLayoutPlot")
         self.verticalLayoutPlot.setContentsMargins(0, 0, 0, 0)
@@ -108,8 +119,8 @@ class Ui_DlgInRatController(object):
         self.labelDeviceName.setText("")
         self.pushButtonStart.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u0430\u0440\u0442", None))
         self.pushButtonStop.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u043e\u043f", None))
-        self.labelSettingDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
-        self.labelSampleFreq.setText(QCoreApplication.translate("DlgInRatController", u"l\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438:", None))
+        self.labelSettingDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430:", None))
+        self.labelSampleFreq.setText(QCoreApplication.translate("DlgInRatController", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438:", None))
         self.labelMode.setText(QCoreApplication.translate("DlgInRatController", u"\u0420\u0435\u0436\u0438\u043c", None))
     # retranslateUi
 

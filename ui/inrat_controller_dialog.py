@@ -3,20 +3,23 @@ import logging
 import threading
 
 import numpy as np
+from PySide6.QtCore import Signal
 
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner
 from pyqtgraph import PlotWidget, mkPen
+from sqlalchemy.util import await_only
 
-from device.inrat.constants import InRatDataRateEcg, Command
+from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
 from device.inrat.inrat import InRat
+from device.inrat.structures import InRatSettings
 from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
-                ("2000 Гц", InRatDataRateEcg.HZ_1000.value), ]
+                ("2000 Гц", InRatDataRateEcg.HZ_2000.value), ]
 
 MODE = [("Деактивация", Command.Deactivate.value),
         ("Активация", Command.Activate.value)]
@@ -46,28 +49,73 @@ class DisplaySignal(PlotWidget):
             self.getAxis(ax).setTickPen(pen)
             self.getAxis(ax).setTickFont(font)
 
-        self.timebase_s = 10  # окно отображения сигнала
+        self.timebase_s = 5  # окно отображения сигнала
+        self.fs = 500
 
+    def set_data(self, time: np.ndarray, signal: np.ndarray):
+        """ Отображение сигнала на графике """
+        if time.shape != signal.shape:
+            logger.error("Время и сигнал ЭКГ имеют разную размерность")
+            return
+
+        max_len = self.timebase_s * self.fs
+        if len(self.time) < max_len:
+            self.time = np.append(self.time, time)
+            self.ecg = np.append(self.ecg, signal)
+        else:
+            self.time = np.append(self.time[len(time):], time)
+            self.ecg = np.append(self.ecg[len(signal):], signal)
+
+        self.plot_signal.setData(self.time, self.ecg)
+
+        if self.time[-1] < self.timebase_s:
+            self.setXRange(self.time[0], self.timebase_s)
+        else:
+            self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
+
+    def set_sampling_rate(self, sampling_rate: int):
+        """ Установка частоты оцифровки """
+        self.fs = sampling_rate
+        logger.info(f"Установлен новая частота: {self.fs} Гц")
+
+    def clear_plot(self):
+        """Очистка графика"""
+        self.time = np.array([])
+        self.ecg = np.array([])
+        self.clear()
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     def __init__(self, schedule_data: ScheduleData, parent = None,  *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.setupUi(self)
+
+        # backend
         self.schedule_data = schedule_data
-
-        self.setWindowTitle(f"Ручной контроль устройства: {self.schedule_data.device.ble_name}")
-
         self.device: None | InRat = None
+        self._settings = InRatSettings(
+            DataRateEcg=InRatDataRateEcg.HZ_500.value,
+            HighPassFilterEcg=0,
+            FullScaleAccelerometer=ScaleAccelerometer.G_2.value,
+            EnabledChannels=EnabledChannels.ECG,
+            EnabledEvents=EventType.START | EventType.TEMP,
+            ActivityThreshold=1
+        )
         self._loop = None
-        self.plot = DisplaySignal(parent=self)
+        self.is_running = False
 
+        # ui
+        self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
+        self.setWindowTitle(f"Ручной контроль устройства: {self.schedule_data.device.ble_name}")
+        self.display = DisplaySignal(parent=self)
         self.setup_combobox()
+        self.verticalLayoutPlot.addWidget(self.display)
 
-        self.verticalLayoutPlot.addWidget(self.plot)
-
+        # signals
         self.pushButtonStart.clicked.connect(self._connect_and_start_data_acquisition)
         self.pushButtonStop.clicked.connect(self._stop_data_acquisition)
+        self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
+        self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
 
     def setup_combobox(self):
         """ Настройка выпадающих списков """
@@ -77,6 +125,21 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         for data in MODE:
             self.comboBoxMode.addItem(*data)
 
+        self.comboBoxMode.setEnabled(False)
+        self.comboBoxSampleFreq.setEnabled(False)
+
+    def _on_samplerate_changed(self):
+        """ Обработчик изменения частоты оцифровки """
+        text_sr = self.comboBoxSampleFreq.currentText()
+        value = self.comboBoxSampleFreq.currentData()
+        self.display.set_sampling_rate(sampling_rate=int(text_sr.split()[0]))
+        logger.debug(f"Установлена частота: {text_sr}, {value}")
+
+    def _on_mode_changed(self):
+        """ Обработчик изменения режима """
+        text_mode = self.comboBoxMode.currentText()
+        value = self.comboBoxMode.currentData()
+        logger.debug(f"Установлен режим: {text_mode}, {value}")
 
     def _run_async_loop(self):
         """ Создание цикла событий для работы с устройством"""
@@ -94,20 +157,27 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if self._loop is None:
             self._run_async_loop()
 
+        # self.display.clear_plot()
+
         future = asyncio.run_coroutine_threadsafe(
             self._connect_and_start_data_acquisition_impl(),
             self._loop
         )
-        self.pushButtonStart.setEnabled(False)
 
     async def _connect_and_start_data_acquisition_impl(self):
+        self.pushButtonStart.setEnabled(False)
+
         await self._connect_device()
-        await asyncio.sleep(10)
-        await self._disconnect_device()
+        await self._start_data_acquisition_device()
 
     async def _connect_device(self):
         """ Поиск и соединение с устройством """
+        if self.device is not None and self.device.is_connected:
+            logger.info(f"Устройство {self.schedule_data.device.ble_name} уже подключено")
+            return
+
         logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
+
         # поиск
         ble_device = None
         try:
@@ -126,7 +196,71 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.pushButtonStop.setEnabled(True)
             logger.debug(f"Выполнено соединение с устройством: {self.device.name}, {self.device.address}")
             return
+
         self.pushButtonStart.setEnabled(True)
+
+    async def _start_data_acquisition_device(self):
+        """ Остановка получения данны"""
+        if self.device is None or not self.device.is_connected:
+            logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено, либо не подключено")
+            return
+
+        data_queue = asyncio.Queue()
+        if await self.device.start_signal_acquisition(signal_queue=data_queue, settings=self._settings):
+            self.is_running = True
+
+            while self.is_running:
+                try:
+                    data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
+
+                    if (
+                            "signal" in data and
+                            "timestamp" in data and
+                            "start_timestamp" in data and
+                            "counter" in data
+                    ):
+                        start_time = data["start_timestamp"]
+                        signal = data["signal"]
+                        time_arr = np.linspace(
+                            start_time + len(data["signal"]) * (data["counter"] - 1) / self.display.fs,
+                            start_time + len(data["signal"]) * data["counter"] / self.display.fs, len(signal)) - start_time
+
+                        self.display.set_data(time=time_arr, signal=signal)
+
+                    data_queue.task_done()
+                except asyncio.TimeoutError:
+                    continue
+
+                except Exception as exp:
+                    logger.error(f"Ошибка обработки данных с устройства {self.schedule_data.device.ble_name}, {exp}")
+                    await self._stop_data_acquisition_impl()
+                    break
+
+    def _stop_data_acquisition(self):
+        logger.debug("Запущено соединение и запуск устройства")
+        if self._loop is None:
+            self._run_async_loop()
+
+        future = asyncio.run_coroutine_threadsafe(
+            self._stop_data_acquisition_impl(),
+            self._loop
+        )
+
+    async def _stop_data_acquisition_impl(self):
+        """ Остановка получения данных с устройства """
+        if self.device is None or not self.device.is_connected:
+            logger.debug("Устройство не найдено или не подключено")
+
+        if not self.is_running:
+            logger.debug(f"Получение данных с {self.schedule_data.device.ble_name} уже остановлено")
+            return
+
+        if await self.device.stop_acquisition():
+            self.is_running = False
+            logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
+            self.pushButtonStart.setEnabled(True)
+            self.pushButtonStop.setEnabled(False)
+            return
 
     async def _disconnect_device(self):
         """ Отсоединение от устройства """
@@ -138,10 +272,16 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStart.setEnabled(True)
         logger.debug("Выполнено отсоединение от устройства")
 
-    def _stop_data_acquisition(self):
-        ...
 
     def closeEvent(self, arg__1, /):
         if self._loop is not None:
+            future = asyncio.run_coroutine_threadsafe(
+                self._disconnect_device(),
+                self._loop
+            )
+            future.result(3)
+
             self._loop.stop()
             self._loop.close()
+
+
