@@ -116,9 +116,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # signals
         self.pushButtonConnection.clicked.connect(self._device_connection)
-        self.pushButtonStart.clicked.connect(self._start_data_acquisition)
-        self.pushButtonStop.clicked.connect(self._stop_data_acquisition)
         self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
+
+        self.pushButtonStart.clicked.connect(self._device_acquisition)
+        self.pushButtonStop.clicked.connect(self._device_stop_acquisition)
+
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
         self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
 
@@ -239,9 +241,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxSampleFreq.setEnabled(False)
         self.comboBoxMode.setEnabled(False)
 
+        # очистка графика
+        self.display.clear_plot()
 
-    def _start_data_acquisition(self):
-        """ Соединение и запуск устройства через асинхронную задачу"""
+    # запуск устройства
+    def _device_acquisition(self):
+        """ Запуск устройства для получения данных через асинхронную задачу"""
         logger.debug("Запущено соединение и запуск устройства")
         if self._loop is None:
             self._run_async_loop()
@@ -253,11 +258,21 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         )
 
     async def _start_data_acquisition_impl(self):
-        self.pushButtonStart.setEnabled(False)
+        """ Запуск устройства для получения данных """
 
-        await self._start_data_acquisition_device()
+        if not self.device.is_connected:
+            logger.error(f"Устройство {self.schedule_data.device.ble_name} не подключено")
 
-    async def _start_data_acquisition_device(self):
+        # активация
+        self.pushButtonStop.setEnabled(True)
+        # деактивация
+        self.comboBoxMode.setEnabled(False)
+        self.comboBoxSampleFreq.setEnabled(False)
+        self.pushButtonDisconnect.setEnabled(False)
+
+        await self._start_data_acquisition()
+
+    async def _start_data_acquisition(self):
         """ Остановка получения данны"""
         if self.device is None or not self.device.is_connected:
             logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено, либо не подключено")
@@ -272,30 +287,26 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             while self.is_running:
                 try:
                     data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
-
-                    if (
-                            "signal" in data and "timestamp" in data and
-                            "start_timestamp" in data and "counter" in data
-                    ):
+                    if "signal" in data and "timestamp" in data and "start_timestamp" in data and "counter" in data:
                         start_time = data["start_timestamp"]
                         signal = data["signal"]
                         time_arr = np.linspace(
                             start_time + len(data["signal"]) * (data["counter"] - 1) / self.display.fs,
                             start_time + len(data["signal"]) * data["counter"] / self.display.fs, len(signal)) - start_time
-
                         self.display.set_data(time=time_arr, signal=signal)
-
                     data_queue.task_done()
+
                 except asyncio.TimeoutError:
                     continue
 
                 except Exception as exp:
                     logger.error(f"Ошибка обработки данных с устройства {self.schedule_data.device.ble_name}, {exp}")
-                    await self._stop_data_acquisition_impl()
+                    # await self._stop_data_acquisition_impl()
                     break
 
-    def _stop_data_acquisition(self):
-        logger.debug("Запущено соединение и запуск устройства")
+    # остановка устройства
+    def _device_stop_acquisition(self):
+        """ Остановка устройства через асинхронную задачу """
         if self._loop is None:
             self._run_async_loop()
 
@@ -306,25 +317,23 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _stop_data_acquisition_impl(self):
         """ Остановка получения данных с устройства """
-        if self.device is None or not self.device.is_connected:
-            logger.debug("Устройство не найдено или не подключено")
-
         if not self.is_running:
             logger.debug(f"Получение данных с {self.schedule_data.device.ble_name} уже остановлено")
             return
 
         if await self.device.stop_acquisition():
             self.is_running = False
-            logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
+
+            # активация при остановке получения данных
+            self.pushButtonDisconnect.setEnabled(True)
             self.pushButtonStart.setEnabled(True)
+            self.comboBoxMode.setEnabled(True)
             self.comboBoxSampleFreq.setEnabled(True)
 
-            # деактивация
+            # деактивация при остановке устройства
             self.pushButtonStop.setEnabled(False)
 
-            return
-
-
+            logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
 
 
     def closeEvent(self, arg__1, /):
