@@ -1,13 +1,19 @@
 import asyncio
+import logging
+import threading
+
 import numpy as np
 
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
+from bleak import BleakScanner
 from pyqtgraph import PlotWidget, mkPen
 
+from device.inrat.inrat import InRat
 from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
 
+logger = logging.getLogger(__name__)
 
 class DisplaySignal(PlotWidget):
     def __init__(self, *args, **kwargs):
@@ -43,9 +49,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         self.setWindowTitle(f"Ручной контроль устройства: {self.schedule_data.device.ble_name}")
 
-        self.plot = DisplaySignal(parent=self)
-        self.device = None
+        self.device: None | InRat = None
         self._loop = None
+        self.plot = DisplaySignal(parent=self)
 
         self.verticalLayoutPlot.addWidget(self.plot)
 
@@ -53,19 +59,68 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStop.clicked.connect(self._stop_data_acquisition)
 
     def _run_async_loop(self):
+        """ Создание цикла событий для работы с устройством"""
         self._loop = asyncio.new_event_loop()
+        self._loop.set_debug(True)
         asyncio.set_event_loop(self._loop)
 
-    async def _connect_and_start_data_acquisition(self):
-        ...
+        self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._loop_thread.start()
+        logger.debug(f"Создан цикл событий: {self._loop}")
 
-    async def _stop_data_acquisition(self):
-        ...
+    def _connect_and_start_data_acquisition(self):
+        """ Соединение и запуск устройства через асинхронную задачу"""
+        logger.debug("Запущено соединение и запуск устройства")
+        if self._loop is None:
+            self._run_async_loop()
+
+        future = asyncio.run_coroutine_threadsafe(
+            self._connect_and_start_data_acquisition_impl(),
+            self._loop
+        )
+        self.pushButtonStart.setEnabled(False)
+
+    async def _connect_and_start_data_acquisition_impl(self):
+        await self._connect_device()
+        await asyncio.sleep(3)
+        await self._disconnect_device()
+
+    async def _connect_device(self):
+        """ Поиск и соединение с устройством """
+        logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
+        ble_device = None
+        try:
+            ble_device = await asyncio.wait_for(BleakScanner.find_device_by_name(self.schedule_data.device.ble_name), timeout=10)
+        except asyncio.TimeoutError:
+            self.pushButtonStart.setEnabled(True)
+            return
+        logger.debug(f"Найдено устройство: {ble_device}")
+
+        if ble_device is None:
+            return
+
+        self.device = InRat(ble_device=ble_device)
+
+        if await self.device.connect(timeout=10):
+            self.pushButtonStop.setEnabled(True)
+            logger.debug(f"Выполнено соединение с устройством: {self.device.name}, {self.device.address}")
+            return
+        self.pushButtonStart.setEnabled(True)
 
     async def _disconnect_device(self):
+        """ Отсоединение от устройства """
+        if self.device is None or not self.device.is_connected:
+            return
+
+        await self.device.disconnect()
+        self.pushButtonStop.setEnabled(False)
+        self.pushButtonStart.setEnabled(True)
+        logger.debug("Выполнено отсоединение от устройства")
+
+    def _stop_data_acquisition(self):
         ...
 
     def closeEvent(self, arg__1, /):
-        self._disconnect_device()
         if self._loop is not None:
+            self._loop.stop()
             self._loop.close()

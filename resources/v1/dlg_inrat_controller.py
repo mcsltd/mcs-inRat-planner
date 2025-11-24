@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllernYbDGO.ui'
+## Form generated from reading UI file 'dlg_inrat_controlleriGihWl.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -52,6 +52,7 @@ class Ui_DlgInRatController(object):
 
         self.pushButtonStop = QPushButton(self.verticalLayoutWidget)
         self.pushButtonStop.setObjectName(u"pushButtonStop")
+        self.pushButtonStop.setEnabled(False)
 
         self.verticalLayout.addWidget(self.pushButtonStop)
 
