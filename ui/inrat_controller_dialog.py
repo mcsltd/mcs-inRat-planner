@@ -16,6 +16,7 @@ from device.inrat.inrat import InRat
 from device.inrat.structures import InRatSettings
 from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
+from util import convert_in_rat_sample_rate_to_str
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
@@ -124,6 +125,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
         self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
 
+    # настройка выпадающих списков
     def setup_combobox(self):
         """ Настройка выпадающих списков """
         for data in SAMPLE_RATES:
@@ -136,7 +138,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         """ Обработчик изменения частоты оцифровки """
         text_sr = self.comboBoxSampleFreq.currentText()
         value = self.comboBoxSampleFreq.currentData()
+
+        self._settings.DataRateEcg = value
+        logger.debug(f"В структуру настроек установлена частота {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
         self.display.set_sampling_rate(sampling_rate=int(text_sr.split()[0]))
+
         logger.debug(f"Установлена частота: {text_sr}, {value}")
 
     def _on_mode_changed(self):
@@ -145,6 +151,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         value = self.comboBoxMode.currentData()
         logger.debug(f"Установлен режим: {text_mode}, {value}")
 
+    # асихронный цикл событий
     def _run_async_loop(self):
         """ Создание цикла событий для работы с устройством"""
         self._loop = asyncio.new_event_loop()
@@ -279,6 +286,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             return
 
         data_queue = asyncio.Queue()
+        logger.debug(f"{self.schedule_data.device.ble_name} запущен на частоте: {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
         if await self.device.start_signal_acquisition(signal_queue=data_queue, settings=self._settings):
             self.is_running = True
             self.pushButtonStop.setEnabled(True) # активация кнопки остановки

@@ -1,6 +1,7 @@
 import os
 import shutil
 
+from device.inrat.constants import InRatDataRateEcg
 from structure import RecordData
 
 
@@ -75,3 +76,14 @@ def copy_file(path_to_copy: str, record: RecordData) -> str:
     else:
         error_message = "Неизвестный тип файла"
         return error_message
+
+
+def convert_in_rat_sample_rate_to_str(code: int):
+    """ Функция конвертации кодов частоты оцифровки в строки """
+    if InRatDataRateEcg.HZ_500.value == code:
+        return "500 Гц"
+    elif InRatDataRateEcg.HZ_1000.value == code:
+        return "1000 Гц"
+    elif InRatDataRateEcg.HZ_2000.value == code:
+        return "2000 Гц"
+    return None
