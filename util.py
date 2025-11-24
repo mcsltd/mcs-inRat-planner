@@ -87,3 +87,5 @@ def convert_in_rat_sample_rate_to_str(code: int):
     elif InRatDataRateEcg.HZ_2000.value == code:
         return "2000 Гц"
     return None
+
+

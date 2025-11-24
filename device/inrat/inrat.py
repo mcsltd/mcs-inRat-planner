@@ -10,7 +10,7 @@ from config import BLE_KEY_IN_RAT
 from device.crypt import get_control_sum
 from device.inrat.constants import Command, InRatDataRateEcg, ScaleAccelerometer, EnabledChannels, EventType
 from device.inrat.decoder import Decoder
-from device.inrat.structures import InRatSettings
+from device.inrat.structures import InRatSettings, InRatStatus
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class InRat:
     UUID_ACQUISITION_SERVICE = "59573ef1-5389-575f-87d5-5f31fcdcba7b"
     UUID_EVENT_SERVICE = "f553739f-9f1f-538d-a7d3-cd987b395eb5"
     UUID_CHARACTERISTIC_CONTROL = "7395ca15-5997-5a1b-a138-75a7a573b8e5"
+    UUID_STATUS = "c3571b1b-e17e-5195-9fd3-8119cb153187"
 
     def __init__(self, ble_device: BLEDevice):
         if ble_device is None:
@@ -151,6 +152,22 @@ class InRat:
         except Exception as exp:
             return False
 
+    async def get_status(self) -> None | InRatStatus:
+        """ Получение статуса устройства """
+        if not self.is_connected:
+            return None
+
+        byte_st = await self._client.read_gatt_char(self.UUID_STATUS)
+        status = InRatStatus.from_buffer_copy(byte_st)
+        return status
+
+    async def set_status(self, cmd: Command) -> bool:
+        """ Изменение статуса устройства на Activated/Deactivated """
+        if not self.is_connected:
+            return False
+
+        res = await self.setup(cmd=cmd)
+        return res
 
 
 async def start():

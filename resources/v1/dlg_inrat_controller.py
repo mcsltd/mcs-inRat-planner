@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllerDskPKw.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerpGpeJw.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -140,8 +140,8 @@ class Ui_DlgInRatController(object):
         self.pushButtonConnection.setText(QCoreApplication.translate("DlgInRatController", u"\u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))
         self.pushButtonDisconnect.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))
         self.pushButtonStop.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u043e\u043f", None))
-        self.labelSettingDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430:", None))
+        self.labelSettingDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438:", None))
         self.labelSampleFreq.setText(QCoreApplication.translate("DlgInRatController", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438:", None))
-        self.labelMode.setText(QCoreApplication.translate("DlgInRatController", u"\u0420\u0435\u0436\u0438\u043c", None))
+        self.labelMode.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u0430\u0442\u0443\u0441:", None))
     # retranslateUi
 

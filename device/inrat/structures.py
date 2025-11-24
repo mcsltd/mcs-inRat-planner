@@ -31,3 +31,19 @@ class InRatEvent(ctypes.Structure):
         ("Data", ctypes.c_int32),
     ]
 
+class InRatUsage(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("PowerOnCount", ctypes.c_uint32),
+        ("AdvertisingSeconds", ctypes.c_uint32),
+        ("ConnectionSeconds", ctypes.c_uint32),
+        ("DataSendSeconds", ctypes.c_uint32)
+    ]
+
+class InRatStatus(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("Activated", ctypes.c_uint16),
+        ("Vddio", ctypes.c_uint16),
+        ("Usage", InRatUsage)
+    ]

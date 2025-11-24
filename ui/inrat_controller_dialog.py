@@ -22,8 +22,8 @@ SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
                 ("2000 Гц", InRatDataRateEcg.HZ_2000.value), ]
 
-MODE = [("Деактивация", Command.Deactivate.value),
-        ("Активация", Command.Activate.value)]
+MODE = [("Деактивирован", Command.Deactivate),
+        ("Активирован", Command.Activate)]
 
 
 logger = logging.getLogger(__name__)
@@ -98,19 +98,16 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.schedule_data = schedule_data
         self.device: None | InRat = None
         self._settings = InRatSettings(
-            DataRateEcg=InRatDataRateEcg.HZ_500.value,
-            HighPassFilterEcg=0,
-            FullScaleAccelerometer=ScaleAccelerometer.G_2.value,
-            EnabledChannels=EnabledChannels.ECG,
-            EnabledEvents=EventType.START | EventType.TEMP,
-            ActivityThreshold=1
+            DataRateEcg=InRatDataRateEcg.HZ_500.value, HighPassFilterEcg=0,
+            FullScaleAccelerometer=ScaleAccelerometer.G_2.value, EnabledChannels=EnabledChannels.ECG,
+            EnabledEvents=EventType.START | EventType.TEMP, ActivityThreshold=1
         )
         self._loop = None
         self.is_running = False
 
         # ui
         self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
-        self.setWindowTitle(f"Ручной контроль устройства: {self.schedule_data.device.ble_name}")
+        self.setWindowTitle(f"Ручной контроль: {self.schedule_data.device.ble_name}")
         self.display = DisplaySignal(parent=self)
         self.setup_combobox()
         self.verticalLayoutPlot.addWidget(self.display)
@@ -134,6 +131,16 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         for data in MODE:
             self.comboBoxMode.addItem(*data)
 
+        self._set_default_sampling_rate()
+
+    def _set_default_sampling_rate(self):
+        """ Установка частоты по умолчанию из schedule_data """
+        # установка частоты по умолчанию
+        text_sample_rate = f"{self.schedule_data.sampling_rate} Гц"
+        idx = self.comboBoxSampleFreq.findText(text_sample_rate)
+        self.comboBoxSampleFreq.setCurrentIndex(idx)
+        self._on_samplerate_changed()
+
     def _on_samplerate_changed(self):
         """ Обработчик изменения частоты оцифровки """
         text_sr = self.comboBoxSampleFreq.currentText()
@@ -146,10 +153,20 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         logger.debug(f"Установлена частота: {text_sr}, {value}")
 
     def _on_mode_changed(self):
-        """ Обработчик изменения режима """
+        """ Обработчик изменения режима и установка режима в устройство через асинхронную задачу """
         text_mode = self.comboBoxMode.currentText()
         value = self.comboBoxMode.currentData()
+
+        future = asyncio.run_coroutine_threadsafe(self._set_device_mode(value), self._loop)
         logger.debug(f"Установлен режим: {text_mode}, {value}")
+
+    def _set_mode_combobox(self, mode: int):
+        """ Установка текущего режима установленного на устройстве """
+        logger.debug(f"Текущий режим на {self.schedule_data.device.ble_name}: {mode}")
+        if mode == 0:
+            self.comboBoxMode.setCurrentIndex(0)
+        elif mode == 1:
+            self.comboBoxMode.setCurrentIndex(1)
 
     # асихронный цикл событий
     def _run_async_loop(self):
@@ -161,6 +178,20 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
         self._loop_thread.start()
         logger.debug(f"Создан цикл событий: {self._loop}")
+
+    # установка статуса устройству - Activated/Deactivated
+    async def _set_device_mode(self, mode: Command):
+        """ Изменение режима у устройства - Activated/Deactivated"""
+        if await self.device.set_status(mode):
+            status = await self.device.get_status()
+            self._set_mode_combobox(mode=status.Activated)
+            return
+        logger.error(f"Не удалось установить режим для устройства: {self.schedule_data.device.ble_name}")
+
+        if mode == Command.Activate:
+            self.comboBoxMode.setCurrentIndex(0)
+        if mode == Command.Deactivate:
+            self.comboBoxMode.setCurrentIndex(1)
 
     # соединение с устройством
     def _device_connection(self):
@@ -185,6 +216,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             return
 
         if await self._connect_device(device):
+            status = await self.device.get_status()
+            self._set_mode_combobox(mode=status.Activated)
+
             # активация при подключении устройства
             self.pushButtonStart.setEnabled(True)
             self.pushButtonDisconnect.setEnabled(True)
@@ -248,6 +282,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxSampleFreq.setEnabled(False)
         self.comboBoxMode.setEnabled(False)
 
+        self.device = None
         # очистка графика
         self.display.clear_plot()
 
@@ -342,7 +377,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.pushButtonStop.setEnabled(False)
 
             logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
-
 
     def closeEvent(self, arg__1, /):
         if self._loop is not None:
