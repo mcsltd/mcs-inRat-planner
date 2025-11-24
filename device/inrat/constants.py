@@ -63,3 +63,11 @@ class EventType(IntFlag):
     ORIENTATION = auto()
     START = auto()
     TEMP = auto()
+
+class InRatEventEnum(IntEnum):
+    Button = 0
+    Activity = 1
+    Freefall = 2
+    Orientation = 3
+    Start = 4
+    Temp = 5

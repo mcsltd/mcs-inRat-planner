@@ -8,7 +8,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
-from pyqtgraph import PlotWidget, mkPen
+from pyqtgraph import PlotWidget, mkPen, TextItem
 from sqlalchemy.util import await_only
 
 from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
@@ -53,6 +53,8 @@ class DisplaySignal(PlotWidget):
         self.timebase_s = 5  # окно отображения сигнала
         self.fs = 500
 
+        self.temperature_text = None
+
     def set_data(self, time: np.ndarray, signal: np.ndarray):
         """ Отображение сигнала на графике """
         if time.shape != signal.shape:
@@ -74,6 +76,10 @@ class DisplaySignal(PlotWidget):
         else:
             self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
 
+        # обновление позиции температуры при добавлении новых графиков
+        if self.temperature_text is not None:
+            self.temperature_text.setPos(self.getViewBox().viewRange()[0][1], self.getViewBox().viewRange()[1][1])
+
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
         self.fs = sampling_rate
@@ -86,7 +92,27 @@ class DisplaySignal(PlotWidget):
         self.ecg = np.array([])
 
         self.plot_signal.clear()
-        # self.clear()
+        # Удаляем текст температуры при очистке
+        if self.temperature_text is not None:
+            self.removeItem(self.temperature_text)
+            self.temperature_text = None
+
+    def set_temperature(self, temperature_celsius: float):
+        if self.temperature_text is not None:
+            self.removeItem(self.temperature_text)
+
+        self.temperature_text = TextItem(
+            text=f"{temperature_celsius:.1f}°C",
+            color=(128, 128, 128),  # Серый цвет
+            anchor=(1, 0)  # Правый верхний угол
+        )
+
+        font = QFont("Arial", 14, QFont.Weight.Bold)
+        self.temperature_text.setFont(font)
+
+        self.addItem(self.temperature_text)
+        self.temperature_text.setPos(self.getViewBox().viewRange()[0][1],
+                                     self.getViewBox().viewRange()[1][1])
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
@@ -100,7 +126,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._settings = InRatSettings(
             DataRateEcg=InRatDataRateEcg.HZ_500.value, HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2.value, EnabledChannels=EnabledChannels.ECG,
-            EnabledEvents=EventType.START | EventType.TEMP, ActivityThreshold=1
+            EnabledEvents=EventType.TEMP, ActivityThreshold=1
         )
         self._loop = None
         self.is_running = False
@@ -322,7 +348,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         data_queue = asyncio.Queue()
         logger.debug(f"{self.schedule_data.device.ble_name} запущен на частоте: {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
-        if await self.device.start_signal_acquisition(signal_queue=data_queue, settings=self._settings):
+        if await self.device.start_data_acquisition(data_queue=data_queue, settings=self._settings):
             self.is_running = True
             self.pushButtonStop.setEnabled(True) # активация кнопки остановки
             self.comboBoxSampleFreq.setEnabled(False)
@@ -337,6 +363,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                             start_time + len(data["signal"]) * (data["counter"] - 1) / self.display.fs,
                             start_time + len(data["signal"]) * data["counter"] / self.display.fs, len(signal)) - start_time
                         self.display.set_data(time=time_arr, signal=signal)
+
+                    if "temp" in data:
+                        self.display.set_temperature(data["temp"])
+
                     data_queue.task_done()
 
                 except asyncio.TimeoutError:
