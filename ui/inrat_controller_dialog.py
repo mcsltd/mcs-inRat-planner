@@ -404,15 +404,75 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
             logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
 
-    def closeEvent(self, arg__1, /):
-        if self._loop is not None:
+    def closeEvent(self, event, /):
+        if self._loop is None or not self._loop.is_running():
+            event.accept()
+            return
+        try:
+            # 1. Запускаем отключение устройства и завершение задач
             future = asyncio.run_coroutine_threadsafe(
-                self._disconnect_device(),
+                self._safe_shutdown(),
                 self._loop
             )
-            future.result(3)
+            # Ждём завершения с таймаутом
+            future.result(timeout=5.0)
 
-            self._loop.stop()
-            self._loop.close()
+        except TimeoutError:
+            logger.warning("Таймаут при завершении задач")
+        except Exception as e:
+            logger.error(f"Ошибка при завершении: {e}")
+        finally:
+            # 2. Останавливаем цикл событий
+            if self._loop.is_running():
+                self._loop.call_soon_threadsafe(self._loop.stop)
 
+            # 3. Ждём завершения потока
+            if self._loop_thread and self._loop_thread.is_alive():
+                self._loop_thread.join(timeout=3.0)
+                if self._loop_thread.is_alive():
+                    logger.warning("Поток цикла событий не завершился вовремя")
 
+            # 4. Закрываем цикл
+            if not self._loop.is_closed():
+                self._loop.close()
+
+            logger.debug("Цикл событий завершён")
+            event.accept()
+
+    async def _safe_shutdown(self):
+        """Безопасное завершение всех операций"""
+        try:
+            # Сначала отключаем устройство
+            await self._disconnect_device()
+
+            # Затем завершаем все задачи
+            await self._shutdown_async_tasks()
+
+        except Exception as e:
+            logger.error(f"Ошибка при безопасном завершении: {e}")
+
+    async def _shutdown_async_tasks(self):
+        """Корректное завершение всех асинхронных задач"""
+        if not self._loop or not self._loop.is_running():
+            return
+
+        # Отменяем все задачи
+        tasks = [task for task in asyncio.all_tasks(self._loop)
+                 if not task.done()]
+
+        if not tasks:
+            return
+
+        logger.debug(f"Отменяем {len(tasks)} активных задач")
+
+        # Отправляем отмену всем задачам
+        for task in tasks:
+            task.cancel()
+
+        # Ждём завершения задач с таймаутом
+        try:
+            await asyncio.wait(tasks, timeout=2.0)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.debug(f"Ошибка при отмене задач: {e}")
