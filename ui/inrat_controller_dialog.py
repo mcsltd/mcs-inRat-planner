@@ -3,13 +3,12 @@ import logging
 import threading
 
 import numpy as np
-from PySide6.QtCore import Signal
+from PySide6 import QtCore
 
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
-from pyqtgraph import PlotWidget, mkPen, TextItem
-from sqlalchemy.util import await_only
+from pyqtgraph import PlotWidget, mkPen, TextItem, InfiniteLine
 
 from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
 from device.inrat.inrat import InRat
@@ -53,7 +52,7 @@ class DisplaySignal(PlotWidget):
         self.timebase_s = 5  # окно отображения сигнала
         self.fs = 500
 
-        self.temperature_text = None
+        self._markers = []
 
     def set_data(self, time: np.ndarray, signal: np.ndarray):
         """ Отображение сигнала на графике """
@@ -69,21 +68,26 @@ class DisplaySignal(PlotWidget):
             self.time = np.append(self.time[len(time):], time)
             self.ecg = np.append(self.ecg[len(signal):], signal)
 
-        self.plot_signal.setData(self.time, self.ecg)
+        self.plot_signal.setData(self.time, self.ecg, antialias=True, clipToView=True)
 
         if self.time[-1] < self.timebase_s:
             self.setXRange(self.time[0], self.timebase_s)
         else:
             self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
 
-        # обновление позиции температуры при добавлении новых графиков
-        if self.temperature_text is not None:
-            self.temperature_text.setPos(self.getViewBox().viewRange()[0][1], self.getViewBox().viewRange()[1][1])
 
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
         self.fs = sampling_rate
         logger.info(f"Установлен новая частота: {self.fs} Гц")
+
+    def set_marker(self, pos, text):
+        """ Add vertical line and text on the plot."""
+        line = InfiniteLine(
+            pos=pos, angle=90, pen=mkPen('gray', width=1, style=QtCore.Qt.PenStyle.DashLine),
+            movable=False, label=text, labelOpts={'color': 'k', 'position': 0.1})
+        self.addItem(line)
+        self._markers.append(line)
 
     def clear_plot(self):
         """Очистка графика"""
@@ -91,28 +95,11 @@ class DisplaySignal(PlotWidget):
         self.time = np.array([])
         self.ecg = np.array([])
 
+        for marker in self._markers:
+            self.removeItem(marker)
+        self.markers = []
+
         self.plot_signal.clear()
-        # Удаляем текст температуры при очистке
-        if self.temperature_text is not None:
-            self.removeItem(self.temperature_text)
-            self.temperature_text = None
-
-    def set_temperature(self, temperature_celsius: float):
-        if self.temperature_text is not None:
-            self.removeItem(self.temperature_text)
-
-        self.temperature_text = TextItem(
-            text=f"{temperature_celsius:.1f}°C",
-            color=(128, 128, 128),  # Серый цвет
-            anchor=(1, 0)  # Правый верхний угол
-        )
-
-        font = QFont("Arial", 14, QFont.Weight.Bold)
-        self.temperature_text.setFont(font)
-
-        self.addItem(self.temperature_text)
-        self.temperature_text.setPos(self.getViewBox().viewRange()[0][1],
-                                     self.getViewBox().viewRange()[1][1])
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
@@ -126,14 +113,15 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._settings = InRatSettings(
             DataRateEcg=InRatDataRateEcg.HZ_500.value, HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2.value, EnabledChannels=EnabledChannels.ECG,
-            EnabledEvents=EventType.TEMP, ActivityThreshold=1
+            EnabledEvents=EventType.TEMP,
+            ActivityThreshold=1
         )
         self._loop = None
         self.is_running = False
 
         # ui
         self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
-        self.setWindowTitle(f"Ручной контроль: {self.schedule_data.device.ble_name}")
+        self.setWindowTitle(f"Ручной режим: {self.schedule_data.device.ble_name}")
         self.display = DisplaySignal(parent=self)
         self.setup_combobox()
         self.verticalLayoutPlot.addWidget(self.display)
@@ -341,7 +329,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         await self._start_data_acquisition()
 
     async def _start_data_acquisition(self):
-        """ Остановка получения данны"""
+        """ Остановка получения данных"""
         if self.device is None or not self.device.is_connected:
             logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено, либо не подключено")
             return
@@ -364,8 +352,16 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                             start_time + len(data["signal"]) * data["counter"] / self.display.fs, len(signal)) - start_time
                         self.display.set_data(time=time_arr, signal=signal)
 
-                    if "temp" in data:
-                        self.display.set_temperature(data["temp"])
+                    if "event" in data:
+                        if data["event"] == "Temp":
+                            temp_in_cels = np.round(data["temp"] / 1000, 2)
+                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text=f"{temp_in_cels} °С")
+                        if data["event"] == "Activity":
+                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Activity")
+                        if data["event"] == "Orientation":
+                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Orientation")
+                        if data["event"] == "Freefall":
+                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Freefall")
 
                     data_queue.task_done()
 

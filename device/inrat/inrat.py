@@ -198,8 +198,17 @@ class InRat:
                 event = InRatEvent.from_buffer(raw_data)
 
                 if event.Type == InRatEventEnum.Temp.value:
-                    await data_queue.put({"counter": event.Counter, "temp": event.Data,
+                    await data_queue.put({"counter": event.Counter, "event": "Temp", "temp": event.Data,
                                            "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
+                if event.Type == InRatEventEnum.Activity.value:
+                    await data_queue.put({"counter": event.Counter, "event": "Activity",
+                                           "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
+                if event.Type == InRatEventEnum.Orientation.value:
+                    await data_queue.put({"counter": event.Counter, "event": "Orientation",
+                                          "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
+                if event.Type == InRatEventEnum.Freefall.value:
+                    await data_queue.put({"counter": event.Counter, "event": "Freefall",
+                                          "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
 
         async def signal_handler(_, raw_data: bytearray):
             try:
