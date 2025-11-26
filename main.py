@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from device.ble_manager import BleManager, RecordingTaskData
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
 from structure import ScheduleData, RecordData
@@ -559,9 +559,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if record is None:
             DialogHelper.show_confirmation_dialog(
-                self,
-                title="Ошибка", message="Не найдена запись ЭКГ", yes_text="Ok",
-                icon=QMessageBox.Icon.Critical, btn_no=False
+                self, title="Ошибка", message="Не найдена запись ЭКГ", yes_text="Ok", icon=QMessageBox.Icon.Critical,
+                btn_no=False
             )
             return
         record_data: RecordData = record.to_dataclass()
@@ -616,14 +615,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             return
 
-        str_time = str(job.next_run_time).split("+")[0]
+        next_run = job.next_run_time.replace(microsecond=0)
+        if next_run.tzinfo is not None:
+            next_run = next_run.astimezone().replace(tzinfo=None)
 
-        if DialogHelper.show_action_dialog(parent=self, title=f"Информация о расписании",
-           message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\""
-                                                 f" запланирована на {str_time}."):
-            dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
-            dlg.exec()
+        str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
+        if schedule_data.device.model == Devices.INRAT.value["InRat"]:
+            if DialogHelper.show_action_dialog(
+                    parent=self, title=f"Информация о расписании",
+                    message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
+            ):
+                # постановка расписания на паузу, если пользователь выбрал ручной режим
+                job.pause()
 
+                try:
+                    dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
+                    dlg.exec()
+
+                    # ToDo: self.reschedule_job()
+
+                    # активация задачи
+                    if datetime.datetime.now() > job.next_run_time:
+                        job.modify(next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=10))
+                    job.resume()
+
+                except Exception as exp:
+                    job.resume()
+
+        if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
+            DialogHelper.show_confirmation_dialog(
+                parent=self, title=f"Информация о расписании",
+                message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
+                yes_text="Ok", btn_no=False
+            )
 
     def configuration_clicked(self):
         """ Активация окна настроек """

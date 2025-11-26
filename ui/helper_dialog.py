@@ -27,7 +27,7 @@ class DialogHelper(QObject):
     @staticmethod
     def show_action_dialog(
             parent, title, message, yes_text="Ok", action_text="Ручной режим",
-            icon: QMessageBox.Icon = QMessageBox.Icon.Information,
+            icon: QMessageBox.Icon = QMessageBox.Icon.NoIcon,
     ):
         msg_box = QMessageBox(parent)
         msg_box.setWindowTitle(title)
