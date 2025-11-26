@@ -405,7 +405,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         data_queue = asyncio.Queue()
         logger.debug(f"{self.schedule_data.device.ble_name} запущен на частоте: {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
-        if await self.device.start_data_acquisition(data_queue=data_queue, settings=self._settings):
+        if await self.device.start_acquisition(data_queue=data_queue, settings=self._settings):
             self.is_running = True
             # деактивация в режиме получения данных
             self.pushButtonStart.setEnabled(False)

@@ -187,7 +187,7 @@ class InRat:
     #     except Exception as exp:
     #         return False
 
-    async def start_data_acquisition(self, data_queue: asyncio.Queue, settings: InRatSettings):
+    async def start_acquisition(self, data_queue: asyncio.Queue, settings: InRatSettings):
         if self._is_notifying:
             return False
 

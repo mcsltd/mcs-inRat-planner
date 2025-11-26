@@ -803,15 +803,3 @@ if __name__ == "__main__":
         app.exec()
 
 
-
-# # проверка есть ли объект в бд
-# has_obj = Object.find([Object.id == schedule.object.id], session)
-# if has_obj is None:
-#     obj_id = Object.from_dataclass(schedule.object).create(session)
-#     logger.info(f"Добавлен новый объект: id={obj_id}")
-
-# # проверка есть ли устройство в бд
-# has_device = Device.find([Device.id == schedule.device.id], session)
-# if has_device is None:
-#     device_id = Device.from_dataclass(schedule.device).create(session)
-#     logger.info(f"Добавлено устройство: id={device_id}")

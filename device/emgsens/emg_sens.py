@@ -206,3 +206,41 @@ class EmgSens:
         except Exception as exp:
             logger.error(f"Failed to start data acquisition on {self.address}: {exp}")
             return False
+
+    async def start_acquisition(self, data_queue: asyncio.Queue, settings: Settings):
+        """ Запуск получения ЭМГ данных """
+        if self.is_notifying:
+            logger.warning(f"Device {self.address} is already notifying")
+            return False
+
+        async def emg_handler(_, raw_data: bytearray):
+            nonlocal last_counter
+            try:
+                sample_timestamp = time.time()
+                counter, emg = decoder.decode_emg(raw_data)
+
+                if counter != last_counter + 1:
+                    logger.warning(f"Пропущен пакет: текущий пакет - {counter}; прошлый пакет - {last_counter}")
+                last_counter = counter
+
+                # logger.debug(f"Device: {self.name}; get emg - counter: {counter}")
+                await data_queue.put({"counter": counter, "signal": emg, "timestamp": sample_timestamp, "start_timestamp": start_timestamp})
+            except Exception as exp:
+                logger.error(f"Error processing EMG data: {exp}")
+
+        try:
+            success = await self.setup(cmd=Command.AcquisitionStart, settings=settings)
+            if not success:
+                return False
+
+            start_timestamp = time.time()
+            last_counter = -1
+            decoder = Decoder(settings)
+            await self._client.start_notify(EmgSens.UUID_ACQUISITION_SERVICE, emg_handler)
+            self._is_notifying = True
+            logger.info(f"Started EMG acquisition on {self.address}")
+            return True
+
+        except Exception as exp:
+            logger.error(f"Failed to start EMG acquisition on {self.address}: {exp}")
+            return False
