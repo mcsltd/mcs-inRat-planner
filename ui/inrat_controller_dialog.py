@@ -120,7 +120,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         # backend
         self.schedule_data = schedule_data
         self.device: None | InRat = None
-        self.storage = InRatStorage(path_to_save=SAVE_DIR)
+        self.storage = InRatStorage(path_to_save=SAVE_DIR, device_name=self.schedule_data.device.ble_name)
         self.start_acquisition_time = None
 
         self._settings = InRatSettings(
