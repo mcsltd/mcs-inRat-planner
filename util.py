@@ -89,3 +89,12 @@ def convert_in_rat_sample_rate_to_str(code: int):
     return None
 
 
+def seconds_to_label_time(seconds: float) -> str:
+    if seconds < 0:
+        raise ValueError("Cекунды меньше 0")
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"

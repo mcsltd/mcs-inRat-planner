@@ -118,7 +118,7 @@ class PlotSignal(PlotWidget):
             self.time = np.append(self.time[len(time):], time)
             self.ecg = np.append(self.ecg[len(ecg):], ecg)
 
-        self.plot_signal.setData(self.time, self.ecg)
+        self.plot_signal.setData(self.time, self.ecg, antialias=False, clipToView=True)
 
         if self.time[-1] < self.timebase_s:
             self.setXRange(self.time[0], self.timebase_s)

@@ -1,21 +1,27 @@
 import asyncio
 import logging
+import os
 import threading
+import time
 
 import numpy as np
+from PySide6.QtCore import Signal, QTimer
+from PySide6.QtWidgets import QFileDialog
 from PySide6 import QtCore
 
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, Qt
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, TextItem, InfiniteLine
 
+from config import SAVE_DIR
 from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
 from device.inrat.inrat import InRat
 from device.inrat.structures import InRatSettings
 from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
-from util import convert_in_rat_sample_rate_to_str
+from tools.inrat_storage import InRatStorage
+from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
@@ -28,8 +34,8 @@ MODE = [("Деактивирован", Command.Deactivate),
 logger = logging.getLogger(__name__)
 
 class DisplaySignal(PlotWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, parent=None, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
         self.setBackground("w")
         self.setDisabled(True)
 
@@ -84,7 +90,7 @@ class DisplaySignal(PlotWidget):
     def set_marker(self, pos, text):
         """ Add vertical line and text on the plot."""
         line = InfiniteLine(
-            pos=pos, angle=90, pen=mkPen('gray', width=1, style=QtCore.Qt.PenStyle.DashLine),
+            pos=pos, angle=90, pen=mkPen('gray', width=2, style=QtCore.Qt.PenStyle.DashLine),
             movable=False, label=text, labelOpts={'color': 'k', 'position': 0.1})
         self.addItem(line)
         self._markers.append(line)
@@ -103,6 +109,10 @@ class DisplaySignal(PlotWidget):
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
+    signal_start_recording = Signal()
+    signal_stop_recording = Signal()
+    signal_accept_data = Signal(object)
+
     def __init__(self, schedule_data: ScheduleData, parent = None,  *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.setupUi(self)
@@ -110,6 +120,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         # backend
         self.schedule_data = schedule_data
         self.device: None | InRat = None
+        self.storage = InRatStorage(path_to_save=SAVE_DIR)
+        self.start_acquisition_time = None
+
         self._settings = InRatSettings(
             DataRateEcg=InRatDataRateEcg.HZ_500.value, HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2.value, EnabledChannels=EnabledChannels.ECG,
@@ -122,19 +135,61 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         # ui
         self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
         self.setWindowTitle(f"Ручной режим: {self.schedule_data.device.ble_name}")
-        self.display = DisplaySignal(parent=self)
+        self.display = DisplaySignal(self)
         self.setup_combobox()
         self.verticalLayoutPlot.addWidget(self.display)
+        self.lineEditSave.setText(self.storage.path_to_save)
+
+        # timer
+        self.recording_timer = QTimer()
+        self.recording_timer.setInterval(1000)
 
         # signals
+        self.recording_timer.timeout.connect(self._on_timeout_expired)
         self.pushButtonConnection.clicked.connect(self._device_connection)
         self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
-
         self.pushButtonStart.clicked.connect(self._device_acquisition)
         self.pushButtonStop.clicked.connect(self._device_stop_acquisition)
-
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
         self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
+        self.comboBoxFormat.currentIndexChanged.connect(self._on_format_changed)
+        self.pushButtonSelectDirSave.clicked.connect(self._on_save_dir_changed)
+        self.pushButtonShowRecords.clicked.connect(self._on_save_dir_clicked)
+        self.pushButtonStartRecording.clicked.connect(self._start_recording)
+        self.pushButtonStopRecording.clicked.connect(self._stop_recording)
+
+    # настройка таймера обновления времени
+    def _on_timeout_expired(self):
+        """ Обработчик таймера записи сигнала """
+        if self.storage.start_time is None:
+            self.labelRTvalue.setText("00:00:00")
+            return
+
+        sec_crnt_time = int(time.time() - self.storage.start_time)
+        label_time = seconds_to_label_time(sec_crnt_time)
+        self.labelRTvalue.setText(label_time)
+
+    # настройка параметров сохранения
+    def _on_save_dir_changed(self):
+        """ Изменение места сохранения, по умолчанию data/ble_device/"""
+        logger.debug("Изменено место сохранения")
+
+        path_to_save = QFileDialog.getExistingDirectory(
+            self,
+            "Выбор места сохранения",
+            # self.storage.path_to_save,
+            "",
+            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
+        )
+        self.storage.set_save_dir(path_to_save)
+        self.lineEditSave.setText(path_to_save)
+
+    def _on_save_dir_clicked(self):
+        """ Обработка нажатия кнопки"""
+        if os.name == 'nt':  # Windows
+            os.system(f'start "" "{self.storage.path_to_save}"')
+        elif os.name == 'posix':  # Linux, macOS
+            os.system(f'open "{self.storage.path_to_save}"')
 
     # настройка выпадающих списков
     def setup_combobox(self):
@@ -146,6 +201,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.comboBoxMode.addItem(*data)
 
         self._set_default_sampling_rate()
+        self._set_default_format()
 
     def _set_default_sampling_rate(self):
         """ Установка частоты по умолчанию из schedule_data """
@@ -155,6 +211,14 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxSampleFreq.setCurrentIndex(idx)
         self._on_samplerate_changed()
 
+    def _set_default_format(self):
+        """ Установка частоты по умолчанию из schedule_data """
+        # установка частоты по умолчанию
+        text_format = self.schedule_data.file_format
+        idx = self.comboBoxFormat.findText(text_format)
+        self.comboBoxFormat.setCurrentIndex(idx)
+        self._on_format_changed()
+
     def _on_samplerate_changed(self):
         """ Обработчик изменения частоты оцифровки """
         text_sr = self.comboBoxSampleFreq.currentText()
@@ -163,6 +227,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._settings.DataRateEcg = value
         logger.debug(f"В структуру настроек установлена частота {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
         self.display.set_sampling_rate(sampling_rate=int(text_sr.split()[0]))
+        self.storage.set_sampling_rate(int(text_sr.split()[0]))
 
         logger.debug(f"Установлена частота: {text_sr}, {value}")
 
@@ -181,6 +246,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.comboBoxMode.setCurrentIndex(0)
         elif mode == 1:
             self.comboBoxMode.setCurrentIndex(1)
+
+    def _on_format_changed(self):
+        """ Изменен формат сохранения сигналов """
+        frmt = self.comboBoxFormat.currentText()
+        self.storage.set_format(frmt)
+        logger.info(f"Изменен формат записи на {frmt}")
 
     # асихронный цикл событий
     def _run_async_loop(self):
@@ -222,6 +293,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
     async def _device_connection_impl(self):
         """ Соединение с устройством  """
         self.pushButtonConnection.setEnabled(False)
+
         device = await self._find_device()
 
         if device is None:
@@ -240,6 +312,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.comboBoxMode.setEnabled(True)
             self.comboBoxSampleFreq.setEnabled(True)
             self.pushButtonDisconnect.setEnabled(True)
+
         else:
             self.pushButtonConnection.setEnabled(True)
 
@@ -287,6 +360,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         await self.device.disconnect()
 
+        # очистка графика
+        self.display.clear_plot()
+
         # активация
         self.pushButtonConnection.setEnabled(True)
         # деактивация
@@ -295,10 +371,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStop.setEnabled(False)
         self.comboBoxSampleFreq.setEnabled(False)
         self.comboBoxMode.setEnabled(False)
-
         self.device = None
-        # очистка графика
-        self.display.clear_plot()
 
     # запуск устройства
     def _device_acquisition(self):
@@ -308,14 +381,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self._run_async_loop()
 
         self.display.clear_plot()
-        future = asyncio.run_coroutine_threadsafe(
-            self._start_data_acquisition_impl(),
-            self._loop
-        )
+        future = asyncio.run_coroutine_threadsafe(self._start_data_acquisition_impl(), self._loop)
 
     async def _start_data_acquisition_impl(self):
         """ Запуск устройства для получения данных """
-
         if not self.device.is_connected:
             logger.error(f"Устройство {self.schedule_data.device.ble_name} не подключено")
 
@@ -338,19 +407,30 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         logger.debug(f"{self.schedule_data.device.ble_name} запущен на частоте: {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
         if await self.device.start_data_acquisition(data_queue=data_queue, settings=self._settings):
             self.is_running = True
-            self.pushButtonStop.setEnabled(True) # активация кнопки остановки
+            # деактивация в режиме получения данных
+            self.pushButtonStart.setEnabled(False)
+
+            # активация
+            self.pushButtonStop.setEnabled(True)
             self.comboBoxSampleFreq.setEnabled(False)
+            self.pushButtonStartRecording.setEnabled(True)
 
             while self.is_running:
                 try:
                     data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
+
+                    if self.start_acquisition_time is None and "start_timestamp" in data:
+                        self.start_acquisition_time = data["start_timestamp"]
+
                     if "signal" in data and "timestamp" in data and "start_timestamp" in data and "counter" in data:
                         start_time = data["start_timestamp"]
                         signal = data["signal"]
                         time_arr = np.linspace(
                             start_time + len(data["signal"]) * (data["counter"] - 1) / self.display.fs,
                             start_time + len(data["signal"]) * data["counter"] / self.display.fs, len(signal)) - start_time
+
                         self.display.set_data(time=time_arr, signal=signal)
+                        self.signal_accept_data.emit(signal)
 
                     if "event" in data:
                         if data["event"] == "Temp":
@@ -391,7 +471,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             return
 
         if await self.device.stop_acquisition():
+            if self.storage.is_recording:
+                self.pushButtonStopRecording.click()
+
             self.is_running = False
+            self.start_acquisition_time = None
 
             # активация при остановке получения данных
             self.pushButtonDisconnect.setEnabled(True)
@@ -401,9 +485,57 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
             # деактивация при остановке устройства
             self.pushButtonStop.setEnabled(False)
+            self.pushButtonStartRecording.setEnabled(False)
+            self.pushButtonStopRecording.setEnabled(False)
 
             logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
 
+    # управление записью сигнала
+    def _start_recording(self):
+        """ Начало записи сигнала """
+        logger.info("Начало записи сигнала")
+
+        # запуск таймера
+        self.recording_timer.start()
+
+        # connect
+        self.signal_start_recording.connect(self.storage.start_recording)
+        self.signal_stop_recording.connect(self.storage.stop_recording)
+        self.signal_accept_data.connect(self.storage.accept_data)
+
+        self.signal_start_recording.emit()
+
+        if self.start_acquisition_time is not None:
+            self.display.set_marker(text="Запись начата", pos=time.time() - self.start_acquisition_time)
+
+        # ui
+        self.pushButtonStartRecording.setEnabled(False)
+        self.comboBoxFormat.setEnabled(False)
+        self.pushButtonStopRecording.setEnabled(True)
+
+    def _stop_recording(self):
+        """ Остановка записи сигнала """
+        logger.info("Остановка записи сигнала")
+        self.signal_stop_recording.emit()
+
+        # остановка таймера
+        self.recording_timer.stop()
+        self._on_timeout_expired()
+
+        # disconnect
+        self.signal_start_recording.disconnect(self.storage.start_recording)
+        self.signal_stop_recording.disconnect(self.storage.stop_recording)
+        self.signal_accept_data.disconnect(self.storage.accept_data)
+
+        if self.start_acquisition_time is not None:
+            self.display.set_marker(text="Запись остановлена", pos=time.time() - self.start_acquisition_time)
+
+        # ui
+        self.pushButtonStartRecording.setEnabled(True)
+        self.comboBoxFormat.setEnabled(True)
+        self.pushButtonStopRecording.setEnabled(False)
+
+    # остановка и закрытие окна
     def closeEvent(self, event, /):
         if self._loop is None or not self._loop.is_running():
             event.accept()
