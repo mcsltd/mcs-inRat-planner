@@ -48,4 +48,4 @@ PATH_TO_ICON_MCS=resources/v1/mcs_icon.png
 
 ## Copyrights
 
-Copyright © 2024, Medical Computer Systems Ltd
+Copyright © 2025, Medical Computer Systems Ltd
