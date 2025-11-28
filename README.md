@@ -1,2 +1,48 @@
 # mcs-inRat
-Software for recording ECG of small animals on a schedule
+
+# InRat Planner
+
+Программа для автоматического съема ЭКГ с BLE устройств EMGsens и InRat по расписанию.
+
+## Возможности
+
+- Подключение к BLE устройствам ЭКГ
+- Запись данных по расписанию
+- Экспорт данных в форматы EDF, WFDB
+- Настройка параметров записи
+- Поддержка ручного режима подключения к устройствам InRat
+- Копирование сделанных записей ЭКГ в папку по выбору
+- Поддерживаемые устройства: InRat, EMGsens
+
+## Установка
+
+1. Выгрузите данные программы InRat Planner с репозитория, через git или как архив с репозитория
+2. Перейдите в папку InRat Planner
+3. Запустите `install.bat`
+
+Для запуска приложения необходимо создать файл `.env` и поместить его в папку `.src`.
+Структура файла `.env`:
+```text
+BLE_KEY_EMG_SENS=...
+BLE_KEY_IN_RAT=...
+DB_PATH=data
+DB_NAME=inRat
+SAVE_DIR=data
+PATH_TO_ICON=resources/v1/icon_app.svg
+PATH_TO_ICON_MCS=resources/v1/mcs_icon.png
+```
+
+* поля `BLE_KEY_EMG_SENS` и `BLE_KEY_IN_RAT` - это пароли для управления BLE устройствами, доступ к ним можно получить написав разработчику на почту mandrei@mks.ru
+
+## Запуск
+
+После запуска install.bat и создания .env файла запустите `run.bat`
+
+### Зависимости
+* Python 3.11
+
+### Системные требования
+* Windows 10, 11
+
+### Требования к библиотекам
+* версии библиотек необходимых для работы приложения расположены в [requirements.txt](requirements.txt).
