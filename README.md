@@ -35,7 +35,7 @@ PATH_TO_ICON_MCS=resources/v1/mcs_icon.png
 
 ## Запуск
 
-После запуска `install.bat` и создания `.env` файла запустите `run.bat`. 
+После запуска `install.bat` и создания `.env` файла запустите `start.bat`. 
 
 ### Зависимости
 * Python >3.12
