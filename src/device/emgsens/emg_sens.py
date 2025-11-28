@@ -1,17 +1,16 @@
 import asyncio
 import logging
 import time
-from enum import Enum
 
 from bleak import BleakClient, BLEDevice
 
-from constants import ConnectionState
-from device.crypt import get_control_sum
-from device.emgsens.constants import Command
-from device.emgsens.decoder import Decoder
-from device.emgsens.structures import Settings
+from src.constants import ConnectionState
+from src.device.crypt import get_control_sum
+from src.device.emgsens.constants import Command
+from src.device.emgsens.decoder import Decoder
+from src.device.emgsens.structures import Settings
 
-from config import BLE_KEY_EMGSENS
+from src.config import BLE_KEY_EMGSENS
 
 logger = logging.getLogger(__name__)
 

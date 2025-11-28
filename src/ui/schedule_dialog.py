@@ -8,17 +8,17 @@ from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer
 from PySide6.QtGui import QIcon, QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QMessageBox, QWidget
 
-from db.database import connection
-from db.models import Experiment, Object, Device
-from db.queries import get_experiments
+from src.db.database import connection
+from src.db.models import Experiment, Object, Device
+from src.db.queries import get_experiments
 
-from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
-from constants import Formats, Devices
+from src.structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+from src.constants import Formats, Devices
 
-from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
-from ui.experiment_dialog import DlgCreateExperiment
+from src.resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from src.ui.experiment_dialog import DlgCreateExperiment
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +78,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.setDefaults()
 
         if schedule is None:
-            self.timer_update = QTimer()
-            self.timer_update.setInterval(1000)
-            self.timer_update.timeout.connect(self._update_time_edit)
-            self.timer_update.start()
+            self.init_timer()
+
+    def init_timer(self):
+        self.timer_update = QTimer()
+        self.timer_update.setInterval(1000)
+        self.timer_update.timeout.connect(self._update_time_edit)
+        self.timer_update.start()
 
     def _on_device_model_changed(self):
         """ Обработчик изменения модели устройства """

@@ -1,12 +1,12 @@
 import wfdb
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QWidget, QDialog
+from PySide6.QtWidgets import QDialog
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 
-from structure import RecordData, ScheduleData
+from src.structure import RecordData, ScheduleData
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
 
 from pyqtgraph import PlotWidget, mkPen
@@ -15,7 +15,7 @@ import numpy as np
 from typing import List
 import os
 
-from resources.v1.wdt_monitor import Ui_FormMonitor
+from src.resources.v1.wdt_monitor import Ui_FormMonitor
 
 
 class Display(PlotWidget):

@@ -8,14 +8,14 @@ from uuid import UUID
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QDialog, QWidget, QPushButton, QSpinBox, QLabel, QHBoxLayout
+from PySide6.QtWidgets import QDialog, QWidget, QSpinBox, QLabel, QHBoxLayout
 from pyqtgraph import PlotWidget, mkPen
 
-from structure import ScheduleData
+from src.structure import ScheduleData
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
-from resources.v1.wdt_monitor import Ui_FormMonitor
+from src.resources.v1.wdt_monitor import Ui_FormMonitor
 
 logger = logging.getLogger(__name__ )
 
@@ -225,7 +225,6 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self.formLayout_5.removeWidget(self.labelFormat)
         self.formLayout_5.removeWidget(self.labelFormatValue)
         self.labelFormatValue.setText(self.schedule_data.file_format)
-
 
 
 class DeviceMockup(QWidget):

@@ -2,17 +2,18 @@ from uuid import UUID
 
 from PySide6.QtCore import QModelIndex, QObject, Signal
 from PySide6.QtGui import QFont, Qt, QIcon
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox, QSpinBox, QLabel, \
-    QSpacerItem, QSizePolicy, QPushButton, QMessageBox, QTableView
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox,
+    QSpinBox, QSpacerItem, QSizePolicy, QPushButton, QMessageBox, QTableView, QLabel)
 
-from db.database import connection
-from db.models import Schedule, Experiment
-from resources.v1.frm_localConfig import Ui_FrmMainConfig
-from tools.modview import GenericTableWidget
-from ui.experiment_dialog import DlgCreateExperiment
-from ui.helper_dialog import DialogHelper
+from src.db.database import connection
+from src.db.models import Schedule, Experiment
+from src.resources.v1.frm_localConfig import Ui_FrmMainConfig
+from src.tools.modview import GenericTableWidget
+from src.ui.experiment_dialog import DlgCreateExperiment
+from src.ui.helper_dialog import DialogHelper
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
 class ConfigSignals(QObject):
     """ Сигналы настроек """
