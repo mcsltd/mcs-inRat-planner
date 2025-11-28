@@ -1,1 +1,1 @@
-from src.device.emgsens.emg_sens import EmgSens
+from device.emgsens.emg_sens import EmgSens

@@ -8,8 +8,8 @@ from uuid import UUID
 from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
 
-from src.constants import Formats, RecordStatus
-from src.structure import RecordingTaskData, RecordData
+from constants import Formats, RecordStatus
+from structure import RecordingTaskData, RecordData
 
 logger = logging.getLogger(__name__)
 

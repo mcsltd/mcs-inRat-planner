@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from src.config import DB_PATH, DB_NAME
-from src.db.models import Base
+from config import DB_PATH, DB_NAME
+from db.models import Base
 
 URL_DB = F"sqlite+pysqlite:///{DB_PATH}/{DB_NAME}.db"
 

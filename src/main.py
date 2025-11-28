@@ -15,21 +15,21 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from src.device.ble_manager import BleManager, RecordingTaskData
+from device.ble_manager import BleManager, RecordingTaskData
 
 # table
-from src.constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
-from src.db.database import connection
-from src.db.models import Schedule, Object, Device, Record
-from src.structure import ScheduleData, RecordData
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
+from db.database import connection
+from db.models import Schedule, Object, Device, Record
+from structure import ScheduleData, RecordData
 
 # ui
-from src.resources.v1.main_window import Ui_MainWindow
-from src.ui.about_dialog import AboutDialog
-from src.ui.helper_dialog import DialogHelper
-from src.ui.inrat_controller_dialog import InRatControllerDialog
-from src.ui.schedule_dialog import DlgCreateSchedule
-from src.tools.modview import GenericTableWidget
+from resources.v1.main_window import Ui_MainWindow
+from ui.about_dialog import AboutDialog
+from ui.helper_dialog import DialogHelper
+from ui.inrat_controller_dialog import InRatControllerDialog
+from ui.schedule_dialog import DlgCreateSchedule
+from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
 
 from config import PATH_TO_ICON
@@ -38,9 +38,9 @@ from config import PATH_TO_ICON
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     soft_delete_records, get_all_record_time, all_restore
-from src.ui.settings_dialog import DlgMainConfig
-from src.ui.monitor_dialog import SignalMonitor
-from src.ui.stream_dialog import BLESignalViewer
+from ui.settings_dialog import DlgMainConfig
+from ui.monitor_dialog import SignalMonitor
+from ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 

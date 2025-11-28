@@ -5,8 +5,8 @@ import struct
 
 from typing import Tuple
 
-from src.device.emgsens.constants import Pkt, Constants
-from src.device.emgsens.structures import Settings
+from device.emgsens.constants import Pkt, Constants
+from device.emgsens.structures import Settings
 
 logger = logging.getLogger(__name__)
 

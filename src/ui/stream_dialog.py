@@ -11,9 +11,9 @@ from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QDialog, QWidget, QSpinBox, QLabel, QHBoxLayout
 from pyqtgraph import PlotWidget, mkPen
 
-from src.structure import ScheduleData
-from src.config import PATH_TO_ICON
-from src.resources.v1.wdt_monitor import Ui_FormMonitor
+from structure import ScheduleData
+from config import PATH_TO_ICON
+from resources.v1.wdt_monitor import Ui_FormMonitor
 
 logger = logging.getLogger(__name__ )
 

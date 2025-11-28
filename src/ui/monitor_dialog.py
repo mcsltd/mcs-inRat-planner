@@ -4,9 +4,9 @@ from PySide6.QtWidgets import QDialog
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 
-from src.structure import RecordData, ScheduleData
+from structure import RecordData, ScheduleData
 
-from src.config import PATH_TO_ICON
+from config import PATH_TO_ICON
 
 
 from pyqtgraph import PlotWidget, mkPen
@@ -15,7 +15,7 @@ import numpy as np
 from typing import List
 import os
 
-from src.resources.v1.wdt_monitor import Ui_FormMonitor
+from resources.v1.wdt_monitor import Ui_FormMonitor
 
 
 class Display(PlotWidget):

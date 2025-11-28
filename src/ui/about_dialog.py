@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QApplication, QWidget,
 from PySide6.QtGui import QPixmap, QFont
 from PySide6.QtCore import Qt
 
-from src.config import PATH_TO_ICON_MCS
+from config import PATH_TO_ICON_MCS
 
 FONT = "Arial"
 

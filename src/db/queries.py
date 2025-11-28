@@ -2,10 +2,10 @@ from dataclasses import asdict
 
 from sqlalchemy import select, delete, update, func
 
-from src.constants import RecordStatus
-from src.db.database import connection
-from src.db.models import Experiment, Schedule, Object, Device, Record
-from src.structure import ScheduleData, RecordData
+from constants import RecordStatus
+from db.database import connection
+from db.models import Experiment, Schedule, Object, Device, Record
+from structure import ScheduleData, RecordData
 
 
 @connection

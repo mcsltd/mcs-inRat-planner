@@ -1,8 +1,8 @@
 import struct
 import numpy as np
 
-from src.device.inrat.constants import Pkt
-from src.device.inrat.constants import Const
+from device.inrat.constants import Pkt
+from device.inrat.constants import Const
 
 
 class Decoder:

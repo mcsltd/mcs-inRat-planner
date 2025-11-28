@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from src.device.inrat.constants import InRatDataRateEcg
-from src.structure import RecordData
+from device.inrat.constants import InRatDataRateEcg
+from structure import RecordData
 
 
 def delete_file(file_path: str | None) -> bool:

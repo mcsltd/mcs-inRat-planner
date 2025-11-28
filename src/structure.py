@@ -3,7 +3,7 @@ import uuid
 from dataclasses import dataclass, field, asdict
 from uuid import UUID
 
-from src.constants import RecordStatus, Devices
+from constants import RecordStatus, Devices
 
 
 @dataclass

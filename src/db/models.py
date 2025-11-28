@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, select, func, desc
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr, relationship, class_mapper, Session
 
-from src.structure import ScheduleData, DeviceData, ObjectData, RecordData, ExperimentData
+from structure import ScheduleData, DeviceData, ObjectData, RecordData, ExperimentData
 
 
 class Base(DeclarativeBase):
