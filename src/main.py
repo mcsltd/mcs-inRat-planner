@@ -15,13 +15,13 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from device.ble_manager import BleManager, RecordingTaskData
+from src.device.ble_manager import BleManager, RecordingTaskData
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
-from db.database import connection
-from db.models import Schedule, Object, Device, Record
-from structure import ScheduleData, RecordData
+from src.constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
+from src.db.database import connection
+from src.db.models import Schedule, Object, Device, Record
+from src.structure import ScheduleData, RecordData
 
 # ui
 from src.resources.v1.main_window import Ui_MainWindow
