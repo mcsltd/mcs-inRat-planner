@@ -18,7 +18,7 @@ from constants import Formats, Devices
 from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from ui.experiment_dialog import DlgCreateExperiment
 
-PATH_TO_ICON = "resources/v1/icon_app.svg"
+from config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 

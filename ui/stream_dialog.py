@@ -13,7 +13,7 @@ from pyqtgraph import PlotWidget, mkPen
 
 from structure import ScheduleData
 
-PATH_TO_ICON = "resources/v1/icon_app.svg"
+from config import PATH_TO_ICON
 
 from resources.v1.wdt_monitor import Ui_FormMonitor
 
@@ -193,6 +193,8 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         time_arr, signal = None, None
         if "signal" in data:
             signal = np.array(data["signal"])
+        elif "event" in data:
+            return
         else:
             raise ValueError("No signal recording")
 

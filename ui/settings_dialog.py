@@ -12,7 +12,7 @@ from tools.modview import GenericTableWidget
 from ui.experiment_dialog import DlgCreateExperiment
 from ui.helper_dialog import DialogHelper
 
-PATH_TO_ICON = "resources/v1/icon_app.svg"
+from config import PATH_TO_ICON
 
 class ConfigSignals(QObject):
     """ Сигналы настроек """

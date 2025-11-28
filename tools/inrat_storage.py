@@ -2,7 +2,6 @@ import datetime
 import logging
 import os.path
 import time
-from pathlib import Path
 
 import numpy as np
 import wfdb
@@ -43,7 +42,6 @@ class InRatStorage(QObject):
         else:
             raise ValueError("Dir is not exists!")
 
-
     def start_recording(self):
         """ Начало записи """
         logger.debug(f"Стартовала запись сигнала, частота={self._fs} Гц, формат={self._format}, место сохранения={self.path_to_save}")
@@ -58,8 +56,10 @@ class InRatStorage(QObject):
         write_dir = f"{self.path_to_save}\\{self._device_name}"
         filename = self.get_file_name()
         os.makedirs(write_dir, exist_ok=True)
+
         if self._format == "WFDB":
             self.save_to_wfdb(record_name=filename, write_dir=write_dir)
+
         if self._format == "EDF":
             filename = f"{write_dir}\\{filename}.edf"
             self.save_to_edf(filename=filename)
@@ -92,8 +92,7 @@ class InRatStorage(QObject):
         """ Сохранение полученного сигнала в WFDB формате """
         try:
             wfdb.io.wrsamp(
-                record_name=record_name,
-                fs=self._fs, units=["uV"], p_signal=self.signal[np.newaxis].T,
+                record_name=record_name, fs=self._fs, units=["uV"], p_signal=self.signal[np.newaxis].T,
                 sig_name=["ECG"], write_dir=write_dir, base_datetime=datetime.datetime.fromtimestamp(self.start_time)
             )
         except Exception as exc:
@@ -118,13 +117,8 @@ class InRatStorage(QObject):
             physical_min = np.round(signal_min * (1 - margin) if signal_min > 0 else signal_min * (1 + margin), decimals=5)
 
             channel_info = {
-                'label': "ECG",
-                'dimension': "uV",
-                'sample_frequency': self._fs,
-                'physical_max': physical_max,
-                'physical_min': physical_min,
-                'digital_max': 32767,
-                'digital_min': -32768,
+                'label': "ECG", 'dimension': "uV", 'sample_frequency': self._fs,
+                'physical_max': physical_max, 'physical_min': physical_min, 'digital_max': 32767, 'digital_min': -32768,
             }
             writer.setSignalHeader(0, channel_info)
             writer.setEquipment("None" if self._device_name is None else self._device_name)

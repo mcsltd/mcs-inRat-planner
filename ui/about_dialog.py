@@ -1,11 +1,11 @@
 import sys
-from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget,
-                               QVBoxLayout, QHBoxLayout, QLabel, QDialog,
-                               QMenuBar, QMenu)
-from PySide6.QtGui import QPixmap, QFont, QAction
+from PySide6.QtWidgets import (QApplication, QWidget,
+                               QVBoxLayout, QHBoxLayout, QLabel, QDialog,)
+from PySide6.QtGui import QPixmap, QFont
 from PySide6.QtCore import Qt
 
-PATH_TO_ICON_MCS = r"C:\Users\andmo\OneDrive\Desktop\my-dev-work\mcs\inRat\mcs-inRat-planner\resources\v1\mcs_icon.png"
+from config import PATH_TO_ICON_MCS
+
 FONT = "Arial"
 
 class AboutDialog(QDialog):

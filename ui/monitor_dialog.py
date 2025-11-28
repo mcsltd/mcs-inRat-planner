@@ -6,7 +6,8 @@ from PySide6.QtWidgets import QMessageBox
 
 from structure import RecordData, ScheduleData
 
-PATH_TO_ICON = "resources/v1/icon_app.svg"
+from config import PATH_TO_ICON
+
 
 from pyqtgraph import PlotWidget, mkPen
 import pyedflib

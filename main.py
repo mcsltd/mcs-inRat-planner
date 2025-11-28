@@ -8,8 +8,7 @@ from copy import copy
 from uuid import UUID
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog, QAbstractItemView, \
-    QTableView
+from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog, QTableView
 from PySide6.QtGui import QIcon
 
 # scheduler
@@ -33,12 +32,12 @@ from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
 
-PATH_TO_ICON = "resources/v1/icon_app.svg"
+from config import PATH_TO_ICON
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
-    get_path_by_record_id, soft_delete_records, get_all_record_time, all_restore
+    soft_delete_records, get_all_record_time, all_restore
 from ui.settings_dialog import DlgMainConfig
 from ui.monitor_dialog import SignalMonitor
 from ui.stream_dialog import BLESignalViewer
@@ -49,7 +48,6 @@ logger = logging.getLogger(__name__)
 class MainWindow(QMainWindow, Ui_MainWindow):
 
     preferences_file: str = "config.ini"
-
     maxConnectDevicesChanged = Signal(int)
 
     def __init__(self, *args, **kwargs):
@@ -582,7 +580,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
-        # ToDo: обработка случаев: 1) произошел конец записи; 2) устройство ещё не записывает; 3) устройство записало сигнал; 4) возможность получения сигналов с неск. устр.
         raw_data = self.tableModelSchedule.get_selected_data()
         schedule_id = raw_data[0]
 
@@ -631,8 +628,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 try:
                     dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
                     dlg.exec()
-
-                    # ToDo: self.reschedule_job()
 
                     # активация задачи
                     if datetime.datetime.now() > job.next_run_time:
@@ -733,7 +728,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event, /):
         """ Обработка закрытия приложения """
-        # ToDo: проверять ble manager на выполнение задач
         self.ble_manager.stop()
 
     @staticmethod

@@ -8,7 +8,6 @@ from uuid import UUID
 from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
 
-
 from constants import Formats, RecordStatus
 from structure import RecordingTaskData, RecordData
 
