@@ -199,7 +199,6 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
             raise ValueError("No signal recording")
 
         if "timestamp" in data:
-            # time_arr = np.linspace(data["timestamp"], data["timestamp"] + len(signal) / self.fs, len(signal)) - self.mock_time
             time_arr = np.linspace(self._last_data_timestamp, self._last_data_timestamp + len(signal) / self.fs, len(signal)) - self.mock_time
             self._last_data_timestamp = self._last_data_timestamp + len(signal) / self.fs
         else:

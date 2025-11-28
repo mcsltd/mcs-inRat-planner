@@ -338,7 +338,6 @@ class WidgetCfgExperiment(WidgetCfg):
             self.pushButtonUpdate.setEnabled(False)
             self.pushButtonDelete.setEnabled(False)
 
-
     @connection
     def get_experiment_data(self, session) -> list:
         data = []

@@ -245,6 +245,17 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def _upload(self, schedule: ScheduleData):
         """ Загрузка данных расписания """
+
+        # start time
+        st = self.default_schedule.datetime_start
+        q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
+        self.dateTimeEditStartExperiment.setDateTime(q_st)
+
+        # finish time
+        ft = self.default_schedule.datetime_finish
+        q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
+        self.dateTimeEditFinishExperiment.setDateTime(q_ft)
+
         # experiment
         self.set_combobox_value(self.comboBoxExperiment, schedule.experiment.name)
 
@@ -282,6 +293,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxModelDevice.setDisabled(True)
         self.LineEditObject.setDisabled(True)
         self.LineEditSnDevice.setDisabled(True)
+        self.comboBoxExperiment.setDisabled(True)
+
+        # деактивация изменения времени
+        self.dateTimeEditStartExperiment.setEnabled(False)
+        self.dateTimeEditFinishExperiment.setEnabled(False)
 
     def set_combobox_value(self, combobox: QComboBox, value: str) -> None:
         idx = combobox.findText(value)
@@ -333,14 +349,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def setDefaults(self):
         """ Установка значений по умолчанию """
-        self.reset_time()
-
         if self.default_schedule is not None:
             logger.debug(f"Установка настроек по умолчанию из структуры расписания: {self.default_schedule}")
-            self.has_unsaved_changes = False
             self._upload(self.default_schedule)
+            self.has_unsaved_changes = False
             return
 
+        self.reset_time()
         logger.info("Установка настроек по умолчанию")
 
         # set text
@@ -364,21 +379,18 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     def reset_time(self):
         """ Сброс времени расписания """
         if self.default_schedule is not None:
-            # start time
-            st = self.default_schedule.datetime_start
-            q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
-            self.dateTimeEditStartExperiment.setDateTime(q_st)
+            self.dateTimeEditStartExperiment.setEnabled(True)
+            self.dateTimeEditFinishExperiment.setEnabled(True)
 
-            # min_st = datetime.datetime.now().replace(microsecond=0, second=0) + datetime.timedelta(minutes=1)
-            # q_min_st = QDateTime(QDate(min_st.year, min_st.month, min_st.day),
-            #                      QTime(min_st.hour, min_st.minute, min_st.second))
-            # self.dateTimeEditStartExperiment.setMinimumDateTime(q_min_st)
-
-            # finish time
-            ft = self.default_schedule.datetime_finish
-            q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
-            self.dateTimeEditFinishExperiment.setDateTime(q_ft)
-            return
+            # # start time
+            # st = self.default_schedule.datetime_start
+            # q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
+            # self.dateTimeEditStartExperiment.setDateTime(q_st)
+            # # finish time
+            # ft = self.default_schedule.datetime_finish
+            # q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
+            # self.dateTimeEditFinishExperiment.setDateTime(q_ft)
+            # return
 
         crt_dt = QDateTime.currentDateTime().addSecs(60)
         # сброс времени начала записи

@@ -461,18 +461,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             f"Нельзя изменить расписание. Дождитесь конца регистрации ЭКГ.", btn_no=False, yes_text="Ок")
             return
 
-        #  во время изменения расписания может начаться запись, надо остановить job
+        # постановка выполнения задачи на паузу во время изменения параметров расписания
         job = self.scheduler.get_job(job_id=str(schedule_id))
         if job is not None:
             logger.debug(f"Расписание поставлено на паузу: {schedule_id}")
             self.scheduler.pause_job(job_id=str(schedule_id))
+            schedule_next_start_time = job.next_run_time
+        else:
+            #  на случай если расписание истекло
+            schedule_next_start_time = schedule_data.datetime_finish
 
         dlg = DlgCreateSchedule(schedule_data)
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
-            schedule_data: ScheduleData = dlg.getSchedule()
-
-            if schedule_data is None:
+            schedule_data_new: ScheduleData = dlg.getSchedule()
+            if schedule_data_new is None:
                 logger.error("Возникла ошибка при обновлении расписания")
                 return
 
@@ -480,14 +483,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             has_schedule = Schedule.find([Schedule.id == schedule.id], session)
             if has_schedule is None:
                 raise ValueError(f"В базе данных не найдено расписание с индексом: {schedule.id}")
-            has_schedule.update(session, **schedule_data.to_dict_with_ids())
+            has_schedule.update(session, **schedule_data_new.to_dict_with_ids())
             logger.info("Расписание было добавлено в базу данных и таблицу")
 
-            start_time = schedule_data.datetime_start
+            start_time = schedule_next_start_time
+            # проверка изменения времени старта
+            if schedule_data.datetime_start != schedule_data_new.datetime_start:
+                start_time = schedule_data_new.datetime_start
+
             job =  self.scheduler.get_job(str(schedule_id))
             if job is not None:
                 self.scheduler.remove_job(job_id=str(schedule_id))
-            self.create_job(schedule_data, start_time=start_time)
+            self.create_job(schedule_data_new, start_time=start_time)
 
             # fill table Schedule
             self.update_content_table_schedule()
