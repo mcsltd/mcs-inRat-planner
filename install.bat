@@ -76,8 +76,7 @@ echo Dependencies installed successfully
 :: start.bat
 echo @echo off > start.bat
 echo call %VENV_DIR%\Scripts\activate >> start.bat
-echo cd src\ >> start.bat
-echo python main.py >> start.bat
+echo python src\main.py >> start.bat
 echo pause >> start.bat
 
 :: Final message
