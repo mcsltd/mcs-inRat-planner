@@ -11,6 +11,46 @@ set PYTHON_EXE=python
 set VENV_DIR=venv
 set REQUIREMENTS=requirements.txt
 
+:: Check Python version
+echo Checking Python version...
+%PYTHON_EXE% --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ERROR: Python not found
+    echo Please install Python 3.12 or higher
+    echo Download from: https://python.org/downloads/
+    pause
+    exit /b 1
+)
+
+:: Get Python version and check if it's 3.12 or higher
+for /f "tokens=2 delims=. " %%i in ('%PYTHON_EXE% --version 2^>^&1') do set PY_MAJOR=%%i
+for /f "tokens=3 delims=. " %%i in ('%PYTHON_EXE% --version 2^>^&1') do set PY_MINOR=%%i
+
+if "%PY_MINOR%"=="" set PY_MINOR=0
+
+echo Found Python version: %PY_MAJOR%.%PY_MINOR%
+
+:: Check if version is 3.12 or higher
+if %PY_MAJOR% LSS 3 (
+    echo ERROR: Python version must be 3.12 or higher
+    echo Current version: %PY_MAJOR%.%PY_MINOR%
+    echo Please install Python 3.12 or higher
+    pause
+    exit /b 1
+)
+
+if %PY_MAJOR% EQU 3 (
+    if %PY_MINOR% LSS 12 (
+        echo ERROR: Python version must be 3.12 or higher
+        echo Current version: 3.%PY_MINOR%
+        echo Please install Python 3.12 or higher
+        pause
+        exit /b 1
+    )
+)
+
+echo Python version check passed: %PY_MAJOR%.%PY_MINOR%
+
 :: Check if requirements.txt exists
 if not exist "%REQUIREMENTS%" (
     echo ERROR: File %REQUIREMENTS% not found
@@ -71,7 +111,6 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 echo Dependencies installed successfully
-
 
 :: start.bat
 echo @echo off > start.bat
