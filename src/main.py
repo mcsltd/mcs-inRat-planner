@@ -465,12 +465,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         job = self.scheduler.get_job(job_id=str(schedule_id))
         if job is not None:
             logger.debug(f"Расписание поставлено на паузу: {schedule_id}")
+            next_run = job.next_run_time
             self.scheduler.pause_job(job_id=str(schedule_id))
-            schedule_next_start_time = job.next_run_time
         else:
             #  на случай если расписание истекло
-            schedule_next_start_time = schedule_data.datetime_finish
+            next_run = schedule_data.datetime_finish
 
+        if next_run.tzinfo is not None:
+            next_run = next_run.astimezone().replace(tzinfo=None)
+
+        # открытие диалогового окна изменения параметров расписания
         dlg = DlgCreateSchedule(schedule_data)
         code = dlg.exec()
         if code == QDialog.DialogCode.Accepted:
@@ -486,12 +490,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             has_schedule.update(session, **schedule_data_new.to_dict_with_ids())
             logger.info("Расписание было добавлено в базу данных и таблицу")
 
-            start_time = schedule_next_start_time
+            start_time = next_run
             # проверка изменения времени старта
             if schedule_data.datetime_start != schedule_data_new.datetime_start:
                 start_time = schedule_data_new.datetime_start
 
-            job =  self.scheduler.get_job(str(schedule_id))
+            job = self.scheduler.get_job(str(schedule_id))
             if job is not None:
                 self.scheduler.remove_job(job_id=str(schedule_id))
             self.create_job(schedule_data_new, start_time=start_time)
@@ -500,8 +504,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.update_content_table_schedule()
             return
 
+        # если параметры расписания не были изменены
         if job is not None:
-            self.scheduler.resume_job(job_id=str(schedule_id))
+            # активация задачи
+            if datetime.datetime.now() > next_run:
+                next_run = datetime.datetime.now() + datetime.timedelta(seconds=10)
+            job.resume()
+            job.modify(next_run_time=next_run)
         return None
 
     @connection
@@ -587,6 +596,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
+
         raw_data = self.tableModelSchedule.get_selected_data()
         schedule_id = raw_data[0]
 
@@ -601,7 +611,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         schedule_data: ScheduleData = schedule.to_dataclass(session)
-
         # запуск просмотра стрима сигнала с устройства, если с устройства записывается сигнал
         device_id = schedule_data.device.id
         if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
@@ -635,14 +644,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 try:
                     dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
                     dlg.exec()
-
-                    # активация задачи
-                    if datetime.datetime.now() > job.next_run_time:
-                        job.modify(next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=10))
-                    job.resume()
-
                 except Exception as exp:
+                    logger.error(f"Ошибка при запуске ручного режима для InRat: {exp}")
+                finally:
+                    # активация задачи
+                    if datetime.datetime.now() > next_run:
+                        next_run = datetime.datetime.now() + datetime.timedelta(seconds=10)
                     job.resume()
+                    job.modify(next_run_time=next_run)
+
 
         if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
             DialogHelper.show_confirmation_dialog(
@@ -787,6 +797,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             else:
                 return f"00:{secs:02d}"
 
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.DEBUG,
@@ -797,7 +809,6 @@ if __name__ == "__main__":
     try:
         window = MainWindow()
         window.showMaximized()
-        # window.show()
     except Exception as exc:
         print(f"Возникла ошибка в работе программы: {exc}")
     finally:
