@@ -810,7 +810,14 @@ if __name__ == "__main__":
         window = MainWindow()
         window.showMaximized()
     except Exception as exc:
-        print(f"Возникла ошибка в работе программы: {exc}")
+        DialogHelper.show_confirmation_dialog(
+            parent=None,
+            title="Возникла ошибка",
+            message=f"Текст ошибки: {exc}",
+            icon=QMessageBox.Icon.Critical,
+            yes_text="Ok",
+            btn_no=False
+          )
     finally:
         app.exec()
 
