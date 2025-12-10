@@ -175,6 +175,7 @@
     <property name="title">
      <string>Помощь</string>
     </property>
+    <addaction name="actionLicenses"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="file"/>
@@ -194,6 +195,11 @@
   <action name="actionAbout">
    <property name="text">
     <string>О программе...</string>
+   </property>
+  </action>
+  <action name="actionLicenses">
+   <property name="text">
+    <string>Сведения о лицензиях</string>
    </property>
   </action>
  </widget>
