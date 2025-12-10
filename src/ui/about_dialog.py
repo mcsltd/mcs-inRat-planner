@@ -99,12 +99,20 @@ class AboutDialog(QDialog):
         email_font.setPointSize(9)
         email_label.setFont(company_font)
 
+        license_label = QLabel(
+            "Лицензия: MIT License\n\n"
+            "Программа включает компоненты под лицензиями:\n- MIT, BSD, Apache 2.0\n- PySide6 (LGPL)")
+        license_label.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        license_label.setOpenExternalLinks(True)
+        license_label.setFont(company_font)
+
         right_layout.addWidget(title_label)
         right_layout.addWidget(description_label)
         right_layout.addWidget(version_label)
         right_layout.addStretch()
         right_layout.addWidget(company_label)
         right_layout.addWidget(email_label)
+        right_layout.addWidget(license_label)
 
         right_widget.setLayout(right_layout)
 
