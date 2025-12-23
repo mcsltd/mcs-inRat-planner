@@ -120,7 +120,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         # backend
         self.schedule_data = schedule_data
         self.device: None | InRat = None
-        self.storage = InRatStorage(path_to_save=SAVE_DIR, device_name=self.schedule_data.device.ble_name)
+        self.storage = InRatStorage(
+            path_to_save=SAVE_DIR,
+            device_name=self.schedule_data.device.ble_name,
+            object_name=self.schedule_data.object.name
+        )
         self.start_acquisition_time = None
 
         self._settings = InRatSettings(
@@ -134,6 +138,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # ui
         self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
+        self.labelObjectName.setText(str(self.schedule_data.object.name))
+
         self.setWindowTitle(f"Ручной режим: {self.schedule_data.device.ble_name}")
         self.display = DisplaySignal(self)
         self.setup_combobox()
@@ -541,12 +547,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             event.accept()
             return
         try:
-            # 1. Запускаем отключение устройства и завершение задач
+            # отключение устройства и завершение задач
             future = asyncio.run_coroutine_threadsafe(
                 self._safe_shutdown(),
                 self._loop
             )
-            # Ждём завершения с таймаутом
+            # завершения с таймаутом
             future.result(timeout=5.0)
 
         except TimeoutError:
@@ -554,17 +560,17 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         except Exception as e:
             logger.error(f"Ошибка при завершении: {e}")
         finally:
-            # 2. Останавливаем цикл событий
+            # останавка цикла событий
             if self._loop.is_running():
                 self._loop.call_soon_threadsafe(self._loop.stop)
 
-            # 3. Ждём завершения потока
+            # ожидание завершения потока
             if self._loop_thread and self._loop_thread.is_alive():
                 self._loop_thread.join(timeout=3.0)
                 if self._loop_thread.is_alive():
                     logger.warning("Поток цикла событий не завершился вовремя")
 
-            # 4. Закрываем цикл
+            # закрытие цикла
             if not self._loop.is_closed():
                 self._loop.close()
 
@@ -588,7 +594,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if not self._loop or not self._loop.is_running():
             return
 
-        # Отменяем все задачи
+        # отмена всех задач
         tasks = [task for task in asyncio.all_tasks(self._loop)
                  if not task.done()]
 
@@ -597,11 +603,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         logger.debug(f"Отменяем {len(tasks)} активных задач")
 
-        # Отправляем отмену всем задачам
+        # отмена всех задач
         for task in tasks:
             task.cancel()
 
-        # Ждём завершения задач с таймаутом
+        # ожидание завершения задач с таймаутом
         try:
             await asyncio.wait(tasks, timeout=2.0)
         except asyncio.CancelledError:

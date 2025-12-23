@@ -8,6 +8,7 @@ from uuid import UUID
 
 from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
+from transliterate import detect_language, translit
 
 from constants import Formats, RecordStatus
 from structure import RecordingTaskData, RecordData
@@ -62,16 +63,22 @@ class Storage(QObject):
     def _save(self, device_id: UUID):
         """ Сохранение данных для устройства с device_id """
         record_property: RecordingTaskData = self._recording_task_property[device_id]
-        # record_id = record_property.id
         device_name = record_property.device.ble_name
         file_format = record_property.file_format
         sampling_rate = int(record_property.sampling_rate)
         signal = self._recording_task_data[device_id]
         start_time = record_property.start_time
+        object_name = record_property.object.name
 
         write_dir = f".\\data\\{device_name}\\"
+        if detect_language(object_name) == "ru":
+            object_name = translit(object_name, reversed=True)
+            object_name = object_name.replace("'", "")
+
         filename = self.get_record_filename(
-            device_name=device_name, start_time=start_time, length_signal=len(signal), sampling_rate=sampling_rate)
+            object_name=object_name,
+            start_time=start_time, length_signal=len(signal), sampling_rate=sampling_rate
+        )
 
         path_to_file = None
         if file_format == list(Formats.EDF.value.values())[0]:
@@ -149,7 +156,6 @@ class Storage(QObject):
 
     def _save_to_wfdb(
             self,
-            # record_id: UUID,
             filename: str,
             ecg_signal: np.ndarray, sampling_rate: int,
             write_dir: str, start_time, units: list[str] = ["uV"]) -> str | None:
@@ -174,10 +180,10 @@ class Storage(QObject):
 
     @staticmethod
     def get_record_filename(
-            device_name: str, start_time: datetime.datetime, length_signal: int, sampling_rate: int,
+            object_name: str, start_time: datetime.datetime, length_signal: int, sampling_rate: int,
     ) -> str:
         str_start_date = f"y{start_time.year}m{start_time.month}d{start_time.day}"
         str_start_time = f"h{start_time.hour}m{start_time.minute}"
         str_duration = f"s{int(length_signal / sampling_rate)}"
-        filename = f"{device_name}_{str_start_date}_{str_start_time}_dur_{str_duration}"
+        filename = f"{object_name}_{str_start_date}_{str_start_time}_dur_{str_duration}"
         return filename

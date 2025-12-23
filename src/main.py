@@ -292,6 +292,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             task=RecordingTaskData(
                 schedule_id=schedule.id,
                 device=schedule.device,
+                object=schedule.object,
                 start_time=start_time,
                 finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration),
                 file_format=schedule.file_format,

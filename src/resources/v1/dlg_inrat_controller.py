@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllerwonzSa.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerXYoEGH.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -46,6 +46,16 @@ class Ui_DlgInRatController(object):
         self.labelDeviceName.setObjectName(u"labelDeviceName")
 
         self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.FieldRole, self.labelDeviceName)
+
+        self.labelObject = QLabel(DlgInRatController)
+        self.labelObject.setObjectName(u"labelObject")
+
+        self.formLayoutInfo.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelObject)
+
+        self.labelObjectName = QLabel(DlgInRatController)
+        self.labelObjectName.setObjectName(u"labelObjectName")
+
+        self.formLayoutInfo.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labelObjectName)
 
 
         self.verticalLayout.addLayout(self.formLayoutInfo)
@@ -243,6 +253,8 @@ class Ui_DlgInRatController(object):
         DlgInRatController.setWindowTitle(QCoreApplication.translate("DlgInRatController", u"Dialog", None))
         self.labelDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e:", None))
         self.labelDeviceName.setText("")
+        self.labelObject.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0431\u044a\u0435\u043a\u0442:", None))
+        self.labelObjectName.setText("")
         self.pushButtonStart.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u0430\u0440\u0442", None))
         self.pushButtonConnection.setText(QCoreApplication.translate("DlgInRatController", u"\u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))
         self.pushButtonDisconnect.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))
