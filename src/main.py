@@ -25,14 +25,14 @@ from structure import ScheduleData, RecordData
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
-from ui.about_dialog import AboutDialog
+from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
 from ui.inrat_controller_dialog import InRatControllerDialog
 from ui.schedule_dialog import DlgCreateSchedule
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
 
-from config import PATH_TO_ICON
+from config import PATH_TO_ICON, PATH_TO_LICENSES
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
@@ -97,6 +97,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
         self.pushButtonDownloadRecords.clicked.connect(self.copy_records)
         self.actionSettings.triggered.connect(self.configuration_clicked)
+        self.actionLicenses.triggered.connect(self.licenses_clicked)
         self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
 
@@ -671,6 +672,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dlg.signals.data_changed.connect(self.update_data)
 
         ok = dlg.exec()
+
+    def licenses_clicked(self):
+        dlg = DialogLicenses(parent=self, path_to_licenses=PATH_TO_LICENSES)
+        dlg.exec()
 
     def on_max_devices_changed(self, cnt_device):
         """ Обработчик изменения количества одновременно подключенных устройств """

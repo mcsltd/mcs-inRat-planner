@@ -1,0 +1,11 @@
+Это программное обеспечение использует следующие сторонние компоненты:
+
+1. PySide6, PySide6_Addons, PySide6_Essentials, shiboken6
+   Лицензия: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+   Эти компоненты динамически линкуются и могут быть заменены пользователем.
+
+2. Certifi
+   Лицензия: Mozilla Public License 2.0 (MPL 2.0)
+
+3. Остальные зависимости лицензированы под MIT, BSD, Apache 2.0.
+   Полный список в файле requirements.txt.

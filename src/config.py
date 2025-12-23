@@ -22,6 +22,7 @@ DB_NAME = os.getenv('DB_NAME')
 SAVE_DIR = os.getenv("SAVE_DIR")
 PATH_TO_ICON = os.getenv("PATH_TO_ICON")
 PATH_TO_ICON_MCS = os.getenv("PATH_TO_ICON_MCS")
+PATH_TO_LICENSES = os.getenv("PATH_TO_LICENSES")
 
 os.makedirs(DB_PATH, exist_ok=True)
 os.makedirs(SAVE_DIR, exist_ok=True)

@@ -1,9 +1,16 @@
+import json
+import os.path
+
 from PySide6.QtWidgets import (QApplication, QWidget,
-                               QVBoxLayout, QHBoxLayout, QLabel, QDialog,)
+                               QVBoxLayout, QHBoxLayout, QLabel, QDialog, QPushButton, QTableWidgetItem, QHeaderView,
+                               QMessageBox, )
 from PySide6.QtGui import QPixmap, QFont
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 
 from config import PATH_TO_ICON_MCS
+from resources.v1.dlg_show_licenses import Ui_DlgLicenses
+
+from src.config import PATH_TO_LICENSES
 
 FONT = "Arial"
 
@@ -92,12 +99,20 @@ class AboutDialog(QDialog):
         email_font.setPointSize(9)
         email_label.setFont(company_font)
 
+        license_label = QLabel(
+            "Лицензия: MIT License\n\n"
+            "Программа включает компоненты под лицензиями:\n- MIT, BSD, Apache 2.0\n- PySide6 (LGPL)")
+        license_label.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        license_label.setOpenExternalLinks(True)
+        license_label.setFont(company_font)
+
         right_layout.addWidget(title_label)
         right_layout.addWidget(description_label)
         right_layout.addWidget(version_label)
         right_layout.addStretch()
         right_layout.addWidget(company_label)
         right_layout.addWidget(email_label)
+        right_layout.addWidget(license_label)
 
         right_widget.setLayout(right_layout)
 
@@ -105,6 +120,54 @@ class AboutDialog(QDialog):
         main_layout.addWidget(right_widget)
 
         self.setLayout(main_layout)
+
+
+class DialogLicenses(QDialog, Ui_DlgLicenses):
+    def __init__(self, path_to_licenses, parent=None,  *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.setupUi(self)
+
+        # настройка таблицы
+        self.tableWidgetLicense.setColumnCount(2)
+        self.tableWidgetLicense.setHorizontalHeaderLabels(["Библиотека", "Лицензия"])
+        header = self.tableWidgetLicense.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+
+        self.load_licenses(path_to_licenses)
+
+
+    def load_licenses(self, json_file):
+        if not os.path.exists(json_file):
+            QMessageBox.warning(
+                self,
+                "Файл не найден",
+                f"Файл {json_file} не найден.",
+                QMessageBox.StandardButton.Ok
+            )
+            return
+
+        try:
+
+            with open(json_file, 'br') as f:
+                data = json.load(f)
+
+            self.tableWidgetLicense.setRowCount(len(data))
+
+            for i, lib in enumerate(data):
+                name_item = QTableWidgetItem(lib.get('Name', 'Неизвестно'))
+                license_item = QTableWidgetItem(lib.get('License', 'Отсутствует'))
+                self.tableWidgetLicense.setItem(i, 0, name_item)
+                self.tableWidgetLicense.setItem(i, 1, license_item)
+        except Exception:
+            QMessageBox.critical(
+                self,
+                "Ошибка чтения",
+                "Не удалось прочитать файл с лицензиями.",
+                QMessageBox.StandardButton.Ok
+            )
+
+
 
 if __name__ == "__main__":
     app = QApplication()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowiTluAi.ui'
+## Form generated from reading UI file 'main_windowhavbTs.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -35,6 +35,8 @@ class Ui_MainWindow(object):
         self.actionSettings.setObjectName(u"actionSettings")
         self.actionAbout = QAction(MainWindow)
         self.actionAbout.setObjectName(u"actionAbout")
+        self.actionLicenses = QAction(MainWindow)
+        self.actionLicenses.setObjectName(u"actionLicenses")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
@@ -124,6 +126,7 @@ class Ui_MainWindow(object):
         self.file.addAction(self.actionSettings)
         self.file.addSeparator()
         self.file.addAction(self.actionExit)
+        self.help.addAction(self.actionLicenses)
         self.help.addAction(self.actionAbout)
 
         self.retranslateUi(MainWindow)
@@ -136,6 +139,7 @@ class Ui_MainWindow(object):
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"\u0412\u044b\u0445\u043e\u0434", None))
         self.actionSettings.setText(QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"\u041e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435...", None))
+        self.actionLicenses.setText(QCoreApplication.translate("MainWindow", u"\u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043e \u043b\u0438\u0446\u0435\u043d\u0437\u0438\u044f\u0445", None))
         self.labelHistory.setText(QCoreApplication.translate("MainWindow", u"\u0410\u0440\u0445\u0438\u0432 \u0437\u0430\u043f\u0438\u0441\u0435\u0439", None))
         self.pushButtonDownloadRecords.setText(QCoreApplication.translate("MainWindow", u"\u0412\u044b\u0433\u0440\u0443\u0437\u0438\u0442\u044c", None))
         self.labelSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435", None))

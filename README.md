@@ -29,6 +29,7 @@ DB_NAME=inRat
 SAVE_DIR=data
 PATH_TO_ICON=resources/v1/icon_app.svg
 PATH_TO_ICON_MCS=resources/v1/mcs_icon.png
+PATH_TO_LICENSES=resources/v1/licenses.json
 ```
 
 * поля `BLE_KEY_EMG_SENS` и `BLE_KEY_IN_RAT` - это пароли для управления BLE устройствами, доступ к ним можно получить написав разработчику на почту mandrei@mks.ru
@@ -49,3 +50,12 @@ PATH_TO_ICON_MCS=resources/v1/mcs_icon.png
 ## Copyrights
 
 Copyright © 2025, Medical Computer Systems Ltd
+
+## Лицензия
+
+Этот проект лицензирован под [MIT License](LICENSE).
+
+### Используемые сторонние библиотеки
+- PySide6 (Qt for Python) используется под лицензией LGPL
+- Другие библиотеки под MIT, BSD, Apache 2.0
+- Подробности в [NOTICE](NOTICE)
