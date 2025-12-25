@@ -291,6 +291,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.ble_manager.add_task(
             task=RecordingTaskData(
                 schedule_id=schedule.id,
+                experiment=schedule.experiment,
                 device=schedule.device,
                 object=schedule.object,
                 start_time=start_time,

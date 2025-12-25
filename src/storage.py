@@ -68,17 +68,11 @@ class Storage(QObject):
         sampling_rate = int(record_property.sampling_rate)
         signal = self._recording_task_data[device_id]
         start_time = record_property.start_time
-        object_name = record_property.object.name
+        obj_name = record_property.object.name
+        experiment = record_property.experiment.name
 
         write_dir = f".\\data\\{device_name}\\"
-        if detect_language(object_name) == "ru":
-            object_name = translit(object_name, reversed=True)
-            object_name = object_name.replace("'", "")
-
-        filename = self.get_record_filename(
-            object_name=object_name,
-            start_time=start_time, length_signal=len(signal), sampling_rate=sampling_rate
-        )
+        filename = self.get_record_filename(experiment=experiment, obj_name=obj_name, start_time=start_time)
 
         path_to_file = None
         if file_format == list(Formats.EDF.value.values())[0]:
@@ -178,12 +172,18 @@ class Storage(QObject):
         del self._recording_task_data[device_id]
         del self._recording_task_property[device_id]
 
-    @staticmethod
-    def get_record_filename(
-            object_name: str, start_time: datetime.datetime, length_signal: int, sampling_rate: int,
-    ) -> str:
-        str_start_date = f"y{start_time.year}m{start_time.month}d{start_time.day}"
-        str_start_time = f"h{start_time.hour}m{start_time.minute}"
-        str_duration = f"s{int(length_signal / sampling_rate)}"
-        filename = f"{object_name}_{str_start_date}_{str_start_time}_dur_{str_duration}"
+    def get_record_filename(self, experiment: str, obj_name: str, start_time: datetime.datetime) -> str:
+        experiment = self.to_latin(experiment)
+        obj_name = self.to_latin(obj_name)
+        str_start_date = f"{start_time.year}-{start_time.month}-{start_time.day}"
+        str_start_time = f"{start_time.hour}-{start_time.minute}"
+        filename = f"{experiment}_{obj_name}_{str_start_date}_{str_start_time}"
         return filename
+
+    @staticmethod
+    def to_latin(string: str) -> str:
+        if detect_language(string) == "ru":
+            string = translit(string, reversed=True)
+            string = string.replace("'", "")
+        return string
+
