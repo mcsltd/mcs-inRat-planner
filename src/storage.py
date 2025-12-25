@@ -176,7 +176,7 @@ class Storage(QObject):
         experiment = self.to_latin(experiment)
         obj_name = self.to_latin(obj_name)
         str_start_date = f"{start_time.year}-{start_time.month}-{start_time.day}"
-        str_start_time = f"{start_time.hour}-{start_time.minute}"
+        str_start_time = f"{start_time.hour}-{start_time.minute}-{start_time.second}"
         filename = f"{experiment}_{obj_name}_{str_start_date}_{str_start_time}"
         return filename
 

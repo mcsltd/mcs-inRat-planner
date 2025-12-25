@@ -123,7 +123,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.storage = InRatStorage(
             path_to_save=SAVE_DIR,
             device_name=self.schedule_data.device.ble_name,
-            object_name=self.schedule_data.object.name
+            object_name=self.schedule_data.object.name,
+            experiment_name=self.schedule_data.experiment.name
         )
         self.start_acquisition_time = None
 
@@ -137,8 +138,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.is_running = False
 
         # ui
-        self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
+        self.labelExperimentName.setText(str(self.schedule_data.experiment.name))
         self.labelObjectName.setText(str(self.schedule_data.object.name))
+        self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
 
         self.setWindowTitle(f"Ручной режим: {self.schedule_data.device.ble_name}")
         self.display = DisplaySignal(self)

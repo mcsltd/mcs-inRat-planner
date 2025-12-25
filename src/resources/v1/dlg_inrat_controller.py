@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllerXYoEGH.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerTojJkM.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -36,16 +36,26 @@ class Ui_DlgInRatController(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.formLayoutInfo = QFormLayout()
         self.formLayoutInfo.setObjectName(u"formLayoutInfo")
+        self.labelExperiment = QLabel(DlgInRatController)
+        self.labelExperiment.setObjectName(u"labelExperiment")
+
+        self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelExperiment)
+
+        self.labelExperimentName = QLabel(DlgInRatController)
+        self.labelExperimentName.setObjectName(u"labelExperimentName")
+
+        self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.FieldRole, self.labelExperimentName)
+
         self.labelDevice = QLabel(DlgInRatController)
         self.labelDevice.setObjectName(u"labelDevice")
         self.labelDevice.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.LabelRole, self.labelDevice)
+        self.formLayoutInfo.setWidget(2, QFormLayout.ItemRole.LabelRole, self.labelDevice)
 
         self.labelDeviceName = QLabel(DlgInRatController)
         self.labelDeviceName.setObjectName(u"labelDeviceName")
 
-        self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.FieldRole, self.labelDeviceName)
+        self.formLayoutInfo.setWidget(2, QFormLayout.ItemRole.FieldRole, self.labelDeviceName)
 
         self.labelObject = QLabel(DlgInRatController)
         self.labelObject.setObjectName(u"labelObject")
@@ -251,6 +261,8 @@ class Ui_DlgInRatController(object):
 
     def retranslateUi(self, DlgInRatController):
         DlgInRatController.setWindowTitle(QCoreApplication.translate("DlgInRatController", u"Dialog", None))
+        self.labelExperiment.setText(QCoreApplication.translate("DlgInRatController", u"\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442:", None))
+        self.labelExperimentName.setText("")
         self.labelDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e:", None))
         self.labelDeviceName.setText("")
         self.labelObject.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0431\u044a\u0435\u043a\u0442:", None))
