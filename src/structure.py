@@ -89,6 +89,7 @@ class RecordData:
 @dataclass
 class RecordingTaskData:
     schedule_id: UUID
+    experiment: ExperimentData
     device: DeviceData
     object: ObjectData
     start_time: datetime.datetime

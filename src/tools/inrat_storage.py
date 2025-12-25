@@ -13,7 +13,12 @@ logger = logging.getLogger(__name__)
 
 class InRatStorage(QObject):
 
-    def __init__(self, path_to_save: str, device_name: str, object_name: str, *args, **kwargs):
+    def __init__(
+            self,
+            path_to_save: str,
+            device_name: str, object_name: str, experiment_name:str,
+            *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.signal = np.array([])
@@ -22,6 +27,7 @@ class InRatStorage(QObject):
 
         self._object_name: str = object_name
         self._device_name: str = device_name
+        self._experiment_name: str = experiment_name
 
         self._fs: int | None = None
         self._format: str | None = None
@@ -57,17 +63,11 @@ class InRatStorage(QObject):
         self.is_recording = False
 
         write_dir = f"{self.path_to_save}\\{self._device_name}"
-        # преобразование в латиницу
-        object_name = self._object_name
-        if detect_language(object_name) == "ru":
-            object_name = translit(object_name, reversed=True)
-            object_name = object_name.replace("'", "")
 
         filename = self.get_record_filename(
-            object_name=object_name,
+            obj_name=self._object_name,
+            experiment=self._experiment_name,
             start_time=datetime.datetime.fromtimestamp(self.start_time),
-            length_signal=len(self.signal),
-            sampling_rate=self._fs
         )
         os.makedirs(write_dir, exist_ok=True)
 
@@ -131,12 +131,18 @@ class InRatStorage(QObject):
         else:
             logger.info(f"Файл в формате EDF {filename} успешно записан!")
 
-    @staticmethod
-    def get_record_filename(
-            object_name: str, start_time: datetime.datetime, length_signal: int, sampling_rate: int,
-    ) -> str:
-        str_start_date = f"y{start_time.year}m{start_time.month}d{start_time.day}"
-        str_start_time = f"h{start_time.hour}m{start_time.minute}s{start_time.second}"
-        str_duration = f"s{int(length_signal / sampling_rate)}"
-        filename = f"{object_name}_{str_start_date}_{str_start_time}_dur_{str_duration}"
+
+    def get_record_filename(self, experiment: str, obj_name: str, start_time: datetime.datetime) -> str:
+        experiment = self.to_latin(experiment)
+        obj_name = self.to_latin(obj_name)
+        str_start_date = f"{start_time.year}-{start_time.month}-{start_time.day}"
+        str_start_time = f"{start_time.hour}-{start_time.minute}-{start_time.second}"
+        filename = f"{experiment}_{obj_name}_{str_start_date}_{str_start_time}"
         return filename
+
+    @staticmethod
+    def to_latin(string: str) -> str:
+        if detect_language(string) == "ru":
+            string = translit(string, reversed=True)
+            string = string.replace("'", "")
+        return string
