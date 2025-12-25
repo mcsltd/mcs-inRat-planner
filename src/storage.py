@@ -45,14 +45,14 @@ class Storage(QObject):
             signal = np.array(data["signal"])
             self._recording_task_data[device_id] = np.append(self._recording_task_data[device_id], signal)
 
-    def stop_recording_task(self, device_id: UUID) -> None:
+    def stop_recording_task(self, device_id: UUID, acquisition_start_time: float) -> None:
         """ Остановка записи данных с устройства """
         if device_id not in self._devices_id:
             logger.warning(f"Отсутствует задача записи для {device_id}, данные не могут быть сохранены")
             return
 
         try:
-            self._save(device_id)
+            self._save(device_id, acquisition_start_time)
         except Exception as exc:
             logger.error(f"Ошибка сохранения данных для устройства с индексом {device_id}: {exc}")
         else:
@@ -60,16 +60,23 @@ class Storage(QObject):
         finally:
             ...
 
-    def _save(self, device_id: UUID):
+    def _save(self, device_id: UUID, acquisition_start_time: float):
         """ Сохранение данных для устройства с device_id """
         record_property: RecordingTaskData = self._recording_task_property[device_id]
+
         device_name = record_property.device.ble_name
-        file_format = record_property.file_format
-        sampling_rate = int(record_property.sampling_rate)
-        signal = self._recording_task_data[device_id]
-        start_time = record_property.start_time
         obj_name = record_property.object.name
         experiment = record_property.experiment.name
+
+        file_format = record_property.file_format
+        sampling_rate = int(record_property.sampling_rate)
+
+        signal = self.signal_truncation(
+            signal=self._recording_task_data[device_id],
+            sampling_rate=sampling_rate,
+            seconds_duration=record_property.sec_duration
+        )
+        start_time = datetime.datetime.fromtimestamp(acquisition_start_time).replace(microsecond=0)
 
         write_dir = f".\\data\\{device_name}\\"
         filename = self.get_record_filename(experiment=experiment, obj_name=obj_name, start_time=start_time)
@@ -96,23 +103,18 @@ class Storage(QObject):
             task = self._recording_task_property[device_id]
             sec_duration = int(len(signal) / sampling_rate)
 
-            record_data = task.get_result_record(duration=sec_duration, status=RecordStatus.OK, path=path_to_file)
+            record_data = task.get_result_record(
+                start_time=start_time, duration=sec_duration, status=RecordStatus.OK, path=path_to_file)
             self.signal_success_save.emit(record_data)
         else:
             logger.error(f"Сигнал ЭКГ не записан в формат {record_property.file_format}")
             task = self._recording_task_property[device_id]
-            record_data = task.get_result_record(duration=0, status=RecordStatus.ERROR)
+            record_data = task.get_result_record(start_time=start_time, duration=0, status=RecordStatus.ERROR)
             self.signal_success_save.emit(record_data)
 
         self._cleanup_task(device_id)
 
-    def _save_to_edf(
-            self,
-            filename: str, # record_id: UUID,
-            write_dir: str,
-            sampling_rate: int,
-            ecg_signal: np.ndarray
-    ) -> str | None:
+    def _save_to_edf(self, filename: str, write_dir: str, sampling_rate: int, ecg_signal: np.ndarray) -> str | None:
         logger.debug("Save data to edf.")
 
         file_name = None
@@ -187,3 +189,7 @@ class Storage(QObject):
             string = string.replace("'", "")
         return string
 
+    @staticmethod
+    def signal_truncation(signal: np.ndarray, sampling_rate: int, seconds_duration: int) -> np.ndarray:
+        trunc_signal = signal[:sampling_rate * seconds_duration]
+        return trunc_signal
