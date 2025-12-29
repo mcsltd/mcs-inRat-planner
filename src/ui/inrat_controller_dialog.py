@@ -23,6 +23,8 @@ from structure import ScheduleData
 from tools.inrat_storage import InRatStorage
 from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
+from src.structure import RecordData
+
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
                 ("2000 Гц", InRatDataRateEcg.HZ_2000.value), ]
@@ -111,6 +113,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     signal_start_recording = Signal()
     signal_stop_recording = Signal()
+    signal_record_saved = Signal(object)
+
     signal_accept_data = Signal(object)
 
     def __init__(self, schedule_data: ScheduleData, parent = None,  *args, **kwargs):
@@ -124,7 +128,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             path_to_save=SAVE_DIR,
             device_name=self.schedule_data.device.ble_name,
             object_name=self.schedule_data.object.name,
-            experiment_name=self.schedule_data.experiment.name
+            experiment_name=self.schedule_data.experiment.name,
+            schedule_id=self.schedule_data.id
         )
         self.start_acquisition_time = None
 
@@ -146,13 +151,14 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.display = DisplaySignal(self)
         self.setup_combobox()
         self.verticalLayoutPlot.addWidget(self.display)
-        self.lineEditSave.setText(self.storage.path_to_save)
+        # self.lineEditSave.setText(self.storage.path_to_save)
 
         # timer
         self.recording_timer = QTimer()
         self.recording_timer.setInterval(1000)
 
         # signals
+        self.storage.signal_record_saved.connect(self._on_record_saved)
         self.recording_timer.timeout.connect(self._on_timeout_expired)
         self.pushButtonConnection.clicked.connect(self._device_connection)
         self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
@@ -161,10 +167,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
         self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
         self.comboBoxFormat.currentIndexChanged.connect(self._on_format_changed)
-        self.pushButtonSelectDirSave.clicked.connect(self._on_save_dir_changed)
-        self.pushButtonShowRecords.clicked.connect(self._on_save_dir_clicked)
+        # self.pushButtonSelectDirSave.clicked.connect(self._on_save_dir_changed)
+        # self.pushButtonShowRecords.clicked.connect(self._on_save_dir_clicked)
         self.pushButtonStartRecording.clicked.connect(self._start_recording)
         self.pushButtonStopRecording.clicked.connect(self._stop_recording)
+
 
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
@@ -176,21 +183,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         sec_crnt_time = int(time.time() - self.storage.start_time)
         label_time = seconds_to_label_time(sec_crnt_time)
         self.labelRTvalue.setText(label_time)
-
-    # настройка параметров сохранения
-    def _on_save_dir_changed(self):
-        """ Изменение места сохранения, по умолчанию data/ble_device/"""
-        logger.debug("Изменено место сохранения")
-
-        path_to_save = QFileDialog.getExistingDirectory(
-            self,
-            "Выбор места сохранения",
-            # self.storage.path_to_save,
-            "",
-            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
-        )
-        self.storage.set_save_dir(path_to_save)
-        self.lineEditSave.setText(path_to_save)
 
     def _on_save_dir_clicked(self):
         """ Обработка нажатия кнопки"""
@@ -543,6 +535,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxFormat.setEnabled(True)
         self.pushButtonStopRecording.setEnabled(False)
 
+    def _on_record_saved(self, record_data: RecordData) -> None:
+        self.signal_record_saved.emit(record_data)
+
     # остановка и закрытие окна
     def closeEvent(self, event, /):
         if self._loop is None or not self._loop.is_running():
@@ -616,3 +611,18 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             pass
         except Exception as e:
             logger.debug(f"Ошибка при отмене задач: {e}")
+
+    # # настройка параметров сохранения
+    # def _on_save_dir_changed(self):
+    #     """ Изменение места сохранения, по умолчанию data/ble_device/"""
+    #     logger.debug("Изменено место сохранения")
+    #
+    #     path_to_save = QFileDialog.getExistingDirectory(
+    #         self,
+    #         "Выбор места сохранения",
+    #         # self.storage.path_to_save,
+    #         "",
+    #         QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
+    #     )
+    #     self.storage.set_save_dir(path_to_save)
+    #     self.lineEditSave.setText(path_to_save)

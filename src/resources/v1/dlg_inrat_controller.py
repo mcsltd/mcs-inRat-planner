@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllerTojJkM.ui'
+## Form generated from reading UI file 'dlg_inrat_controller_v1hWzmSx.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -16,15 +16,14 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFormLayout,
-    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
-    QWidget)
+    QGridLayout, QHBoxLayout, QLabel, QPushButton,
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
 class Ui_DlgInRatController(object):
     def setupUi(self, DlgInRatController):
         if not DlgInRatController.objectName():
             DlgInRatController.setObjectName(u"DlgInRatController")
-        DlgInRatController.resize(1160, 578)
+        DlgInRatController.resize(1164, 586)
         self.gridLayout = QGridLayout(DlgInRatController)
         self.gridLayout.setObjectName(u"gridLayout")
         self.verticalLayoutPlot = QVBoxLayout()
@@ -148,77 +147,44 @@ class Ui_DlgInRatController(object):
 
         self.gridLayout_7 = QGridLayout()
         self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.lineEditSave = QLineEdit(DlgInRatController)
-        self.lineEditSave.setObjectName(u"lineEditSave")
-        self.lineEditSave.setEnabled(False)
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        self.comboBoxFormat = QComboBox(DlgInRatController)
+        self.comboBoxFormat.addItem("")
+        self.comboBoxFormat.addItem("")
+        self.comboBoxFormat.setObjectName(u"comboBoxFormat")
+        self.comboBoxFormat.setEnabled(True)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.lineEditSave.sizePolicy().hasHeightForWidth())
-        self.lineEditSave.setSizePolicy(sizePolicy1)
-        self.lineEditSave.setMaximumSize(QSize(100, 16777215))
+        sizePolicy1.setHeightForWidth(self.comboBoxFormat.sizePolicy().hasHeightForWidth())
+        self.comboBoxFormat.setSizePolicy(sizePolicy1)
+        self.comboBoxFormat.setMaximumSize(QSize(100, 16777215))
         font = QFont()
         font.setPointSize(9)
-        self.lineEditSave.setFont(font)
+        self.comboBoxFormat.setFont(font)
+        self.comboBoxFormat.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
 
-        self.gridLayout_7.addWidget(self.lineEditSave, 1, 1, 1, 1)
+        self.gridLayout_7.addWidget(self.comboBoxFormat, 1, 1, 1, 1)
 
         self.labelRT = QLabel(DlgInRatController)
         self.labelRT.setObjectName(u"labelRT")
         self.labelRT.setFont(font)
         self.labelRT.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
 
-        self.gridLayout_7.addWidget(self.labelRT, 3, 0, 1, 1)
-
-        self.pushButtonSelectDirSave = QPushButton(DlgInRatController)
-        self.pushButtonSelectDirSave.setObjectName(u"pushButtonSelectDirSave")
-        self.pushButtonSelectDirSave.setEnabled(True)
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.pushButtonSelectDirSave.sizePolicy().hasHeightForWidth())
-        self.pushButtonSelectDirSave.setSizePolicy(sizePolicy2)
-        self.pushButtonSelectDirSave.setMinimumSize(QSize(80, 0))
-        self.pushButtonSelectDirSave.setFont(font)
-
-        self.gridLayout_7.addWidget(self.pushButtonSelectDirSave, 1, 2, 1, 1)
-
-        self.comboBoxFormat = QComboBox(DlgInRatController)
-        self.comboBoxFormat.addItem("")
-        self.comboBoxFormat.addItem("")
-        self.comboBoxFormat.setObjectName(u"comboBoxFormat")
-        self.comboBoxFormat.setEnabled(True)
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.comboBoxFormat.sizePolicy().hasHeightForWidth())
-        self.comboBoxFormat.setSizePolicy(sizePolicy3)
-        self.comboBoxFormat.setMaximumSize(QSize(100, 16777215))
-        self.comboBoxFormat.setFont(font)
-        self.comboBoxFormat.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
-
-        self.gridLayout_7.addWidget(self.comboBoxFormat, 2, 1, 1, 1)
-
-        self.labelDirSave = QLabel(DlgInRatController)
-        self.labelDirSave.setObjectName(u"labelDirSave")
-        self.labelDirSave.setFont(font)
-        self.labelDirSave.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_7.addWidget(self.labelDirSave, 1, 0, 1, 1)
-
-        self.labelRTvalue = QLabel(DlgInRatController)
-        self.labelRTvalue.setObjectName(u"labelRTvalue")
-        self.labelRTvalue.setFont(font)
-        self.labelRTvalue.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.gridLayout_7.addWidget(self.labelRTvalue, 3, 1, 1, 1)
+        self.gridLayout_7.addWidget(self.labelRT, 2, 0, 1, 1)
 
         self.labelFormat = QLabel(DlgInRatController)
         self.labelFormat.setObjectName(u"labelFormat")
         self.labelFormat.setFont(font)
         self.labelFormat.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
 
-        self.gridLayout_7.addWidget(self.labelFormat, 2, 0, 1, 1)
+        self.gridLayout_7.addWidget(self.labelFormat, 1, 0, 1, 1)
+
+        self.labelRTvalue = QLabel(DlgInRatController)
+        self.labelRTvalue.setObjectName(u"labelRTvalue")
+        self.labelRTvalue.setFont(font)
+        self.labelRTvalue.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.gridLayout_7.addWidget(self.labelRTvalue, 2, 1, 1, 1)
 
 
         self.verticalLayout.addLayout(self.gridLayout_7)
@@ -239,12 +205,6 @@ class Ui_DlgInRatController(object):
 
 
         self.verticalLayout.addLayout(self.horizontalLayoutRecording)
-
-        self.pushButtonShowRecords = QPushButton(DlgInRatController)
-        self.pushButtonShowRecords.setObjectName(u"pushButtonShowRecords")
-        self.pushButtonShowRecords.setMaximumSize(QSize(147, 16777215))
-
-        self.verticalLayout.addWidget(self.pushButtonShowRecords)
 
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -275,16 +235,13 @@ class Ui_DlgInRatController(object):
         self.labelSampleFreq.setText(QCoreApplication.translate("DlgInRatController", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438:", None))
         self.labelMode.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u0430\u0442\u0443\u0441:", None))
         self.labelStorage.setText(QCoreApplication.translate("DlgInRatController", u"\u0417\u0430\u043f\u0438\u0441\u044c \u0441\u0438\u0433\u043d\u0430\u043b\u0430:", None))
-        self.labelRT.setText(QCoreApplication.translate("DlgInRatController", u"\u0412\u0440\u0435\u043c\u044f \u0437\u0430\u043f\u0438\u0441\u0438:", None))
-        self.pushButtonSelectDirSave.setText(QCoreApplication.translate("DlgInRatController", u"\u0418\u0437\u043c\u0435\u043d\u0438\u0442\u044c", None))
         self.comboBoxFormat.setItemText(0, QCoreApplication.translate("DlgInRatController", u"WFDB", None))
         self.comboBoxFormat.setItemText(1, QCoreApplication.translate("DlgInRatController", u"EDF", None))
 
-        self.labelDirSave.setText(QCoreApplication.translate("DlgInRatController", u"\u041c\u0435\u0441\u0442\u043e \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f:", None))
-        self.labelRTvalue.setText(QCoreApplication.translate("DlgInRatController", u"00:00:00", None))
+        self.labelRT.setText(QCoreApplication.translate("DlgInRatController", u"\u0412\u0440\u0435\u043c\u044f \u0437\u0430\u043f\u0438\u0441\u0438:", None))
         self.labelFormat.setText(QCoreApplication.translate("DlgInRatController", u"\u0424\u043e\u0440\u043c\u0430\u0442:", None))
+        self.labelRTvalue.setText(QCoreApplication.translate("DlgInRatController", u"00:00:00", None))
         self.pushButtonStartRecording.setText(QCoreApplication.translate("DlgInRatController", u"\u041d\u0430\u0447\u0430\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u044c", None))
         self.pushButtonStopRecording.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u044c", None))
-        self.pushButtonShowRecords.setText(QCoreApplication.translate("DlgInRatController", u"\u041f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u0438", None))
     # retranslateUi
 

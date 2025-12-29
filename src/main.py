@@ -647,6 +647,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 try:
                     dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
+                    dlg.signal_record_saved.connect(self.handle_record_result)
                     dlg.exec()
                 except Exception as exp:
                     logger.error(f"Ошибка при запуске ручного режима для InRat: {exp}")
