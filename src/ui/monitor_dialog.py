@@ -112,7 +112,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         self.labelFormatValue.setText(self.record_data.file_format)
         self.labelDurationValue.setText(f"{self.record_data.sec_duration} с.")
         self.labelSamplingRateValue.setText(f"{self.record_data.sampling_rate} Гц")
-        self.labelStartTimeValue.setText(f"{str(self.record_data.datetime_start)}")
+        self.labelStartTimeValue.setText(f"{str(self.record_data.datetime_start.replace(microsecond=0))}")
 
     def _read_edf_file(self, file_path: str):
         """Чтение данных из EDF файла"""

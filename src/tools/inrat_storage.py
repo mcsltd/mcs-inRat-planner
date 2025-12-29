@@ -2,21 +2,26 @@ import datetime
 import logging
 import os.path
 import time
+from uuid import UUID
 
 import numpy as np
 import wfdb
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
 from transliterate import detect_language, translit
+
+from src.constants import RecordStatus
+from src.structure import RecordData
 
 logger = logging.getLogger(__name__)
 
 class InRatStorage(QObject):
 
+    signal_record_saved = Signal(object)
+
     def __init__(
             self,
-            path_to_save: str,
-            device_name: str, object_name: str, experiment_name:str,
+            path_to_save: str, device_name: str, object_name: str, experiment_name:str, schedule_id: UUID,
             *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
@@ -25,6 +30,7 @@ class InRatStorage(QObject):
         self.path_to_save = os.path.abspath(path_to_save)
         self.is_recording = True
 
+        self._schedule_id: UUID = schedule_id
         self._object_name: str = object_name
         self._device_name: str = device_name
         self._experiment_name: str = experiment_name
@@ -63,11 +69,11 @@ class InRatStorage(QObject):
         self.is_recording = False
 
         write_dir = f"{self.path_to_save}\\{self._device_name}"
+        datetime_st = datetime.datetime.fromtimestamp(self.start_time)
 
         filename = self.get_record_filename(
-            obj_name=self._object_name,
-            experiment=self._experiment_name,
-            start_time=datetime.datetime.fromtimestamp(self.start_time),
+            obj_name=self._object_name, experiment=self._experiment_name,
+            start_time=datetime_st,
         )
         os.makedirs(write_dir, exist_ok=True)
 
@@ -77,6 +83,12 @@ class InRatStorage(QObject):
         if self._format == "EDF":
             filename = f"{write_dir}\\{filename}.edf"
             self.save_to_edf(filename=filename)
+        
+        # оповещение окна ручного режима о сделанной записи
+        record_data = RecordData(datetime_start=datetime_st, sec_duration=int(len(self.signal) / self._fs),
+                                 file_format=self._format, sampling_rate=self._fs, status=RecordStatus.OK.value,
+                                 schedule_id=self._schedule_id, path=filename)
+        self.signal_record_saved.emit(record_data)
 
         # сброс
         self.start_time: datetime.datetime | None = None

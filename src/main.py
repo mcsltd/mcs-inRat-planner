@@ -213,7 +213,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             now = datetime.datetime.now()
 
             schedule = s.to_dataclass(session)
+            start_time = schedule.datetime_start
             schedule_id = schedule.id
+
             dt = datetime.timedelta(seconds=(schedule.sec_duration + schedule.sec_interval))
 
             # проверка на случай уже созданного расписания
@@ -231,7 +233,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 start_time = schedule.datetime_start
             else:
                 last_record = last_record.to_dataclass()
-                start_time = last_record.datetime_start + dt  # время следующей запланированной записи
+                if not start_time > last_record.datetime_start: # обработка случая когда перед началом записи экг писались в ручном режиме
+                    start_time = last_record.datetime_start + dt  # время следующей запланированной записи
 
             if now > start_time: # проверка если запланированная запись отстаёт от текущего времени
                 logger.info(f"Запланированное время записи {str(start_time)} меньше чем текущее время {str(now)}")
@@ -647,6 +650,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 try:
                     dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
+                    dlg.signal_record_saved.connect(self.handle_record_result)
                     dlg.exec()
                 except Exception as exp:
                     logger.error(f"Ошибка при запуске ручного режима для InRat: {exp}")
