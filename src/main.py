@@ -15,13 +15,13 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from device.ble_manager import BleManager, RecordingTaskData
+from device.ble_manager import BleManager
 
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
-from structure import ScheduleData, RecordData
+from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
 from resources.v1.main_window import Ui_MainWindow
@@ -269,7 +269,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Установка задачи в планировщик """
 
         # ToDo: проблема с обработкой
-
         self.scheduler.add_job(
             self._create_record,
             args=(schedule, start_time),
@@ -295,7 +294,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 device=schedule.device,
                 object=schedule.object,
                 start_time=start_time,
-                finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration),
+
+                sec_duration=schedule.sec_duration,
+                # finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration),
+
                 file_format=schedule.file_format,
                 sampling_rate=schedule.sampling_rate
             )
@@ -314,7 +316,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def handle_record_result(self, record_data: RecordData, session):
         """ Обработка  сигнала (signal_record_result) из BleManager c результатом записи сигнала """
-
         schedule_id = record_data.schedule_id
         schedule = Schedule.find([Schedule.id == schedule_id], session)
 
