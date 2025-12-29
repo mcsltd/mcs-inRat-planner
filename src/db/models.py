@@ -91,8 +91,8 @@ class Schedule(Base):
     device_id: Mapped[UUID] = mapped_column(ForeignKey("device.id"))
     sec_duration: Mapped[int]
     sec_interval: Mapped[int]
-    datetime_start: Mapped[datetime.datetime]
-    datetime_finish: Mapped[datetime.datetime]
+    datetime_start: Mapped[datetime.datetime | None]
+    datetime_finish: Mapped[datetime.datetime | None]
     file_format: Mapped[str]
     sampling_rate: Mapped[int]
     # один-к-одному

@@ -4,7 +4,7 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer
+from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer, Qt
 from PySide6.QtGui import QIcon, QIntValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QMessageBox, QWidget
 
@@ -52,10 +52,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.fill_combobox(self.comboBoxModelDevice, Devices)
         self.fill_combobox(self.comboBoxFormat, Formats)
 
-        self.comboBoxDuration.addItems(
-            ["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
-
-        # self.comboBoxInterval.setPlaceholderText("[hh:mm]")
+        self.comboBoxDuration.addItems(["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
         self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
 
         # monitoring the has_unsaved_change flag
@@ -70,8 +67,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
         self.pushButtonCancel.clicked.connect(self.close)
         self.comboBoxModelDevice.currentIndexChanged.connect(self._on_device_model_changed)
+        self.checkBoxCancelSchedule.stateChanged.connect(self._disable_scheduling_time)
 
-        # self.pushButtonAddExperiment.clicked.connect(self.add_experiment)
         self.pushButtonAddExperiment.hide()
 
         # установка настроек по умолчанию
@@ -79,6 +76,24 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         if schedule is None:
             self.init_timer()
+
+    def _disable_scheduling_time(self, state: Qt.CheckState):
+        if state == Qt.CheckState.Checked.value:
+            logger.debug("Отключено планирование расписания")
+            self.labelStarTime.setDisabled(True)
+            self.labeFinishTime.setDisabled(True)
+            self.dateTimeEditStartExperiment.setDisabled(True)
+            self.dateTimeEditFinishExperiment.setDisabled(True)
+            self.pushButtonResetTime.setDisabled(True)
+
+        if state == Qt.CheckState.Unchecked.value:
+            logger.debug("Включено планирование расписания")
+            self.labelStarTime.setEnabled(True)
+            self.labeFinishTime.setEnabled(True)
+            self.dateTimeEditStartExperiment.setEnabled(True)
+            self.dateTimeEditFinishExperiment.setEnabled(True)
+            self.pushButtonResetTime.setEnabled(True)
+
 
     def init_timer(self):
         self.timer_update = QTimer()
@@ -438,8 +453,11 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
         dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
-        start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0, second=0)
-        finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0, second=0)
+        start_datetime = None
+        finish_datetime = None
+        if self.checkBoxCancelSchedule.checkState() == Qt.CheckState.Unchecked.value:
+            start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0, second=0)
+            finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0, second=0)
 
         sec_interval = self.convert_to_seconds_by_last_word(self.comboBoxInterval.currentText())
         sec_duration = self.convert_to_seconds_by_last_word(self.comboBoxDuration.currentText())

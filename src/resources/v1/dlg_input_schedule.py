@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_scheduleqsuXWk.ui'
+## Form generated from reading UI file 'dlg_input_schedule_v1zQewxf.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -15,23 +15,23 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QDateTimeEdit, QDialog,
-    QFormLayout, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QSizePolicy, QSpacerItem,
-    QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
+    QDialog, QFormLayout, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QSizePolicy,
+    QSpacerItem, QWidget)
 
 class Ui_DlgCreateNewSchedule(object):
     def setupUi(self, DlgCreateNewSchedule):
         if not DlgCreateNewSchedule.objectName():
             DlgCreateNewSchedule.setObjectName(u"DlgCreateNewSchedule")
         DlgCreateNewSchedule.setWindowModality(Qt.WindowModality.ApplicationModal)
-        DlgCreateNewSchedule.resize(492, 537)
+        DlgCreateNewSchedule.resize(492, 582)
         DlgCreateNewSchedule.setAutoFillBackground(False)
         DlgCreateNewSchedule.setInputMethodHints(Qt.InputMethodHint.ImhUrlCharactersOnly)
         DlgCreateNewSchedule.setSizeGripEnabled(False)
         self.groupBoxRecords = QGroupBox(DlgCreateNewSchedule)
         self.groupBoxRecords.setObjectName(u"groupBoxRecords")
-        self.groupBoxRecords.setGeometry(QRect(20, 290, 451, 191))
+        self.groupBoxRecords.setGeometry(QRect(20, 320, 451, 191))
         self.formLayoutWidget_2 = QWidget(self.groupBoxRecords)
         self.formLayoutWidget_2.setObjectName(u"formLayoutWidget_2")
         self.formLayoutWidget_2.setGeometry(QRect(10, 30, 431, 116))
@@ -105,7 +105,7 @@ class Ui_DlgCreateNewSchedule(object):
         self.pushButtonByDefault.setMaximumSize(QSize(100, 16777215))
         self.groupBoxSchedule = QGroupBox(DlgCreateNewSchedule)
         self.groupBoxSchedule.setObjectName(u"groupBoxSchedule")
-        self.groupBoxSchedule.setGeometry(QRect(20, 150, 451, 131))
+        self.groupBoxSchedule.setGeometry(QRect(20, 150, 451, 161))
         self.formLayoutWidget_3 = QWidget(self.groupBoxSchedule)
         self.formLayoutWidget_3.setObjectName(u"formLayoutWidget_3")
         self.formLayoutWidget_3.setGeometry(QRect(10, 30, 431, 51))
@@ -145,6 +145,9 @@ class Ui_DlgCreateNewSchedule(object):
         self.pushButtonResetTime.setSizePolicy(sizePolicy1)
         self.pushButtonResetTime.setMinimumSize(QSize(100, 0))
         self.pushButtonResetTime.setMaximumSize(QSize(100, 16777215))
+        self.checkBoxCancelSchedule = QCheckBox(self.groupBoxSchedule)
+        self.checkBoxCancelSchedule.setObjectName(u"checkBoxCancelSchedule")
+        self.checkBoxCancelSchedule.setGeometry(QRect(10, 130, 431, 20))
         self.formLayoutWidget = QWidget(DlgCreateNewSchedule)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
         self.formLayoutWidget.setGeometry(QRect(30, 30, 441, 115))
@@ -222,7 +225,7 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.horizontalLayoutWidget = QWidget(DlgCreateNewSchedule)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(30, 490, 431, 31))
+        self.horizontalLayoutWidget.setGeometry(QRect(30, 530, 431, 31))
         self.horizontalLayout_2 = QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -258,6 +261,7 @@ class Ui_DlgCreateNewSchedule(object):
         self.labelStarTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0414\u0430\u0442\u0430 \u043d\u0430\u0447\u0430\u043b\u0430", None))
         self.labeFinishTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0414\u0430\u0442\u0430 \u043e\u043a\u043e\u043d\u0447\u0430\u043d\u0438\u044f", None))
         self.pushButtonResetTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0432\u0440\u0435\u043c\u044f", None))
+        self.checkBoxCancelSchedule.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041d\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044e \u043f\u043e \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044e", None))
         self.LabelExperiment.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442", None))
         self.LabelObject.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041e\u0431\u044a\u0435\u043a\u0442", None))
         self.LabelModelDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041c\u043e\u0434\u0435\u043b\u044c \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
