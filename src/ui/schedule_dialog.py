@@ -23,7 +23,9 @@ from config import PATH_TO_ICON
 logger = logging.getLogger(__name__)
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
+
     signal_add_experiment = Signal()
+
     def __init__(self, schedule: ScheduleData | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -74,10 +76,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # установка настроек по умолчанию
         self.setDefaults()
 
+        self.timer_update = None
         if schedule is None:
             self.init_timer()
 
     def _disable_scheduling_time(self, state: Qt.CheckState):
+
         if state == Qt.CheckState.Checked.value:
             logger.debug("Отключено планирование расписания")
             self.labelStarTime.setDisabled(True)
@@ -86,6 +90,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.dateTimeEditFinishExperiment.setDisabled(True)
             self.pushButtonResetTime.setDisabled(True)
 
+            if hasattr(self, "timer_update"):
+                if self.timer_update is not None:
+                    self.timer_update.stop()
+
         if state == Qt.CheckState.Unchecked.value:
             logger.debug("Включено планирование расписания")
             self.labelStarTime.setEnabled(True)
@@ -93,6 +101,12 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.dateTimeEditStartExperiment.setEnabled(True)
             self.dateTimeEditFinishExperiment.setEnabled(True)
             self.pushButtonResetTime.setEnabled(True)
+
+            if (self.default_schedule is not None and
+                    (self.default_schedule.datetime_start is None or
+                     self.default_schedule.datetime_finish is None)):
+                self.reset_time()
+                self.init_timer()
 
 
     def init_timer(self):
@@ -264,15 +278,18 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
     def _upload(self, schedule: ScheduleData):
         """ Загрузка данных расписания """
 
-        # start time
+        # get start time & finish time
         st = self.default_schedule.datetime_start
-        q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
-        self.dateTimeEditStartExperiment.setDateTime(q_st)
-
-        # finish time
         ft = self.default_schedule.datetime_finish
-        q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
-        self.dateTimeEditFinishExperiment.setDateTime(q_ft)
+
+        if st is not None or ft is not None:
+            q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
+            self.dateTimeEditStartExperiment.setDateTime(q_st)
+            q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
+            self.dateTimeEditFinishExperiment.setDateTime(q_ft)
+        else:
+            # расписание имеет статус незапланированного
+            self.checkBoxCancelSchedule.setChecked(True)
 
         # experiment
         self.set_combobox_value(self.comboBoxExperiment, schedule.experiment.name)
@@ -400,16 +417,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.dateTimeEditStartExperiment.setEnabled(True)
             self.dateTimeEditFinishExperiment.setEnabled(True)
 
-            # # start time
-            # st = self.default_schedule.datetime_start
-            # q_st = QDateTime(QDate(st.year, st.month, st.day), QTime(st.hour, st.minute, st.second))
-            # self.dateTimeEditStartExperiment.setDateTime(q_st)
-            # # finish time
-            # ft = self.default_schedule.datetime_finish
-            # q_ft = QDateTime(QDate(ft.year, ft.month, ft.day), QTime(ft.hour, ft.minute, ft.second))
-            # self.dateTimeEditFinishExperiment.setDateTime(q_ft)
-            # return
-
         crt_dt = QDateTime.currentDateTime().addSecs(60)
         # сброс времени начала записи
         self.dateTimeEditStartExperiment.setMinimumDateTime(crt_dt)
@@ -455,7 +462,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         start_datetime = None
         finish_datetime = None
-        if self.checkBoxCancelSchedule.checkState() == Qt.CheckState.Unchecked.value:
+        state = self.checkBoxCancelSchedule.checkState().value
+        if state == Qt.CheckState.Unchecked.value:
             start_datetime = self.dateTimeEditStartExperiment.dateTime().toPython().replace(microsecond=0, second=0)
             finish_datetime = self.dateTimeEditFinishExperiment.dateTime().toPython().replace(microsecond=0, second=0)
 
@@ -473,9 +481,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # schedule
         sch_d = ScheduleData(
             id=schedule_id,
-            experiment=exp_d,
-            device=dev_d,
-            object=obj_d,
+            experiment=exp_d, device=dev_d, object=obj_d,
             datetime_start=start_datetime, datetime_finish=finish_datetime,
             sec_interval=sec_interval, sec_duration=sec_duration,
             sampling_rate=sampling_rate, file_format=file_format
