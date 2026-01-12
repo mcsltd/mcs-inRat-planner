@@ -75,7 +75,7 @@ class AboutDialog(QDialog):
         # description_label.setWordWrap(True)
 
         # Версия (бета)
-        version_label = QLabel("Версия v.0.0.2 - beta")
+        version_label = QLabel("Версия v.0.0.3 - beta")
         version_font = QFont("Arial")
         version_font.setPointSize(10)
         # version_font.setBold(True)
@@ -86,7 +86,7 @@ class AboutDialog(QDialog):
         right_layout.addStretch()
 
         # Название компании (в самом низу)
-        company_label = QLabel("© 2025 ООО \"Медицинские Компьютерные системы\"")
+        company_label = QLabel("© 2026 ООО \"Медицинские Компьютерные системы\"")
         company_font = QFont(FONT)
         company_font.setPointSize(9)
         company_label.setFont(company_font)
