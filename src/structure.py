@@ -31,8 +31,8 @@ class ScheduleData:
     object: ObjectData | None
     sec_duration: int
     sec_interval: int
-    datetime_start: datetime.datetime
-    datetime_finish: datetime.datetime
+    datetime_start: datetime.datetime | None
+    datetime_finish: datetime.datetime | None
     sampling_rate: int
     file_format: str
     id: UUID = field(default_factory=uuid.uuid4)

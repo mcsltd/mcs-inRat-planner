@@ -216,6 +216,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             start_time = schedule.datetime_start
             schedule_id = schedule.id
 
+            if start_time is None: # пропуск незапланированных расписаний
+                continue
             dt = datetime.timedelta(seconds=(schedule.sec_duration + schedule.sec_interval))
 
             # проверка на случай уже созданного расписания
@@ -270,7 +272,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
-
         # ToDo: проблема с обработкой
         self.scheduler.add_job(
             self._create_record,
@@ -360,7 +361,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             logger.info(f"Добавлено расписание: id={schedule_id}")
 
             time = schedule.datetime_start
-            self.create_job(schedule, start_time=time)
+            if time is not None:
+                self.create_job(schedule, start_time=time)
 
             # fill table Schedule
             self.update_content_table_schedule()
@@ -378,12 +380,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             schedule_id = schedule.id
             experiment_name = schedule.experiment.name
-            start_datetime = schedule.datetime_start
-            finish_datetime = schedule.datetime_finish
+            start_datetime = "Не установлено" if schedule.datetime_start is None else schedule.datetime_start
+            finish_datetime = "Не установлено" if schedule.datetime_finish is None else schedule.datetime_finish
             obj = schedule.object.name
             device = schedule.device.ble_name
 
-            status = self.ble_manager.get_device_status(device_id=schedule.device.id)
+            if schedule.datetime_finish is None or schedule.datetime_start is None:
+                status = ScheduleState.UNPLANNED.value
+            else:
+                status = self.ble_manager.get_device_status(device_id=schedule.device.id)
 
             interval = self.convert_seconds_to_str(schedule.sec_interval, mode="short")
             duration = self.convert_seconds_to_str(schedule.sec_duration, mode="short")
@@ -448,6 +453,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
 
+    # ToDo: сделать активным режим - незапланировано
     @connection
     def update_schedule(self, session) -> None:
         """ Обработчик кнопки изменения расписаний """
@@ -475,10 +481,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             next_run = job.next_run_time
             self.scheduler.pause_job(job_id=str(schedule_id))
         else:
-            #  на случай если расписание истекло
+            #  на случай если расписание истекло или незапланированно
             next_run = schedule_data.datetime_finish
 
-        if next_run.tzinfo is not None:
+        if next_run is not None:
             next_run = next_run.astimezone().replace(tzinfo=None)
 
         # открытие диалогового окна изменения параметров расписания
@@ -494,7 +500,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             has_schedule = Schedule.find([Schedule.id == schedule.id], session)
             if has_schedule is None:
                 raise ValueError(f"В базе данных не найдено расписание с индексом: {schedule.id}")
-            has_schedule.update(session, **schedule_data_new.to_dict_with_ids())
+            data = schedule_data_new.to_dict_with_ids()
+            has_schedule.update(session, **data)
             logger.info("Расписание было добавлено в базу данных и таблицу")
 
             start_time = next_run
@@ -502,10 +509,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if schedule_data.datetime_start != schedule_data_new.datetime_start:
                 start_time = schedule_data_new.datetime_start
 
-            job = self.scheduler.get_job(str(schedule_id))
-            if job is not None:
-                self.scheduler.remove_job(job_id=str(schedule_id))
-            self.create_job(schedule_data_new, start_time=start_time)
+            if start_time is not None:
+                job = self.scheduler.get_job(str(schedule_id))
+                if job is not None:
+                    self.scheduler.remove_job(job_id=str(schedule_id))
+                self.create_job(schedule_data_new, start_time=start_time)
 
             # fill table Schedule
             self.update_content_table_schedule()
@@ -603,7 +611,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @connection
     def clicked_schedule(self, index, session):
         """ Обработчик двойного нажатия на строку в таблице Schedule """
-
         raw_data = self.tableModelSchedule.get_selected_data()
         schedule_id = raw_data[0]
 
@@ -626,27 +633,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             dlg.exec()
             return
 
-        job = self.scheduler.get_job(job_id=str(schedule_id))
-        if job is None:
-            DialogHelper.show_confirmation_dialog(
-                self,
-                title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
-                icon=QMessageBox.Icon.Critical, btn_no=False
-            )
-            return
+        job, str_time = None, None
+        if schedule_data.datetime_start is not None or schedule_data.datetime_finish is not None:
+            job = self.scheduler.get_job(job_id=str(schedule_id))
+            if job is None:
+                DialogHelper.show_confirmation_dialog(
+                    self,
+                    title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
+                    icon=QMessageBox.Icon.Critical, btn_no=False
+                )
+                return
 
-        next_run = job.next_run_time.replace(microsecond=0)
-        if next_run.tzinfo is not None:
-            next_run = next_run.astimezone().replace(tzinfo=None)
+            next_run = job.next_run_time.replace(microsecond=0)
+            if next_run.tzinfo is not None:
+                next_run = next_run.astimezone().replace(tzinfo=None)
 
-        str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
+            str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
+
         if schedule_data.device.model == Devices.INRAT.value["InRat"]:
+            if job is not None:
+                text_message = f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}."
+            else:
+                text_message = f"Не задано расписание для объекта \"{schedule_data.object.name}\"."
+
             if DialogHelper.show_action_dialog(
                     parent=self, title=f"Информация о расписании",
-                    message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
+                    message=text_message,
             ):
-                # постановка расписания на паузу, если пользователь выбрал ручной режим
-                job.pause()
+                if job is not None:
+                    # постановка расписания на паузу, если пользователь выбрал ручной режим
+                    job.pause()
 
                 try:
                     dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
@@ -655,12 +671,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 except Exception as exp:
                     logger.error(f"Ошибка при запуске ручного режима для InRat: {exp}")
                 finally:
-                    # активация задачи
-                    if datetime.datetime.now() > next_run:
-                        next_run = datetime.datetime.now() + datetime.timedelta(seconds=10)
-                    job.resume()
-                    job.modify(next_run_time=next_run)
-
+                    if job is not None:
+                        # активация задачи
+                        if datetime.datetime.now() > next_run:
+                            next_run = datetime.datetime.now() + datetime.timedelta(seconds=10)
+                        job.resume()
+                        job.modify(next_run_time=next_run)
 
         if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
             DialogHelper.show_confirmation_dialog(
@@ -808,7 +824,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return f"{minutes:02d}" if secs == 0 else f"{minutes:02d}:{secs:02d}"
             else:
                 return f"00:{secs:02d}"
-
 
 
 if __name__ == "__main__":
