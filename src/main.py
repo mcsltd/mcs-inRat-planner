@@ -387,6 +387,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if schedule.datetime_finish is None or schedule.datetime_start is None:
                 status = ScheduleState.UNPLANNED.value
+            elif schedule.datetime_finish < datetime.datetime.now():
+                status = ScheduleState.EXPIRED.value
             else:
                 status = self.ble_manager.get_device_status(device_id=schedule.device.id)
 
@@ -618,14 +620,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule = Schedule.find([Schedule.id == schedule_id], session)
         if schedule is None:
             DialogHelper.show_confirmation_dialog(
-                self,
-                title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
+                self, title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
                 icon=QMessageBox.Icon.Critical, btn_no=False
             )
             return
 
         schedule_data: ScheduleData = schedule.to_dataclass(session)
-        # запуск просмотра стрима сигнала с устройства, если с устройства записывается сигнал
+
+        # запуск просмотра стрима сигнала с устройства
         device_id = schedule_data.device.id
         if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
             dlg = BLESignalViewer(schedule_data=schedule_data)
@@ -635,31 +637,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         job, str_time = None, None
         if schedule_data.datetime_start is not None or schedule_data.datetime_finish is not None:
-            job = self.scheduler.get_job(job_id=str(schedule_id))
-            if job is None:
-                DialogHelper.show_confirmation_dialog(
-                    self,
-                    title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
-                    icon=QMessageBox.Icon.Critical, btn_no=False
-                )
-                return
-
-            next_run = job.next_run_time.replace(microsecond=0)
-            if next_run.tzinfo is not None:
-                next_run = next_run.astimezone().replace(tzinfo=None)
-
-            str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
+            # проверка на истечение времени
+            if not(schedule_data.datetime_finish < datetime.datetime.now()):
+                job = self.scheduler.get_job(job_id=str(schedule_id))
+                if job is None:
+                    DialogHelper.show_confirmation_dialog(self, title="Ошибка", message="Не найдено расписание записи ЭКГ",
+                                                          yes_text="Ok", icon=QMessageBox.Icon.Critical, btn_no=False)
+                    return
+                next_run = job.next_run_time.replace(microsecond=0)
+                if next_run.tzinfo is not None:
+                    next_run = next_run.astimezone().replace(tzinfo=None)
+                str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
 
         if schedule_data.device.model == Devices.INRAT.value["InRat"]:
             if job is not None:
                 text_message = f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}."
-            else:
+            elif schedule_data.datetime_start is None or schedule_data.datetime_finish is None:
                 text_message = f"Не задано расписание для объекта \"{schedule_data.object.name}\"."
+            elif schedule_data.datetime_finish < datetime.datetime.now():
+                text_message = f"Расписание регистрации ЭКГ для объекта \"{schedule_data.object.name}\" истекло."
 
-            if DialogHelper.show_action_dialog(
-                    parent=self, title=f"Информация о расписании",
-                    message=text_message,
-            ):
+            if DialogHelper.show_action_dialog(parent=self, title=f"Информация о расписании", message=text_message,):
                 if job is not None:
                     # постановка расписания на паузу, если пользователь выбрал ручной режим
                     job.pause()
