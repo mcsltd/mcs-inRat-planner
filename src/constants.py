@@ -78,6 +78,7 @@ class ScheduleState(Enum):
     ACQUISITION = "Регистрация ЭКГ"
     DISCONNECT = "Ожидание"
     UNPLANNED = "Не запланировано"
+    EXPIRED = "Истекло"
 
 MONTHS = {
         1: "янв", 2: "фев", 3: "мар", 4: "апр", 5: "май", 6: "июн",
