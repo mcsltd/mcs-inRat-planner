@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt, QSize
 from config import PATH_TO_ICON_MCS
 from resources.v1.dlg_show_licenses import Ui_DlgLicenses
 
-from src.config import PATH_TO_LICENSES
+from config import PATH_TO_LICENSES
 
 FONT = "Arial"
 

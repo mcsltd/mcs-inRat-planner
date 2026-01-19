@@ -10,8 +10,8 @@ from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
 from transliterate import detect_language, translit
 
-from src.constants import RecordStatus
-from src.structure import RecordData
+from constants import RecordStatus
+from structure import RecordData
 
 logger = logging.getLogger(__name__)
 
