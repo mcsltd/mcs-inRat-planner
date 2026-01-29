@@ -79,6 +79,7 @@ class InRatStorage(QObject):
 
         if self._format == "WFDB":
             self.save_to_wfdb(filename=filename, write_dir=write_dir)
+            filename = f"{write_dir}\\{filename}"
 
         if self._format == "EDF":
             filename = f"{write_dir}\\{filename}.edf"

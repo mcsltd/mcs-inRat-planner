@@ -70,7 +70,13 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
     def load_record(self, record_data: RecordData):
         """Загрузка сохраненных данных из EDF файла и отображение на графике"""
 
-        if not os.path.exists(record_data.path):
+        if record_data.file_format == "WFDB":
+            if not os.path.exists(f"{record_data.path}.hea") or not os.path.exists(f"{record_data.path}.dat"):
+                self._show_error(f"Файл не найден: {record_data.path}")
+                self.accept()
+                return
+
+        if record_data.file_format == "EDF" and not os.path.exists(record_data.path):
             self._show_error(f"Файл не найден: {record_data.path}")
             self.accept()
             return
@@ -150,7 +156,6 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
             base_path = file_path
             if file_path.endswith('.dat') or file_path.endswith('.hea'):
                 base_path = file_path[:-4]
-
             # Читаем запись с помощью wfdb
             record = wfdb.rdrecord(base_path)
 
