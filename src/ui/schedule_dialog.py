@@ -4,26 +4,27 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer, Qt
-from PySide6.QtGui import QIcon, QIntValidator
+from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer, Qt, QRegularExpression
+from PySide6.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QMessageBox, QWidget
 
-from db.database import connection
-from db.models import Experiment, Object, Device
-from db.queries import get_experiments
+from src.db.database import connection
+from src.db.models import Experiment, Object, Device
+from src.db.queries import get_experiments
 
-from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
-from constants import Formats, Devices
+from src.structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+from src.constants import Formats, Devices
 
-from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
-from ui.experiment_dialog import DlgCreateExperiment
+from src.resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from src.ui.experiment_dialog import DlgCreateExperiment
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
+    MAX_LENGTH_OBJECT = 30
     signal_add_experiment = Signal()
 
     def __init__(self, schedule: ScheduleData | None = None, *args, **kwargs):
@@ -43,6 +44,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         validator = QIntValidator(0, 9999, self)
         self.LineEditSnDevice.setMaxLength(4)
         self.LineEditSnDevice.setValidator(validator)
+
+        # валидатор для вводимых символов в поле Объект исследования
+        pattern = r'^[a-zA-Zа-яА-ЯёЁ0-9\s\-_\.\,]*$'
+        object_validator = QRegularExpressionValidator(QRegularExpression(pattern))
+        self.LineEditObject.setMaxLength(self.MAX_LENGTH_OBJECT)
+        self.LineEditObject.setValidator(object_validator)
+        self.LineEditObject.setToolTip("Запрещены символы: {}[]@#$;^*-=|\\/'?%\"!`")
 
         # setup datetime edit
         self.dateTimeEditStartExperiment.setCalendarPopup(True)
@@ -81,7 +89,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.init_timer()
 
     def _disable_scheduling_time(self, state: Qt.CheckState):
-
         if state == Qt.CheckState.Checked.value:
             logger.debug("Отключено планирование расписания")
             self.labelStarTime.setDisabled(True)
@@ -107,7 +114,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
                      self.default_schedule.datetime_finish is None)):
                 self.reset_time()
                 self.init_timer()
-
 
     def init_timer(self):
         self.timer_update = QTimer()
