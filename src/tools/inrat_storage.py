@@ -10,8 +10,8 @@ from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
 from transliterate import detect_language, translit
 
-from constants import RecordStatus
-from structure import RecordData
+from src.constants import RecordStatus
+from src.structure import RecordData
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class InRatStorage(QObject):
         if self._format == "EDF":
             filename = f"{write_dir}\\{filename}.edf"
             self.save_to_edf(filename=filename)
-        
+
         # оповещение окна ручного режима о сделанной записи
         record_data = RecordData(datetime_start=datetime_st, sec_duration=int(len(self.signal) / self._fs),
                                  file_format=self._format, sampling_rate=self._fs, status=RecordStatus.OK.value,
@@ -115,7 +115,6 @@ class InRatStorage(QObject):
         else:
             logger.info(f"Файл в формате WFDB {filename} успешно записан!")
 
-
     def save_to_edf(self, filename: str):
         """ Сохранение полученного сигнала в EDF формате """
         try:
@@ -144,10 +143,9 @@ class InRatStorage(QObject):
         else:
             logger.info(f"Файл в формате EDF {filename} успешно записан!")
 
-
     def get_record_filename(self, experiment: str, obj_name: str, start_time: datetime.datetime) -> str:
-        experiment = self.to_latin(experiment)
-        obj_name = self.to_latin(obj_name)
+        experiment = self.to_latin(experiment).replace(".", "_").replace(",", "_").replace(" ", "_")
+        obj_name = self.to_latin(obj_name).replace(".", "_").replace(",", "_").replace(" ", "_")
         str_start_date = f"{start_time.year}-{start_time.month}-{start_time.day}"
         str_start_time = f"{start_time.hour}-{start_time.minute}-{start_time.second}"
         filename = f"{experiment}_{obj_name}_{str_start_date}_{str_start_time}"

@@ -12,6 +12,7 @@ from transliterate import detect_language, translit
 
 from constants import Formats, RecordStatus
 from structure import RecordingTaskData, RecordData
+from src.config import SAVE_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ class Storage(QObject):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.path_to_save = os.path.abspath(SAVE_DIR)
 
         self._devices_id: set[UUID] = set()
         self._recording_task_data: dict[UUID, np.ndarray] = {}
@@ -78,12 +81,12 @@ class Storage(QObject):
         )
         start_time = datetime.datetime.fromtimestamp(acquisition_start_time).replace(microsecond=0)
 
-        write_dir = f".\\data\\{device_name}\\"
+        write_dir = f"{self.path_to_save}\\{device_name}\\"
         filename = self.get_record_filename(experiment=experiment, obj_name=obj_name, start_time=start_time)
 
         path_to_file = None
         if file_format == list(Formats.EDF.value.values())[0]:
-            write_dir += "EDF\\"
+            # write_dir += r"EDF\"
             # create dir for saving files with selected format
             os.makedirs(write_dir, exist_ok=True)
             path_to_file = self._save_to_edf(
@@ -92,7 +95,7 @@ class Storage(QObject):
             )
 
         elif file_format == list(Formats.WFDB.value.values())[0]:
-            write_dir += "WFDB\\"
+            # write_dir += r"WFDB\"
             os.makedirs(write_dir, exist_ok=True)
             path_to_file = self._save_to_wfdb(
                 filename=filename, write_dir=write_dir,
@@ -164,7 +167,7 @@ class Storage(QObject):
                 sig_name=["ECG"], write_dir=write_dir, base_datetime=start_time,
             )
             logger.debug("Сигнал ЭКГ сохранен в WFDB формате")
-            path_to_save = f"{write_dir}\\{filename}.hea"
+            path_to_save = rf"{write_dir}\\{filename}"
         except Exception as exc:
             logger.error("Ошибка записи сигнала ЭКГ в формат WFDB")
         return path_to_save
@@ -175,8 +178,8 @@ class Storage(QObject):
         del self._recording_task_property[device_id]
 
     def get_record_filename(self, experiment: str, obj_name: str, start_time: datetime.datetime) -> str:
-        experiment = self.to_latin(experiment)
-        obj_name = self.to_latin(obj_name)
+        experiment = self.to_latin(experiment).replace(".", "_").replace(",", "_").replace(" ", "_")
+        obj_name = self.to_latin(obj_name).replace(".", "_").replace(",", "_").replace(" ", "_")
         str_start_date = f"{start_time.year}-{start_time.month}-{start_time.day}"
         str_start_time = f"{start_time.hour}-{start_time.minute}-{start_time.second}"
         filename = f"{experiment}_{obj_name}_{str_start_date}_{str_start_time}"
