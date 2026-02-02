@@ -6,14 +6,14 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox,
     QSpinBox, QSpacerItem, QSizePolicy, QPushButton, QMessageBox, QTableView, QLabel)
 
-from db.database import connection
-from db.models import Schedule, Experiment
-from resources.v1.frm_localConfig import Ui_FrmMainConfig
-from tools.modview import GenericTableWidget
-from ui.experiment_dialog import DlgCreateExperiment
-from ui.helper_dialog import DialogHelper
+from src.db.database import connection
+from src.db.models import Schedule, Experiment
+from src.resources.v1.frm_localConfig import Ui_FrmMainConfig
+from src.tools.modview import GenericTableWidget
+from src.ui.experiment_dialog import DlgCreateExperiment
+from src.ui.helper_dialog import DialogHelper
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
 class ConfigSignals(QObject):
     """ Сигналы настроек """
@@ -62,9 +62,7 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
         self.signals = ConfigSignals()
 
         self._idx_selected_widget = 0
-        self.widgets = [
-            WidgetCfgGeneral(self, cnt_device), WidgetCfgExperiment(self)
-        ]
+        self.widgets = [WidgetCfgGeneral(self, cnt_device), WidgetCfgExperiment(self)]
         self.set_widgets()
 
         self.listWidget.clicked.connect(self.setup_widget)
@@ -360,95 +358,6 @@ class WidgetCfgExperiment(WidgetCfg):
         return super().eventFilter(watched, event)
 
 
-
-"""class WidgetCfgDevice(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Устройства"
-        self.setup_ui()
-        self.set_data_table()
-        self.setup_ble_settings()
-
-    @connection
-    def set_data_table(self, session):
-        columns = ["№", "Название"]
-        data = []
-        devices = Device.fetch_all(session)
-        for idx, d in enumerate(devices):
-            d = d.to_dataclass()
-            data.append([idx + 1, d.ble_name])
-
-
-    def setup_ble_settings(self):
-        # Группа настроек подключения BLE
-        self.ble_connection_group = QGroupBox("Настройки подключения BLE устройств")
-        ble_connection_layout = QVBoxLayout(self.ble_connection_group)
-
-        # Настройка максимального количества подключений
-        connection_limit_layout = QHBoxLayout()
-        self.label_cnt_device = QLabel("Максимальное количество подключаемых устройств:")
-        connection_limit_layout.addWidget(self.label_cnt_device)
-
-        self.connection_spinbox = QSpinBox()
-        self.connection_spinbox.setRange(1, 4)
-        self.connection_spinbox.setValue(2)
-        self.connection_spinbox.setSuffix(" устройств")
-        self.connection_spinbox.setFixedWidth(120)
-        connection_limit_layout.addWidget(self.connection_spinbox)
-
-        self.v_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        connection_limit_layout.addStretch()
-        ble_connection_layout.addLayout(connection_limit_layout)
-
-        # Поясняющая надпись
-        info_label = QLabel("• Увеличение количества может повлиять на стабильность работы")
-        info_label.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
-        ble_connection_layout.addWidget(info_label)
-
-        self.verticalLayout.insertWidget(1, self.ble_connection_group)
-        self.verticalLayout.insertItem(2, self.v_spacer)"""
-
-"""class WidgetCfgSchedule(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Расписания"
-        self.setup_ui()
-        self.set_data_table()
-
-    @connection
-    def set_data_table(self, session):
-        data = []
-        columns = ["№", "Эксперимент", "Дата начала", "Дата окончания", "Длительность\nзаписи", "Периодичность\nзаписи"]
-        schedules = Schedule.fetch_all(session)
-        for idx, sch in enumerate(schedules):
-            sch = sch.to_dataclass(session)
-            data.append([idx + 1,
-                         sch.experiment.name,
-                         sch.datetime_start,
-                         sch.datetime_finish,
-                         self.convert_seconds_to_str(sch.sec_interval),
-                         self.convert_seconds_to_str(sch.sec_duration)]
-            )
-        # self.table.setData(data=data, description=columns)"""
-"""
-class WidgetCfgObject(WidgetCfg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = "Объекты"
-        self.setup_ui()
-        self.set_data_table()
-
-    @connection
-    def set_data_table(self, session):
-        data = []
-        columns = ["№", "Название"]
-        objs = Object.fetch_all(session)
-        for idx, obj in enumerate(objs):
-            obj = obj.to_dataclass()
-            data.append([idx + 1, obj.name])
-        # self.table.setData(data=data, description=columns)
-"""
 
 if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication, QLabel, QWidget, QDialog
