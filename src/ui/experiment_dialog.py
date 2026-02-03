@@ -2,11 +2,11 @@ from PySide6.QtWidgets import QMessageBox, QDialog, QWidget
 from PySide6.QtGui import QIcon, QRegularExpressionValidator
 from PySide6.QtCore import QRegularExpression
 
-from src.db.database import connection
-from src.db.models import Experiment
+from db.database import connection
+from db.models import Experiment
 
-from src.resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
-from src.structure import ExperimentData
+from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
+from structure import ExperimentData
 
 PATH_TO_ICON = "resources/v1/icon_app.svg"
 

@@ -1,9 +1,9 @@
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog
 
-from src.config import PATH_TO_ICON
-from src.resources.v1.widget_crud_experiment import Ui_WidgetCrudExperiment
-from src.ui.settings_dialog import WidgetCfgExperiment, ConfigSignals
+from config import PATH_TO_ICON
+from resources.v1.widget_crud_experiment import Ui_WidgetCrudExperiment
+from ui.settings_dialog import WidgetCfgExperiment, ConfigSignals
 
 
 class ExperimentCRUDWidget(QDialog, Ui_WidgetCrudExperiment):
