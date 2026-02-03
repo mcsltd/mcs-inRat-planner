@@ -5,25 +5,26 @@ import threading
 import time
 
 import numpy as np
-from PySide6.QtCore import Signal, QTimer
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtCore import Signal, QTimer, Qt, QSize
+from PySide6.QtWidgets import QFileDialog, QVBoxLayout, QProgressBar, QSizePolicy, QLabel, QMessageBox, QPushButton, \
+    QHBoxLayout, QSpacerItem, QDialogButtonBox
 from PySide6 import QtCore
 
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from config import SAVE_DIR
-from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
-from device.inrat.inrat import InRat
-from device.inrat.structures import InRatSettings
-from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
-from structure import ScheduleData
-from tools.inrat_storage import InRatStorage
-from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
+from src.config import SAVE_DIR, PATH_TO_ICON
+from src.device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
+from src.device.inrat.inrat import InRat
+from src.device.inrat.structures import InRatSettings
+from src.resources.v1.dlg_inrat_controller import Ui_DlgInRatController
+from src.structure import ScheduleData
+from src.tools.inrat_storage import InRatStorage
+from src.util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
-from structure import RecordData
+from src.structure import RecordData
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
@@ -115,6 +116,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
     signal_stop_recording = Signal()
     signal_record_saved = Signal(object)
 
+    signal_show_dialog = Signal()
+    signal_close_dialog = Signal()
+
+    signal_show_info_dialog = Signal()
+
     signal_accept_data = Signal(object)
 
     def __init__(self, schedule_data: ScheduleData, parent = None,  *args, **kwargs):
@@ -156,6 +162,15 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.recording_timer = QTimer()
         self.recording_timer.setInterval(1000)
 
+        # waiting dialog
+        self.dlg_waiting_connection = WaitingDialog(name=self.schedule_data.device.ble_name)
+        self.signal_show_dialog.connect(self.dlg_waiting_connection.show)
+        self.signal_close_dialog.connect(self.dlg_waiting_connection.close)
+
+        # info dialog
+        self.dlg_info_connection = InfoConnectionDialog(name=self.schedule_data.device.ble_name, icon_path=PATH_TO_ICON)
+        self.signal_show_info_dialog.connect(self.dlg_info_connection.show)
+
         # signals
         self.storage.signal_record_saved.connect(self._on_record_saved)
         self.recording_timer.timeout.connect(self._on_timeout_expired)
@@ -168,7 +183,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxFormat.currentIndexChanged.connect(self._on_format_changed)
         self.pushButtonStartRecording.clicked.connect(self._start_recording)
         self.pushButtonStopRecording.clicked.connect(self._stop_recording)
-
 
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
@@ -255,7 +269,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         """ Создание цикла событий для работы с устройством"""
         self._loop = asyncio.new_event_loop()
         self._loop.set_debug(True)
-        asyncio.set_event_loop(self._loop)
+        # asyncio.set_event_loop(self._loop)
 
         self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
         self._loop_thread.start()
@@ -289,29 +303,40 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _device_connection_impl(self):
         """ Соединение с устройством  """
-        self.pushButtonConnection.setEnabled(False)
+        self.signal_show_dialog.emit()
 
-        device = await self._find_device()
+        try:
+            self.pushButtonConnection.setEnabled(False)
 
-        if device is None:
-            logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено")
-            self.pushButtonConnection.setEnabled(True)
-            return
+            device = await self._find_device()
 
-        if await self._connect_device(device):
-            status = await self.device.get_status()
-            self._set_mode_combobox(mode=status.Activated)
+            if device is None:
+                logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено")
+                self.pushButtonConnection.setEnabled(True)
+                return
 
-            # активация при подключении устройства
-            self.pushButtonStart.setEnabled(True)
-            self.pushButtonDisconnect.setEnabled(True)
-            # деактивация при подключении устройства
-            self.comboBoxMode.setEnabled(True)
-            self.comboBoxSampleFreq.setEnabled(True)
-            self.pushButtonDisconnect.setEnabled(True)
+            if await self._connect_device(device):
+                status = await self.device.get_status()
+                self._set_mode_combobox(mode=status.Activated)
 
-        else:
-            self.pushButtonConnection.setEnabled(True)
+                # активация при подключении устройства
+                self.pushButtonStart.setEnabled(True)
+                self.pushButtonDisconnect.setEnabled(True)
+                # деактивация при подключении устройства
+                self.comboBoxMode.setEnabled(True)
+                self.comboBoxSampleFreq.setEnabled(True)
+                self.pushButtonDisconnect.setEnabled(True)
+
+            else:
+                self.pushButtonConnection.setEnabled(True)
+        except:
+            ...
+        finally:
+            self.signal_close_dialog.emit()
+
+            if self.device is None or not self.device.is_connected:
+                self.device = None
+                self.signal_show_info_dialog.emit()
 
     async def _find_device(self) -> BLEDevice | None:
         """ Поиск устройства """
@@ -341,8 +366,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self._run_async_loop()
 
         future = asyncio.run_coroutine_threadsafe(
-            self._disconnect_device(),
-            self._loop
+            self._disconnect_device(), self._loop
         )
 
     async def _disconnect_device(self):
@@ -608,3 +632,91 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             pass
         except Exception as e:
             logger.debug(f"Ошибка при отмене задач: {e}")
+
+
+class WaitingDialog(QDialog):
+
+    def __init__(self, name: str, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Поиск и подключение к {name}")
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowIcon(QIcon(PATH_TO_ICON))
+
+        font = QFont()
+        font.setPointSize(10)
+
+        self.setFixedSize(300, 150)
+        layout = QVBoxLayout()
+
+        self.label = QLabel(f"Идёт поиск и подключение к {name}...")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setFont(font)
+
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 0)
+
+        self.progress.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        layout.setContentsMargins(10, 10, 10, 10)  # Добавляем отступы
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.progress)
+
+        self.setLayout(layout)
+
+
+
+class InfoConnectionDialog(QDialog):
+    def __init__(self, name, icon_path):
+        super().__init__(parent=None)
+        self.setWindowTitle(f"Информация о соединении с {name}")
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowIcon(QIcon(icon_path))
+
+        self.setMinimumSize(300, 120)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(15)
+
+        text_layout = QHBoxLayout()
+
+        # Создаем и настраиваем метку с текстом
+        self.label = QLabel(
+            f"Не удалось подключиться к {name}.\nПовторите попытку подключения."
+        )
+        self.label.setTextFormat(Qt.TextFormat.RichText)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignCenter)
+
+        # Настраиваем шрифт
+        font = QFont()
+        font.setPointSize(10)
+        self.label.setFont(font)
+
+        # Разрешаем перенос текста
+        self.label.setWordWrap(True)
+        self.label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        text_layout.addWidget(self.label)
+        # text_layout.addStretch()  # Добавляем растягивающийся элемент справа
+
+        main_layout.addLayout(text_layout)
+
+        # Добавляем вертикальный спейсер для отступа
+        main_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+
+        # Создаем QDialogButtonBox с кнопкой OK
+        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        self.button_box.accepted.connect(self.accept)
+
+        # Устанавливаем фиксированную высоту для кнопок
+        self.button_box.setFixedHeight(30)
+
+        # Настраиваем размеры кнопок внутри button box
+        for button in self.button_box.buttons():
+            button.setMinimumSize(40, 30)
+
+        main_layout.addWidget(self.button_box)
+
+    def accept(self):
+        """Переопределяем метод accept для закрытия диалога"""
+        super().accept()
