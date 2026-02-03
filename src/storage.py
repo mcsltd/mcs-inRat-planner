@@ -12,7 +12,7 @@ from transliterate import detect_language, translit
 
 from constants import Formats, RecordStatus
 from structure import RecordingTaskData, RecordData
-from src.config import SAVE_DIR
+from config import SAVE_DIR
 
 logger = logging.getLogger(__name__)
 

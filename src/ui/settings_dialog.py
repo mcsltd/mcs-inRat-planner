@@ -6,12 +6,12 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QWidget, QHBoxLayout, QGroupBox,
     QSpinBox, QSpacerItem, QSizePolicy, QPushButton, QMessageBox, QTableView, QLabel)
 
-from src.db.database import connection
-from src.db.models import Schedule, Experiment
-from src.resources.v1.frm_localConfig import Ui_FrmMainConfig
-from src.tools.modview import GenericTableWidget
-from src.ui.experiment_dialog import DlgCreateExperiment
-from src.ui.helper_dialog import DialogHelper
+from db.database import connection
+from db.models import Schedule, Experiment
+from resources.v1.frm_localConfig import Ui_FrmMainConfig
+from tools.modview import GenericTableWidget
+from ui.experiment_dialog import DlgCreateExperiment
+from ui.helper_dialog import DialogHelper
 
 from src.config import PATH_TO_ICON
 

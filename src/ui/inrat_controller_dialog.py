@@ -15,14 +15,14 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from src.config import SAVE_DIR, PATH_TO_ICON
-from src.device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
-from src.device.inrat.inrat import InRat
-from src.device.inrat.structures import InRatSettings
-from src.resources.v1.dlg_inrat_controller import Ui_DlgInRatController
-from src.structure import ScheduleData
-from src.tools.inrat_storage import InRatStorage
-from src.util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
+from config import SAVE_DIR, PATH_TO_ICON
+from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
+from device.inrat.inrat import InRat
+from device.inrat.structures import InRatSettings
+from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
+from structure import ScheduleData
+from tools.inrat_storage import InRatStorage
+from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
 from src.structure import RecordData
 
@@ -680,43 +680,34 @@ class InfoConnectionDialog(QDialog):
 
         text_layout = QHBoxLayout()
 
-        # Создаем и настраиваем метку с текстом
         self.label = QLabel(
             f"Не удалось подключиться к {name}.\nПовторите попытку подключения."
         )
         self.label.setTextFormat(Qt.TextFormat.RichText)
         self.label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignCenter)
 
-        # Настраиваем шрифт
         font = QFont()
         font.setPointSize(10)
         self.label.setFont(font)
 
-        # Разрешаем перенос текста
         self.label.setWordWrap(True)
         self.label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         text_layout.addWidget(self.label)
-        # text_layout.addStretch()  # Добавляем растягивающийся элемент справа
 
         main_layout.addLayout(text_layout)
 
-        # Добавляем вертикальный спейсер для отступа
         main_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
-        # Создаем QDialogButtonBox с кнопкой OK
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
         self.button_box.accepted.connect(self.accept)
 
-        # Устанавливаем фиксированную высоту для кнопок
         self.button_box.setFixedHeight(30)
 
-        # Настраиваем размеры кнопок внутри button box
         for button in self.button_box.buttons():
             button.setMinimumSize(40, 30)
 
         main_layout.addWidget(self.button_box)
 
     def accept(self):
-        """Переопределяем метод accept для закрытия диалога"""
         super().accept()
