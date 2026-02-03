@@ -13,7 +13,7 @@ from tools.modview import GenericTableWidget
 from ui.experiment_dialog import DlgCreateExperiment
 from ui.helper_dialog import DialogHelper
 
-from src.config import PATH_TO_ICON
+from config import PATH_TO_ICON
 
 class ConfigSignals(QObject):
     """ Сигналы настроек """

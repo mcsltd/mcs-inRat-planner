@@ -24,7 +24,7 @@ from structure import ScheduleData
 from tools.inrat_storage import InRatStorage
 from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
-from src.structure import RecordData
+from structure import RecordData
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
