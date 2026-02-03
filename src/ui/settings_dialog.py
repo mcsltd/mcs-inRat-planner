@@ -62,7 +62,10 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
         self.signals = ConfigSignals()
 
         self._idx_selected_widget = 0
-        self.widgets = [WidgetCfgGeneral(self, cnt_device), WidgetCfgExperiment(self)]
+        self.widgets = [
+            WidgetCfgGeneral(self, cnt_device),
+        #     WidgetCfgExperiment(self)
+        ]
         self.set_widgets()
 
         self.listWidget.clicked.connect(self.setup_widget)
