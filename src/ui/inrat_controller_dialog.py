@@ -151,7 +151,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.display = DisplaySignal(self)
         self.setup_combobox()
         self.verticalLayoutPlot.addWidget(self.display)
-        # self.lineEditSave.setText(self.storage.path_to_save)
 
         # timer
         self.recording_timer = QTimer()
@@ -167,8 +166,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
         self.comboBoxMode.currentIndexChanged.connect(self._on_mode_changed)
         self.comboBoxFormat.currentIndexChanged.connect(self._on_format_changed)
-        # self.pushButtonSelectDirSave.clicked.connect(self._on_save_dir_changed)
-        # self.pushButtonShowRecords.clicked.connect(self._on_save_dir_clicked)
         self.pushButtonStartRecording.clicked.connect(self._start_recording)
         self.pushButtonStopRecording.clicked.connect(self._stop_recording)
 
@@ -611,18 +608,3 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             pass
         except Exception as e:
             logger.debug(f"Ошибка при отмене задач: {e}")
-
-    # # настройка параметров сохранения
-    # def _on_save_dir_changed(self):
-    #     """ Изменение места сохранения, по умолчанию data/ble_device/"""
-    #     logger.debug("Изменено место сохранения")
-    #
-    #     path_to_save = QFileDialog.getExistingDirectory(
-    #         self,
-    #         "Выбор места сохранения",
-    #         # self.storage.path_to_save,
-    #         "",
-    #         QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
-    #     )
-    #     self.storage.set_save_dir(path_to_save)
-    #     self.lineEditSave.setText(path_to_save)

@@ -178,7 +178,14 @@
     <addaction name="actionLicenses"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="manage">
+    <property name="title">
+     <string>Управление</string>
+    </property>
+    <addaction name="actionExperiments"/>
+   </widget>
    <addaction name="file"/>
+   <addaction name="manage"/>
    <addaction name="help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -200,6 +207,11 @@
   <action name="actionLicenses">
    <property name="text">
     <string>Сведения о лицензиях</string>
+   </property>
+  </action>
+  <action name="actionExperiments">
+   <property name="text">
+    <string>Эксперименты</string>
    </property>
   </action>
  </widget>
