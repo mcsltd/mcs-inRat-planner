@@ -144,7 +144,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Удалить</string>
+           <string>Архивировать</string>
           </property>
          </widget>
         </item>
