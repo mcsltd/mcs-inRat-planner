@@ -8,17 +8,17 @@ from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer, Qt, QRegular
 from PySide6.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QMessageBox, QWidget
 
-from db.database import connection
-from db.models import Experiment, Object, Device
-from db.queries import get_experiments
+from src.db.database import connection
+from src.db.models import Experiment, Object, Device
+from src.db.queries import get_experiments
 
-from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
-from constants import Formats, Devices
+from src.structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+from src.constants import Formats, Devices
 
-from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
-from ui.experiment_dialog import DlgCreateExperiment
+from src.resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from src.ui.experiment_dialog import DlgCreateExperiment
 
-from config import PATH_TO_ICON
+from src.config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +59,10 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
         self.fill_combobox_experiment()
 
-        self.fill_combobox(self.comboBoxModelDevice, Devices)
+        # self.fill_combobox(self.comboBoxModelDevice, Devices)
         self.fill_combobox(self.comboBoxFormat, Formats)
 
+        self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
         self.comboBoxDuration.addItems(["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
         self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
 
@@ -76,7 +77,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.pushButtonResetTime.clicked.connect(self.reset_time)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
         self.pushButtonCancel.clicked.connect(self.close)
-        self.comboBoxModelDevice.currentIndexChanged.connect(self._on_device_model_changed)
+        # self.comboBoxModelDevice.currentIndexChanged.connect(self._on_device_model_changed)
         self.checkBoxCancelSchedule.stateChanged.connect(self._disable_scheduling_time)
 
         self.pushButtonAddExperiment.hide()
@@ -121,20 +122,20 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.timer_update.timeout.connect(self._update_time_edit)
         self.timer_update.start()
 
-    def _on_device_model_changed(self):
-        """ Обработчик изменения модели устройства """
-        device_name = self.comboBoxModelDevice.currentText()
-        logger.info(f"Изменена модель устройства: {device_name}")
-
-        if device_name == "InRat":
-            logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
-            self.comboBoxSamplingRate.clear()
-            self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
-
-        elif device_name == "EMGsens":
-            logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
-            self.comboBoxSamplingRate.clear()
-            self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
+    # def _on_device_model_changed(self):
+    #     """ Обработчик изменения модели устройства """
+    #     device_name = "inRat"
+    #     logger.info(f"Изменена модель устройства: {device_name}")
+    #
+    #     if device_name == "InRat":
+    #         logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
+    #         self.comboBoxSamplingRate.clear()
+    #         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
+    #
+    #     elif device_name == "EMGsens":
+    #         logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
+    #         self.comboBoxSamplingRate.clear()
+    #         self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
 
     def on_start_datetime_changed(self):
         """ Обработка изменения даты со временем в окне ввода времени """
@@ -151,9 +152,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             start_time += datetime.timedelta(minutes=1)
 
             self.dateTimeEditStartExperiment.setDateTime(
-                QDateTime(
-                    QDate(start_time.year, start_time.month, start_time.day),
-                    QTime(start_time.hour, start_time.minute, start_time.second))
+                QDateTime(QDate(start_time.year, start_time.month, start_time.day),
+                          QTime(start_time.hour, start_time.minute, start_time.second))
             )
             logger.info(f"Изменено время начала записи ЭКГ: {str(start_time)}")
 
@@ -229,7 +229,8 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             return True
 
         sn = self.LineEditSnDevice.text().strip()
-        model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        # model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        model = "inRat-1-"
         name = f"{model}{sn}"
         if self._is_device_exists(name, session):
             self.show_error_message(title="Ошибка создания устройства", message=f"Устройство {name} уже существует")
@@ -304,9 +305,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.LineEditObject.setText(schedule.object.name)
 
         # model
-        models = {"EMG-SENS-": "EMGsens", "inRat-1-": "InRat"}
-        self.set_combobox_value(self.comboBoxModelDevice, models[schedule.device.model])
-        self.comboBoxModelDevice.currentIndexChanged.emit(-1)
+        # models = {"EMG-SENS-": "EMGsens", "inRat-1-": "InRat"}
+        # self.set_combobox_value(self.comboBoxModelDevice, models[schedule.device.model])
+        # self.comboBoxModelDevice.currentIndexChanged.emit(-1)
 
         # serial number
         self.LineEditSnDevice.setText(str(schedule.device.serial_number))
@@ -331,7 +332,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         }
         self.set_combobox_value(self.comboBoxFormat, formats[schedule.file_format])
 
-        self.comboBoxModelDevice.setDisabled(True)
+        # self.comboBoxModelDevice.setDisabled(True)
         self.LineEditObject.setDisabled(True)
         self.LineEditSnDevice.setDisabled(True)
         self.comboBoxExperiment.setDisabled(True)
@@ -404,11 +405,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         # set index
         self.comboBoxFormat.setCurrentIndex(0) # set EDF
-        self.comboBoxModelDevice.setCurrentIndex(0) # set InRat
-        self.comboBoxModelDevice.currentIndexChanged.emit(0)
+        # self.comboBoxModelDevice.setCurrentIndex(0) # set InRat
+        # self.comboBoxModelDevice.currentIndexChanged.emit(0)
+
+        logger.debug(f"Окно создания расписаний настроено под модель: inRat")
+        self.comboBoxSamplingRate.clear()
 
         self.comboBoxSamplingRate.setCurrentIndex(0)
-
         self.comboBoxDuration.setCurrentIndex(0)
         self.comboBoxInterval.setCurrentIndex(0)
 
@@ -463,7 +466,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             device_id = self.default_schedule.device.id
 
         device_sn = self.LineEditSnDevice.text().strip()
-        device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        # device_model = f"{list(self.comboBoxModelDevice.currentData().value.values())[0]}"
+        device_model = f"inRat-1-"
+
         dev_d: DeviceData = DeviceData(id=device_id, ble_name=f"{device_model}{device_sn}", model=device_model, serial_number=device_sn)
 
         start_datetime = None
@@ -495,18 +500,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         return sch_d
 
-    def convert_to_seconds_by_format(self, duration: str, time_format: str) -> int:
-        sec_duration = 0
-
-        if time_format == "[mm:ss]":    # duration
-            duration = "0:" + duration
-        if time_format == "[hh:mm]":    # interval
-            duration = duration + ":0"
-
-        time = duration.replace(":", " ").split()[::-1]
-        for i, t in enumerate(time):
-            sec_duration += int(t) * (60 ** i)
-        return sec_duration
 
     def convert_to_seconds_by_last_word(self, value: str):
         """ Конвертация в секунды по последнему слову """
@@ -523,17 +516,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             raise ValueError("Невозможно выполнить конвертацию в секунды")
 
         return seconds
-
-    def convert_seconds_to_str_by_format(self, seconds: int, time_format: str) -> str | None:
-        if time_format == "[mm:ss]":    # duration
-            s = seconds % 60
-            m = seconds // 60
-            return f"{m:02d}:{s:02d}"
-        if time_format == "[hh:mm]":    # interval
-            m = seconds // 60 % 60
-            h = seconds // 3600
-            return f"{h:02d}:{m:02d}"
-        return None
 
     def convert_seconds_with_identifier(self, seconds: int) -> str | None:
         minutes = seconds // 60
@@ -563,17 +545,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
                 return f"{hours} часа"
             else:
                 return f"{hours} часов"
-
-    @classmethod
-    def convertTimeIntoSeconds(cls, combobox: QComboBox, spinbox: QSpinBox) -> int:
-        crnt_unit = combobox.currentText()
-        if crnt_unit == "секунд":
-            return spinbox.value()
-        elif crnt_unit == "минут":
-            return spinbox.value() * 60
-        elif crnt_unit == "часов":
-            return spinbox.value() * (60 ** 2)
-        raise ValueError("Invalid data type")
 
     def closeEvent(self, event):
         logger.info("Close dialog window")

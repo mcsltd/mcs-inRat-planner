@@ -15,7 +15,7 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from device.ble_manager import BleManager
+from src.ble_manager import BleManager
 
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
@@ -601,8 +601,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         schedule = Schedule.find([Schedule.id == record_data.schedule_id], session)
         if schedule is None:
             DialogHelper.show_confirmation_dialog(
-                self,
-                title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
+                self,title="Ошибка", message="Не найдено расписание записи ЭКГ", yes_text="Ok",
                 icon=QMessageBox.Icon.Critical, btn_no=False
             )
             return
@@ -643,8 +642,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if not(schedule_data.datetime_finish < datetime.datetime.now()):
                 job = self.scheduler.get_job(job_id=str(schedule_id))
                 if job is None:
-                    DialogHelper.show_confirmation_dialog(self, title="Ошибка", message="Не найдено расписание записи ЭКГ",
-                                                          yes_text="Ok", icon=QMessageBox.Icon.Critical, btn_no=False)
+                    DialogHelper.show_confirmation_dialog(
+                        self, title="Ошибка", message="Не найдено расписание записи ЭКГ",
+                        yes_text="Ok", icon=QMessageBox.Icon.Critical, btn_no=False)
                     return
                 next_run = job.next_run_time.replace(microsecond=0)
                 if next_run.tzinfo is not None:
@@ -678,12 +678,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         job.resume()
                         job.modify(next_run_time=next_run)
 
-        if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
-            DialogHelper.show_confirmation_dialog(
-                parent=self, title=f"Информация о расписании",
-                message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
-                yes_text="Ok", btn_no=False
-            )
+        # if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
+        #     DialogHelper.show_confirmation_dialog(
+        #         parent=self, title=f"Информация о расписании",
+        #         message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
+        #         yes_text="Ok", btn_no=False
+        #     )
 
     def experiments_clicked(self):
         dlg = ExperimentCRUDWidget()

@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>488</width>
-    <height>574</height>
+    <width>492</width>
+    <height>582</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>320</y>
+     <y>330</y>
      <width>451</width>
      <height>191</height>
     </rect>
@@ -173,9 +173,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>150</y>
+     <y>170</y>
      <width>451</width>
-     <height>161</height>
+     <height>151</height>
     </rect>
    </property>
    <property name="title">
@@ -187,7 +187,7 @@
       <x>10</x>
       <y>30</y>
       <width>431</width>
-      <height>51</height>
+      <height>52</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayoutSchedule">
@@ -272,7 +272,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>130</y>
+      <y>120</y>
       <width>431</width>
       <height>20</height>
      </rect>
@@ -287,11 +287,11 @@
     <rect>
      <x>30</x>
      <y>30</y>
-     <width>441</width>
-     <height>115</height>
+     <width>431</width>
+     <height>56</height>
     </rect>
    </property>
-   <layout class="QFormLayout" name="formLayoutInformation">
+   <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
      <widget class="QLabel" name="LabelExperiment">
       <property name="sizePolicy">
@@ -308,72 +308,6 @@
       </property>
       <property name="text">
        <string>Эксперимент</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="LabelObject">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>170</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>Объект</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="LineEditObject"/>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="LabelModelDevice">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>170</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>Модель устройства</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="1">
-     <widget class="QComboBox" name="comboBoxModelDevice"/>
-    </item>
-    <item row="3" column="1">
-     <widget class="QLineEdit" name="LineEditSnDevice"/>
-    </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="LabelSnDevice">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>170</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>Серийный номер устройства</string>
       </property>
      </widget>
     </item>
@@ -406,6 +340,28 @@
        </widget>
       </item>
      </layout>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="LabelObject">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Объект</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="LineEditObject"/>
     </item>
    </layout>
   </widget>
@@ -445,6 +401,47 @@
        <string>Отменить</string>
       </property>
      </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QGroupBox" name="groupBoxInRat">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>100</y>
+     <width>451</width>
+     <height>61</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>inRat</string>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="LabelSnDevice">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>170</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Серийный номер</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="LineEditSnDevice"/>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

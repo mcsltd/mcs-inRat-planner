@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_schedule_v1zQewxf.ui'
+## Form generated from reading UI file 'dlg_input_schedule_v3XIvEMU.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -16,9 +16,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
-    QDialog, QFormLayout, QGroupBox, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QSizePolicy,
-    QSpacerItem, QWidget)
+    QDialog, QFormLayout, QGridLayout, QGroupBox,
+    QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QSizePolicy, QSpacerItem, QWidget)
 
 class Ui_DlgCreateNewSchedule(object):
     def setupUi(self, DlgCreateNewSchedule):
@@ -31,7 +31,7 @@ class Ui_DlgCreateNewSchedule(object):
         DlgCreateNewSchedule.setSizeGripEnabled(False)
         self.groupBoxRecords = QGroupBox(DlgCreateNewSchedule)
         self.groupBoxRecords.setObjectName(u"groupBoxRecords")
-        self.groupBoxRecords.setGeometry(QRect(20, 320, 451, 191))
+        self.groupBoxRecords.setGeometry(QRect(20, 330, 451, 191))
         self.formLayoutWidget_2 = QWidget(self.groupBoxRecords)
         self.formLayoutWidget_2.setObjectName(u"formLayoutWidget_2")
         self.formLayoutWidget_2.setGeometry(QRect(10, 30, 431, 116))
@@ -105,10 +105,10 @@ class Ui_DlgCreateNewSchedule(object):
         self.pushButtonByDefault.setMaximumSize(QSize(100, 16777215))
         self.groupBoxSchedule = QGroupBox(DlgCreateNewSchedule)
         self.groupBoxSchedule.setObjectName(u"groupBoxSchedule")
-        self.groupBoxSchedule.setGeometry(QRect(20, 150, 451, 161))
+        self.groupBoxSchedule.setGeometry(QRect(20, 170, 451, 151))
         self.formLayoutWidget_3 = QWidget(self.groupBoxSchedule)
         self.formLayoutWidget_3.setObjectName(u"formLayoutWidget_3")
-        self.formLayoutWidget_3.setGeometry(QRect(10, 30, 431, 51))
+        self.formLayoutWidget_3.setGeometry(QRect(10, 30, 431, 52))
         self.formLayoutSchedule = QFormLayout(self.formLayoutWidget_3)
         self.formLayoutSchedule.setObjectName(u"formLayoutSchedule")
         self.formLayoutSchedule.setContentsMargins(0, 0, 0, 0)
@@ -147,59 +147,20 @@ class Ui_DlgCreateNewSchedule(object):
         self.pushButtonResetTime.setMaximumSize(QSize(100, 16777215))
         self.checkBoxCancelSchedule = QCheckBox(self.groupBoxSchedule)
         self.checkBoxCancelSchedule.setObjectName(u"checkBoxCancelSchedule")
-        self.checkBoxCancelSchedule.setGeometry(QRect(10, 130, 431, 20))
+        self.checkBoxCancelSchedule.setGeometry(QRect(10, 120, 431, 20))
         self.formLayoutWidget = QWidget(DlgCreateNewSchedule)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
-        self.formLayoutWidget.setGeometry(QRect(30, 30, 441, 115))
-        self.formLayoutInformation = QFormLayout(self.formLayoutWidget)
-        self.formLayoutInformation.setObjectName(u"formLayoutInformation")
-        self.formLayoutInformation.setContentsMargins(0, 0, 0, 0)
+        self.formLayoutWidget.setGeometry(QRect(30, 30, 431, 56))
+        self.gridLayout_2 = QGridLayout(self.formLayoutWidget)
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
         self.LabelExperiment = QLabel(self.formLayoutWidget)
         self.LabelExperiment.setObjectName(u"LabelExperiment")
         sizePolicy.setHeightForWidth(self.LabelExperiment.sizePolicy().hasHeightForWidth())
         self.LabelExperiment.setSizePolicy(sizePolicy)
         self.LabelExperiment.setMinimumSize(QSize(170, 0))
 
-        self.formLayoutInformation.setWidget(0, QFormLayout.ItemRole.LabelRole, self.LabelExperiment)
-
-        self.LabelObject = QLabel(self.formLayoutWidget)
-        self.LabelObject.setObjectName(u"LabelObject")
-        sizePolicy.setHeightForWidth(self.LabelObject.sizePolicy().hasHeightForWidth())
-        self.LabelObject.setSizePolicy(sizePolicy)
-        self.LabelObject.setMinimumSize(QSize(170, 0))
-
-        self.formLayoutInformation.setWidget(1, QFormLayout.ItemRole.LabelRole, self.LabelObject)
-
-        self.LineEditObject = QLineEdit(self.formLayoutWidget)
-        self.LineEditObject.setObjectName(u"LineEditObject")
-
-        self.formLayoutInformation.setWidget(1, QFormLayout.ItemRole.FieldRole, self.LineEditObject)
-
-        self.LabelModelDevice = QLabel(self.formLayoutWidget)
-        self.LabelModelDevice.setObjectName(u"LabelModelDevice")
-        sizePolicy.setHeightForWidth(self.LabelModelDevice.sizePolicy().hasHeightForWidth())
-        self.LabelModelDevice.setSizePolicy(sizePolicy)
-        self.LabelModelDevice.setMinimumSize(QSize(170, 0))
-
-        self.formLayoutInformation.setWidget(2, QFormLayout.ItemRole.LabelRole, self.LabelModelDevice)
-
-        self.comboBoxModelDevice = QComboBox(self.formLayoutWidget)
-        self.comboBoxModelDevice.setObjectName(u"comboBoxModelDevice")
-
-        self.formLayoutInformation.setWidget(2, QFormLayout.ItemRole.FieldRole, self.comboBoxModelDevice)
-
-        self.LineEditSnDevice = QLineEdit(self.formLayoutWidget)
-        self.LineEditSnDevice.setObjectName(u"LineEditSnDevice")
-
-        self.formLayoutInformation.setWidget(3, QFormLayout.ItemRole.FieldRole, self.LineEditSnDevice)
-
-        self.LabelSnDevice = QLabel(self.formLayoutWidget)
-        self.LabelSnDevice.setObjectName(u"LabelSnDevice")
-        sizePolicy.setHeightForWidth(self.LabelSnDevice.sizePolicy().hasHeightForWidth())
-        self.LabelSnDevice.setSizePolicy(sizePolicy)
-        self.LabelSnDevice.setMinimumSize(QSize(170, 0))
-
-        self.formLayoutInformation.setWidget(3, QFormLayout.ItemRole.LabelRole, self.LabelSnDevice)
+        self.gridLayout_2.addWidget(self.LabelExperiment, 0, 0, 1, 1)
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
@@ -221,7 +182,20 @@ class Ui_DlgCreateNewSchedule(object):
         self.horizontalLayout.addWidget(self.pushButtonAddExperiment)
 
 
-        self.formLayoutInformation.setLayout(0, QFormLayout.ItemRole.FieldRole, self.horizontalLayout)
+        self.gridLayout_2.addLayout(self.horizontalLayout, 0, 1, 1, 1)
+
+        self.LabelObject = QLabel(self.formLayoutWidget)
+        self.LabelObject.setObjectName(u"LabelObject")
+        sizePolicy.setHeightForWidth(self.LabelObject.sizePolicy().hasHeightForWidth())
+        self.LabelObject.setSizePolicy(sizePolicy)
+        self.LabelObject.setMinimumSize(QSize(170, 0))
+
+        self.gridLayout_2.addWidget(self.LabelObject, 1, 0, 1, 1)
+
+        self.LineEditObject = QLineEdit(self.formLayoutWidget)
+        self.LineEditObject.setObjectName(u"LineEditObject")
+
+        self.gridLayout_2.addWidget(self.LineEditObject, 1, 1, 1, 1)
 
         self.horizontalLayoutWidget = QWidget(DlgCreateNewSchedule)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
@@ -243,6 +217,29 @@ class Ui_DlgCreateNewSchedule(object):
 
         self.horizontalLayout_2.addWidget(self.pushButtonCancel)
 
+        self.groupBoxInRat = QGroupBox(DlgCreateNewSchedule)
+        self.groupBoxInRat.setObjectName(u"groupBoxInRat")
+        self.groupBoxInRat.setGeometry(QRect(20, 100, 451, 61))
+        self.gridLayout = QGridLayout(self.groupBoxInRat)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.formLayout = QFormLayout()
+        self.formLayout.setObjectName(u"formLayout")
+        self.LabelSnDevice = QLabel(self.groupBoxInRat)
+        self.LabelSnDevice.setObjectName(u"LabelSnDevice")
+        sizePolicy.setHeightForWidth(self.LabelSnDevice.sizePolicy().hasHeightForWidth())
+        self.LabelSnDevice.setSizePolicy(sizePolicy)
+        self.LabelSnDevice.setMinimumSize(QSize(170, 0))
+
+        self.formLayout.setWidget(0, QFormLayout.ItemRole.LabelRole, self.LabelSnDevice)
+
+        self.LineEditSnDevice = QLineEdit(self.groupBoxInRat)
+        self.LineEditSnDevice.setObjectName(u"LineEditSnDevice")
+
+        self.formLayout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.LineEditSnDevice)
+
+
+        self.gridLayout.addLayout(self.formLayout, 0, 0, 1, 1)
+
 
         self.retranslateUi(DlgCreateNewSchedule)
 
@@ -263,12 +260,12 @@ class Ui_DlgCreateNewSchedule(object):
         self.pushButtonResetTime.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0432\u0440\u0435\u043c\u044f", None))
         self.checkBoxCancelSchedule.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041d\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044e \u043f\u043e \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044e", None))
         self.LabelExperiment.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442", None))
-        self.LabelObject.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041e\u0431\u044a\u0435\u043a\u0442", None))
-        self.LabelModelDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041c\u043e\u0434\u0435\u043b\u044c \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
-        self.LabelSnDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u0435\u0440\u0438\u0439\u043d\u044b\u0439 \u043d\u043e\u043c\u0435\u0440 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
         self.comboBoxExperiment.setCurrentText("")
         self.pushButtonAddExperiment.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u043e\u0437\u0434\u0430\u0442\u044c", None))
+        self.LabelObject.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041e\u0431\u044a\u0435\u043a\u0442", None))
         self.pushButtonOk.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"Ok", None))
         self.pushButtonCancel.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c", None))
+        self.groupBoxInRat.setTitle(QCoreApplication.translate("DlgCreateNewSchedule", u"inRat", None))
+        self.LabelSnDevice.setText(QCoreApplication.translate("DlgCreateNewSchedule", u"\u0421\u0435\u0440\u0438\u0439\u043d\u044b\u0439 \u043d\u043e\u043c\u0435\u0440", None))
     # retranslateUi
 
