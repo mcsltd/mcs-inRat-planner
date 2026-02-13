@@ -15,7 +15,7 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from device.ble_manager import BleManager
+from src.ble_manager import BleManager
 
 # table
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
