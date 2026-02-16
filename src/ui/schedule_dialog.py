@@ -409,7 +409,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # self.comboBoxModelDevice.currentIndexChanged.emit(0)
 
         logger.debug(f"Окно создания расписаний настроено под модель: inRat")
-        self.comboBoxSamplingRate.clear()
 
         self.comboBoxSamplingRate.setCurrentIndex(0)
         self.comboBoxDuration.setCurrentIndex(0)
