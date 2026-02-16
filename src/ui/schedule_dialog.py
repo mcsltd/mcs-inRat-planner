@@ -122,21 +122,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.timer_update.timeout.connect(self._update_time_edit)
         self.timer_update.start()
 
-    # def _on_device_model_changed(self):
-    #     """ Обработчик изменения модели устройства """
-    #     device_name = "inRat"
-    #     logger.info(f"Изменена модель устройства: {device_name}")
-    #
-    #     if device_name == "InRat":
-    #         logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
-    #         self.comboBoxSamplingRate.clear()
-    #         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
-    #
-    #     elif device_name == "EMGsens":
-    #         logger.debug(f"Окно создания расписаний настроено под модель: {device_name}")
-    #         self.comboBoxSamplingRate.clear()
-    #         self.comboBoxSamplingRate.addItems(["1000 Гц", "2000 Гц", "5000 Гц"])
-
     def on_start_datetime_changed(self):
         """ Обработка изменения даты со временем в окне ввода времени """
         # обработка ошибки finish_time < start_time, finish_time всегда должен быть больше или равен start_time
@@ -409,7 +394,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # self.comboBoxModelDevice.currentIndexChanged.emit(0)
 
         logger.debug(f"Окно создания расписаний настроено под модель: inRat")
-        self.comboBoxSamplingRate.clear()
 
         self.comboBoxSamplingRate.setCurrentIndex(0)
         self.comboBoxDuration.setCurrentIndex(0)
