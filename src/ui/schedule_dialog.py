@@ -22,6 +22,17 @@ from src.config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 
+DURATION_VALUES = [
+    ("1 минута", 1, True), ("2 минуты", 2, True), ("3 минуты", 3, True), ("4 минуты", 4, True),
+    ("5 минут", 5, True), ("10 минут", 10, True), ("15 минут", 15, True), ("20 минут", 20, True)
+]
+
+INTERVAL_VALUES = [
+    ("10 минут", 10, True), ("20 минут", 20, True), ("30 минут", 30, True),
+    ("1 час", 60, True), ("2 часа", 120, True), ("3 часа", 180, True)
+]
+
+
 class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     MAX_LENGTH_OBJECT = 30
@@ -63,8 +74,14 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.fill_combobox(self.comboBoxFormat, Formats)
 
         self.comboBoxSamplingRate.addItems(["500 Гц", "1000 Гц", "2000 Гц"])
-        self.comboBoxDuration.addItems(["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
-        self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
+        # self.comboBoxDuration.addItems(["1 минута", "2 минуты", "3 минуты", "4 минуты", "5 минут", "10 минут", "15 минут", "20 минут"])
+        # self.comboBoxInterval.addItems(["10 минут", "20 минут", "30 минут", "1 час", "2 часа", "3 часа"])
+
+        for value in DURATION_VALUES:
+            self.comboBoxDuration.addItem(value[0])
+        for value in INTERVAL_VALUES:
+            self.comboBoxInterval.addItem(value[0])
+        self._interval_changed(0)
 
         # monitoring the has_unsaved_change flag
         self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
@@ -77,8 +94,9 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.pushButtonResetTime.clicked.connect(self.reset_time)
         self.pushButtonOk.clicked.connect(self.on_ok_clicked)
         self.pushButtonCancel.clicked.connect(self.close)
-        # self.comboBoxModelDevice.currentIndexChanged.connect(self._on_device_model_changed)
         self.checkBoxCancelSchedule.stateChanged.connect(self._disable_scheduling_time)
+        self.comboBoxDuration.currentIndexChanged.connect(self._duration_changed)
+        self.comboBoxInterval.currentIndexChanged.connect(self._interval_changed)
 
         self.pushButtonAddExperiment.hide()
 
@@ -88,6 +106,56 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         self.timer_update = None
         if schedule is None:
             self.init_timer()
+
+    def _duration_changed(self, index: int):
+        """ Настройка интервалов записи под выбранную длительность """
+        disable_idx_interval = None
+        if index == 5: # длительность - 10 минут, периодичность - от 20 минут
+            disable_idx_interval = [0]
+        elif index == 6: # длительность - 15 минут, периодичность - от 20 минут
+            disable_idx_interval = [0]
+        elif index == 7: # длительность - 20 минут, периодичность - от 30 минут
+            disable_idx_interval = [0, 1]
+
+        # передвинуть индекс в выпадающем списке с интервалами
+        crt_interval_idx = self.comboBoxInterval.currentIndex()
+        if disable_idx_interval is not None and crt_interval_idx in disable_idx_interval:
+            self.comboBoxInterval.setCurrentIndex(disable_idx_interval[-1] + 1)
+
+        model = self.comboBoxInterval.model()
+        # деактивация длительностей > интервала записи
+        for idx in range(model.rowCount()):
+            item = model.item(idx)
+            if disable_idx_interval is not None and idx in disable_idx_interval:
+                item.setEnabled(False)
+                item.setForeground(Qt.GlobalColor.gray)
+            else:
+                item.setEnabled(True)
+                item.setForeground(Qt.GlobalColor.black)
+
+    def _interval_changed(self, index: int):
+        """ Настройка длительностей записей под выбранный интервал """
+        disable_idx_duration = None
+        if index == 0:  # 10 минут
+            disable_idx_duration = [5, 6, 7]
+        elif index == 1:  # 20 минут
+            disable_idx_duration = [7]
+
+        # передвинуть индекс в выпадающем списке с длительностями
+        crt_dur_idx = self.comboBoxDuration.currentIndex()
+        if disable_idx_duration is not None and crt_dur_idx in disable_idx_duration:
+            self.comboBoxInterval.setCurrentIndex(disable_idx_duration[0] - 1)
+
+        model = self.comboBoxDuration.model()
+        # деактивация длительностей > интервала записи
+        for idx in range(model.rowCount()):
+            item = model.item(idx)
+            if disable_idx_duration is not None and idx in disable_idx_duration:
+                item.setEnabled(False)
+                item.setForeground(Qt.GlobalColor.gray)
+            else:
+                item.setEnabled(True)
+                item.setForeground(Qt.GlobalColor.black)
 
     def _disable_scheduling_time(self, state: Qt.CheckState):
         if state == Qt.CheckState.Checked.value:
@@ -144,7 +212,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
     def on_ok_clicked(self):
         """ Обработчик нажатия кнопки Ok """
-
         if self.default_schedule is None:
             if not self.validate_input():   # проверка если обязательные поля не были заполнены
                 return
