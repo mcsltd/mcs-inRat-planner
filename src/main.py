@@ -213,7 +213,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         cnt_job = 0
         schedules: list[Schedule] = Schedule.get_all_schedules(session)
         for s in schedules:
-            now = datetime.datetime.now()
+            t_now = datetime.datetime.now()
 
             schedule = s.to_dataclass(session)
             start_time = schedule.datetime_start
@@ -228,29 +228,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if job is not None:
                 logger.info(f"Задача для расписания с {schedule_id} уже создана")
 
-            if now >= schedule.datetime_finish:
+            if t_now + dt > schedule.datetime_finish:
                 logger.debug(f"Время действия расписания истекло: {schedule.datetime_finish} для {schedule.id}")
                 continue
 
-            last_record = Record.get_last_record(schedule_id, session) # последняя запись в таблице Records
-            if last_record is None:
-                logger.debug(f"Для объекта {schedule.object.name} не было найдено записей!")
-                start_time = schedule.datetime_start
-            else:
-                last_record = last_record.to_dataclass()
-                if not start_time > last_record.datetime_start: # обработка случая когда перед началом записи экг писались в ручном режиме
-                    start_time = last_record.datetime_start + dt  # время следующей запланированной записи
+            # расчёт времени следующего старта записи по расписанию
+            if start_time < t_now:
+                n = int((t_now - start_time).seconds / dt.seconds) # кол-во полных запусков за диапазон времени от start_time до now
+                if n * dt + start_time > t_now:
+                    start_time = n * dt + start_time
+                else:
+                    start_time = (n + 1) * dt + start_time
 
-            if now > start_time: # проверка если запланированная запись отстаёт от текущего времени
-                logger.info(f"Запланированное время записи {str(start_time)} меньше чем текущее время {str(now)}")
-                template_missed_record = RecordData(
-                    schedule_id=schedule_id,
-                    datetime_start=start_time, sec_duration=0,
-                    file_format=schedule.file_format, sampling_rate=schedule.sampling_rate,
-                    status=RecordStatus.ERROR.value)
-
-                start_time = self.fill_missed_records(
-                    template_missed_record=template_missed_record, time_now=now, delta_time=dt, session=session)
+            # заполнение в базе данных пропущенных записей
+            # last_record = Record.get_last_record(schedule_id, session) # последняя запись в таблице Records
+            # if last_record is None:
+            #     logger.debug(f"Для объекта {schedule.object.name} не было найдено записей!")
+            #     start_time = schedule.datetime_start
+            # else:
+            #     last_record = last_record.to_dataclass()
+            #     if not start_time > last_record.datetime_start: # обработка случая когда перед началом записи экг писались в ручном режиме
+            #         start_time = last_record.datetime_start + dt  # время следующей запланированной записи
+            # if now > start_time: # проверка если запланированная запись отстаёт от текущего времени
+            #     logger.info(f"Запланированное время записи {str(start_time)} меньше чем текущее время {str(now)}")
+            #     template_missed_record = RecordData(schedule_id=schedule_id, datetime_start=start_time, sec_duration=0, file_format=schedule.file_format, sampling_rate=schedule.sampling_rate, status=RecordStatus.ERROR.value)
+            #     start_time = self.fill_missed_records(template_missed_record=template_missed_record, time_now=now, delta_time=dt, session=session)
 
             self.create_job(schedule, start_time=start_time)
             cnt_job += 1
@@ -275,14 +277,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
-        # ToDo: проблема с обработкой
         self.scheduler.add_job(
-            self._create_record,
-            args=(schedule, start_time),
-            trigger="interval",
-            seconds=schedule.sec_interval,
-            id=str(schedule.id),
-            next_run_time=start_time,
+            self._create_record, args=(schedule, start_time),
+            trigger="interval", seconds=schedule.sec_interval,
+            id=str(schedule.id), next_run_time=start_time,
         )
         logger.info(
             f"Создано расписание: {str(schedule.id)};"
