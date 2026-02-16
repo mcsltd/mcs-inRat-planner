@@ -21,7 +21,6 @@ from src.device.inrat.inrat import InRat
 from src.device.inrat.structures import InRatSettings
 from src.resources.v1.dlg_inrat_controller import Ui_DlgInRatController
 from src.structure import ScheduleData
-from src.tools.check_bluetooth import is_bluetooth_enabled
 from src.tools.inrat_storage import InRatStorage
 from src.util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
@@ -297,10 +296,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         logger.debug("Выполняется соединение с устройством")
         if self._loop is None:
             self._run_async_loop()
-
-        if not is_bluetooth_enabled():
-            QMessageBox.critical(self, "Ошибка работы Bluetooth!", "Проверьте включен ли Bluetooth!")
-            return
 
         future = asyncio.run_coroutine_threadsafe(self._device_connection_impl(), self._loop)
 
