@@ -39,6 +39,8 @@ class InRat:
         self._connection_state = ConnectionState.DISCONNECTED
         self._is_notifying = False
 
+        self._name = ble_device.name
+
     @property
     def is_connected(self) -> bool:
         return self._client.is_connected
@@ -49,7 +51,7 @@ class InRat:
 
     @property
     def name(self) -> str:
-        return self._client.name
+        return self._name
 
     async def connect(self, timeout: float) -> bool:
         """ Подключение к устройству с таймаутом """
