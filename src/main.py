@@ -222,24 +222,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if start_time is None: # пропуск незапланированных расписаний
                 continue
-            dt = datetime.timedelta(seconds=schedule.sec_interval)
 
             # проверка на случай уже созданного расписания
             job = self.scheduler.get_job(job_id=str(schedule_id))
             if job is not None:
                 logger.info(f"Задача для расписания с {schedule_id} уже создана")
+                continue
 
-            if t_now + dt > schedule.datetime_finish:
-                logger.debug(f"Время действия расписания истекло: {schedule.datetime_finish} для {schedule.id}")
+            dt = datetime.timedelta(seconds=schedule.sec_interval)
+            if t_now > schedule.datetime_finish:
+                logger.debug(f"Время действия расписания {schedule.id} истекло {schedule.datetime_finish}")
                 continue
 
             # расчёт времени следующего старта записи по расписанию
             if start_time < t_now:
-                n = int(np.ceil((t_now - start_time).seconds / dt.seconds)) # кол-во полных запусков за диапазон времени от start_time до now
-                if n * dt + start_time > t_now:
-                    start_time = n * dt + start_time
-                else:
-                    start_time = (n + 1) * dt + start_time
+                n = int((t_now - start_time).total_seconds() // dt.total_seconds()) # кол-во полных запусков за диапазон времени от start_time до now
+                start_time = (n + 1) * dt + start_time
 
                 # заполнение в базе данных пропущенных записей
                 cnt_skip_rec = self.fill_missed_scheduled_records(schedule, t_now, session)
@@ -250,39 +248,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
 
-
     def fill_missed_scheduled_records(self, schedule: ScheduleData, t_now: datetime.datetime, session: Session) -> int:
         """ Заполнение пропущенных записей в таблице Record """
-        schedule_id = schedule.id
         start_time = schedule.datetime_start
-        # todo: finish_time = schedule.datetime_finish
-        dt = datetime.timedelta(seconds=schedule.sec_interval)
+        finish_time = schedule.datetime_finish
 
-        if start_time is None or start_time > t_now:
+        # получить последнюю запись сделанную по расписанию
+        last_record = Record.get_last_record(schedule.id, session)
+        if last_record and last_record.datetime_start > start_time:
+            last_time = last_record.datetime_start
+            start_idx = int(((last_time - start_time).total_seconds()) // schedule.sec_interval) + 1
+        else:
+            start_idx = 0   # отсутствуют записи по расписанию
+
+        end_idx = int((t_now - start_time).total_seconds() // schedule.sec_interval)    # количество записей до t_now
+        finish_idx = int((finish_time - start_time).total_seconds() // schedule.sec_interval)   # общее кол-во записей
+        end_idx = min(end_idx, finish_idx)
+
+        values = []
+        for idx in range(start_idx, end_idx + 1):
+            record_time = start_time + datetime.timedelta(seconds=idx * schedule.sec_interval)
+            values.append({
+                'id': uuid.uuid4(), 'schedule_id': schedule.id, 'datetime_start': record_time,
+                'sec_duration': 0, 'file_format': schedule.file_format, 'sampling_rate': schedule.sampling_rate,
+                'status': RecordStatus.ERROR.value,
+            })
+        if not values:
             return 0
-        template_missed_record = RecordData(schedule_id=schedule_id, datetime_start=start_time, sec_duration=0, file_format=schedule.file_format, sampling_rate=schedule.sampling_rate, status=RecordStatus.ERROR.value)
 
-        # заполнить пустыми записями cо start_time до t_now
-        last_record = Record.get_last_record(schedule_id, session)
-        if last_record is None:
-            n = int(np.ceil((t_now - start_time).seconds / dt.seconds))  # кол-во полных запусков за диапазон времени от start_time до now
-            for idx in range(n):
-                rec = copy(template_missed_record)
-                rec.id = uuid.uuid4()
-                rec.datetime_start = start_time + dt * idx
-                Record.from_dataclass(rec).create(session)
-            return n
+        session.execute(Record.__table__.insert(), values)
+        session.commit()
 
-        # заполнить пустыми записями cо datetime_start последней записи до t_now
-        last_record_st = last_record.datetime_start
-        n_last = int(np.ceil((last_record_st - start_time).seconds / dt.seconds))
-        n_next = int(np.ceil((t_now - start_time).seconds / dt.seconds))
-        for idx in range(n_last, n_next):
-            rec = copy(template_missed_record)
-            rec.id = uuid.uuid4()
-            rec.datetime_start = start_time + dt * idx
-            Record.from_dataclass(rec).create(session)
-        return n_next - n_last
+        return len(values)
+
 
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
