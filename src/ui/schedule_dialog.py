@@ -81,7 +81,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.comboBoxDuration.addItem(value[0])
         for value in INTERVAL_VALUES:
             self.comboBoxInterval.addItem(value[0])
-        self._interval_changed(0)
 
         # monitoring the has_unsaved_change flag
         self.comboBoxExperiment.editTextChanged.connect(self.on_form_changed)
@@ -356,11 +355,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
         # object
         self.LineEditObject.setText(schedule.object.name)
 
-        # model
-        # models = {"EMG-SENS-": "EMGsens", "inRat-1-": "InRat"}
-        # self.set_combobox_value(self.comboBoxModelDevice, models[schedule.device.model])
-        # self.comboBoxModelDevice.currentIndexChanged.emit(-1)
-
         # serial number
         self.LineEditSnDevice.setText(str(schedule.device.serial_number))
 
@@ -451,20 +445,13 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
 
         self.reset_time()
         logger.info("Установка настроек по умолчанию")
-
         # set text
         self.comboBoxExperiment.setPlaceholderText("Не выбрано")
-
         # set index
         self.comboBoxFormat.setCurrentIndex(0) # set EDF
-        # self.comboBoxModelDevice.setCurrentIndex(0) # set InRat
-        # self.comboBoxModelDevice.currentIndexChanged.emit(0)
-
-        logger.debug(f"Окно создания расписаний настроено под модель: inRat")
-
+        # set default value to combobox
         self.comboBoxSamplingRate.setCurrentIndex(0)
-        self.comboBoxDuration.setCurrentIndex(0)
-        self.comboBoxInterval.setCurrentIndex(0)
+        self._interval_changed(0)
 
         if (self.LineEditSnDevice.text().strip() == ""
                 or self.LineEditObject.text().strip() == ""
@@ -585,7 +572,7 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
                 return f"1 минута"
             else:
                 # Округляем до ближайшего кратного 10
-                rounded_minutes = round(minutes / 10) * 10
+                rounded_minutes = int(minutes)
                 return f"{rounded_minutes} минут"
         else:
             # Преобразуем в часы
