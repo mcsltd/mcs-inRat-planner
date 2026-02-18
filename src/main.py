@@ -664,6 +664,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
 
         if schedule_data.device.model == Devices.INRAT.value["InRat"]:
+            text_message = ""
             if job is not None:
                 text_message = f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}."
             elif schedule_data.datetime_start is None or schedule_data.datetime_finish is None:
@@ -689,13 +690,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             next_run = datetime.datetime.now() + datetime.timedelta(seconds=10)
                         job.resume()
                         job.modify(next_run_time=next_run)
-
-        # if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
-        #     DialogHelper.show_confirmation_dialog(
-        #         parent=self, title=f"Информация о расписании",
-        #         message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
-        #         yes_text="Ok", btn_no=False
-        #     )
 
     def experiments_clicked(self):
         dlg = ExperimentCRUDWidget()

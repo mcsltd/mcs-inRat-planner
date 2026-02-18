@@ -79,6 +79,7 @@ class ScheduleState(Enum):
     DISCONNECT = "Ожидание"
     UNPLANNED = "Не запланировано"
     EXPIRED = "Истекло"
+    IN_QUEUE = "В очереди"
 
 MONTHS = {
         1: "янв", 2: "фев", 3: "мар", 4: "апр", 5: "май", 6: "июн",
