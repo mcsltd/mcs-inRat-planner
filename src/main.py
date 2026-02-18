@@ -104,6 +104,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionLicenses.triggered.connect(self.licenses_clicked)
         self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
+        self.actionDEBUGActiveSchedule.triggered.connect(self.debug_show_active_schedule_tasks)
 
         self.installEventFilter(self)
 
@@ -117,6 +118,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # загрузка настроек
         self.get_preferences()
+
+    def debug_show_active_schedule_tasks(self):
+        DialogHelper.show_confirmation_dialog(
+            parent=self, title="Информация о количестве активных расписаний",
+            message=f"Всего активных расписаний: {len(self.scheduler.get_jobs())}",
+            yes_text="Да", no_text="Нет",
+            icon=QMessageBox.Icon.Information,
+        )
 
     def on_selection_changed(self):
         """ Обработка нажатия на строки в таблице Schedule """
@@ -245,7 +254,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             self.create_job(schedule, start_time=start_time)
             cnt_job += 1
-
         logger.info(f"Инициализация задач закончена. Всего проинициализировано задач: {cnt_job}")
 
     def fill_missed_scheduled_records(self, schedule: ScheduleData, t_now: datetime.datetime, session: Session) -> int:
@@ -632,7 +640,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         schedule_data: ScheduleData = schedule.to_dataclass(session)
-
         # запуск просмотра стрима сигнала с устройства
         device_id = schedule_data.device.id
         if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:

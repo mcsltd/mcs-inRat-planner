@@ -175,6 +175,7 @@
     <property name="title">
      <string>Помощь</string>
     </property>
+    <addaction name="actionDEBUGActiveSchedule"/>
     <addaction name="actionLicenses"/>
     <addaction name="actionAbout"/>
    </widget>
@@ -212,6 +213,11 @@
   <action name="actionExperiments">
    <property name="text">
     <string>Эксперименты</string>
+   </property>
+  </action>
+  <action name="actionDEBUGActiveSchedule">
+   <property name="text">
+    <string>DEBUG: кол-во активных задач</string>
    </property>
   </action>
  </widget>
