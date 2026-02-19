@@ -19,9 +19,10 @@ from sqlalchemy.orm import Session
 from src.ble_manager import BleManager
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
-from db.database import connection
-from db.models import Schedule, Object, Device, Record
+from src.constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
+from src.db.database import connection
+from src.db.models import Schedule, Object, Device, Record
+from src.tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
@@ -37,12 +38,12 @@ from ui.manage_experiments import ExperimentCRUDWidget
 from config import PATH_TO_ICON, PATH_TO_LICENSES
 
 # database
-from db.queries import get_count_records, get_count_error_records, \
+from src.db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     soft_delete_records, get_all_record_time, all_restore
-from ui.settings_dialog import DlgMainConfig
-from ui.monitor_dialog import SignalMonitor
-from ui.stream_dialog import BLESignalViewer
+from src.ui.settings_dialog import DlgMainConfig
+from src.ui.monitor_dialog import SignalMonitor
+from src.ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # init ble manager
         self.ble_manager = BleManager()
-        self.ble_manager.start()
+        if is_bluetooth_enabled():
+            self.ble_manager.start()
+        else:
+            DialogHelper.show_confirmation_dialog(
+                parent=self, title="Ошибка работы Bluetooth",
+                message="Bluetooth не найден. Убедитесь, что Bluetooth включен.",
+                icon=QMessageBox.Icon.Critical, yes_text="Ok", no_text=None
+            )
 
         # init scheduler
         self.scheduler = QtScheduler()
@@ -118,6 +126,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # загрузка настроек
         self.get_preferences()
+
 
     def debug_show_active_schedule_tasks(self):
         DialogHelper.show_confirmation_dialog(
@@ -850,7 +859,7 @@ if __name__ == "__main__":
     except Exception as exc:
         DialogHelper.show_confirmation_dialog(
             parent=None,
-            title="Возникла ошибка",
+            title="Возникла ошибка запуска приложения",
             message=f"Текст ошибки: {exc}",
             icon=QMessageBox.Icon.Critical,
             yes_text="Ok",
