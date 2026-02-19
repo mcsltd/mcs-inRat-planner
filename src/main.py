@@ -19,9 +19,10 @@ from sqlalchemy.orm import Session
 from src.ble_manager import BleManager
 
 # table
-from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
-from db.database import connection
-from db.models import Schedule, Object, Device, Record
+from src.constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
+from src.db.database import connection
+from src.db.models import Schedule, Object, Device, Record
+from src.tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
@@ -37,12 +38,12 @@ from ui.manage_experiments import ExperimentCRUDWidget
 from config import PATH_TO_ICON, PATH_TO_LICENSES
 
 # database
-from db.queries import get_count_records, get_count_error_records, \
+from src.db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     soft_delete_records, get_all_record_time, all_restore
-from ui.settings_dialog import DlgMainConfig
-from ui.monitor_dialog import SignalMonitor
-from ui.stream_dialog import BLESignalViewer
+from src.ui.settings_dialog import DlgMainConfig
+from src.ui.monitor_dialog import SignalMonitor
+from src.ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # init ble manager
         self.ble_manager = BleManager()
-        self.ble_manager.start()
+        if is_bluetooth_enabled():
+            self.ble_manager.start()
+        else:
+            DialogHelper.show_confirmation_dialog(
+                parent=self, title="Ошибка работы Bluetooth",
+                message="Bluetooth не найден. Убедитесь, что Bluetooth включен.",
+                icon=QMessageBox.Icon.Critical, yes_text="Ok", no_text=None
+            )
 
         # init scheduler
         self.scheduler = QtScheduler()
@@ -118,6 +126,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # загрузка настроек
         self.get_preferences()
+
 
     def debug_show_active_schedule_tasks(self):
         DialogHelper.show_confirmation_dialog(
@@ -640,12 +649,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         schedule_data: ScheduleData = schedule.to_dataclass(session)
+
         # запуск просмотра стрима сигнала с устройства
         device_id = schedule_data.device.id
-        if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
+        device_status = self.ble_manager.get_device_status(device_id)
+        if device_status == ScheduleState.ACQUISITION.value:
             dlg = BLESignalViewer(schedule_data=schedule_data)
             self.ble_manager.signal_data_received.connect(dlg.accept_signal)
             dlg.exec()
+            return
+
+        if device_status == ScheduleState.IN_QUEUE.value:
+            text_message = f"Устройство {schedule_data.device.ble_name} находится в очереди на подключение."
+            DialogHelper.show_confirmation_dialog(parent=self, title=f"Информация о расписании", message=text_message,
+                                                  yes_text="Ok", btn_no=False, icon=QMessageBox.Icon.Information)
+            return
+
+        if device_status == ScheduleState.CONNECTION.value:
+            text_message = f"Выполняется поиск {schedule_data.device.ble_name}."
+            DialogHelper.show_confirmation_dialog(parent=self, title=f"Информация о расписании", message=text_message,
+                                                  yes_text="Ok", btn_no=False, icon=QMessageBox.Icon.Information)
             return
 
         job, str_time = None, None
@@ -664,6 +687,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 str_time = next_run.strftime("%Y-%m-%d %H:%M:%S")
 
         if schedule_data.device.model == Devices.INRAT.value["InRat"]:
+            text_message = ""
             if job is not None:
                 text_message = f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}."
             elif schedule_data.datetime_start is None or schedule_data.datetime_finish is None:
@@ -689,13 +713,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             next_run = datetime.datetime.now() + datetime.timedelta(seconds=10)
                         job.resume()
                         job.modify(next_run_time=next_run)
-
-        # if schedule_data.device.model == Devices.EMGSENS.value["EMGsens"]:
-        #     DialogHelper.show_confirmation_dialog(
-        #         parent=self, title=f"Информация о расписании",
-        #         message=f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}.",
-        #         yes_text="Ok", btn_no=False
-        #     )
 
     def experiments_clicked(self):
         dlg = ExperimentCRUDWidget()
@@ -856,7 +873,7 @@ if __name__ == "__main__":
     except Exception as exc:
         DialogHelper.show_confirmation_dialog(
             parent=None,
-            title="Возникла ошибка",
+            title="Возникла ошибка запуска приложения",
             message=f"Текст ошибки: {exc}",
             icon=QMessageBox.Icon.Critical,
             yes_text="Ok",
