@@ -3,7 +3,6 @@ import logging
 import os
 import uuid
 from configparser import ConfigParser
-from copy import copy
 
 from uuid import UUID
 
@@ -16,13 +15,13 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from src.ble_manager import BleManager
+from ble_manager import BleManager
 
 # table
-from src.constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
-from src.db.database import connection
-from src.db.models import Schedule, Object, Device, Record
-from src.tools.check_bluetooth import is_bluetooth_enabled
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
+from db.database import connection
+from db.models import Schedule, Object, Device, Record
+from tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
@@ -31,19 +30,19 @@ from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
 from ui.inrat_controller_dialog import InRatControllerDialog
 from ui.schedule_dialog import DlgCreateSchedule
+from ui.manage_experiments import ExperimentCRUDWidget
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
-from ui.manage_experiments import ExperimentCRUDWidget
 
 from config import PATH_TO_ICON, PATH_TO_LICENSES
 
 # database
-from src.db.queries import get_count_records, get_count_error_records, \
+from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     soft_delete_records, get_all_record_time, all_restore
-from src.ui.settings_dialog import DlgMainConfig
-from src.ui.monitor_dialog import SignalMonitor
-from src.ui.stream_dialog import BLESignalViewer
+from ui.settings_dialog import DlgMainConfig
+from ui.monitor_dialog import SignalMonitor
+from ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 
@@ -366,7 +365,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
         dlg = DlgCreateSchedule()
         code = dlg.exec()
-
         if code == QDialog.DialogCode.Accepted:
             schedule: ScheduleData = dlg.getSchedule()
 

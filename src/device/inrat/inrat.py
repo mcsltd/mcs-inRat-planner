@@ -6,12 +6,12 @@ from enum import Enum
 
 from bleak import BleakClient, BLEDevice, BleakScanner
 
-from src.config import BLE_KEY_IN_RAT
-from src.device.crypt import get_control_sum
-from src.device.inrat.constants import Command, InRatDataRateEcg, ScaleAccelerometer, EnabledChannels, EventType, \
+from config import BLE_KEY_IN_RAT
+from device.crypt import get_control_sum
+from device.inrat.constants import Command, InRatDataRateEcg, ScaleAccelerometer, EnabledChannels, EventType, \
     InRatEventEnum
-from src.device.inrat.decoder import Decoder
-from src.device.inrat.structures import InRatSettings, InRatStatus, InRatEvent
+from device.inrat.decoder import Decoder
+from device.inrat.structures import InRatSettings, InRatStatus, InRatEvent
 
 logger = logging.getLogger(__name__)
 
