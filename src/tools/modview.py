@@ -208,6 +208,7 @@ class _DataItemDelegate(QStyledItemDelegate):
 
         self.border_color_rules = {
             ScheduleState.CONNECTION.value: QColor(255, 165, 0),
+            ScheduleState.IN_QUEUE.value: QColor(255, 165, 0),
             ScheduleState.ACQUISITION.value: QColor(0, 255, 0),
         }
 

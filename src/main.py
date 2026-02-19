@@ -649,12 +649,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         schedule_data: ScheduleData = schedule.to_dataclass(session)
+
         # запуск просмотра стрима сигнала с устройства
         device_id = schedule_data.device.id
-        if self.ble_manager.get_device_status(device_id) == ScheduleState.ACQUISITION.value:
+        device_status = self.ble_manager.get_device_status(device_id)
+        if device_status == ScheduleState.ACQUISITION.value:
             dlg = BLESignalViewer(schedule_data=schedule_data)
             self.ble_manager.signal_data_received.connect(dlg.accept_signal)
             dlg.exec()
+            return
+
+        if device_status == ScheduleState.IN_QUEUE.value:
+            text_message = f"Устройство {schedule_data.device.ble_name} находится в очереди на подключение."
+            DialogHelper.show_confirmation_dialog(parent=self, title=f"Информация о расписании", message=text_message,
+                                                  yes_text="Ok", btn_no=False, icon=QMessageBox.Icon.Information)
+            return
+
+        if device_status == ScheduleState.CONNECTION.value:
+            text_message = f"Выполняется поиск {schedule_data.device.ble_name}."
+            DialogHelper.show_confirmation_dialog(parent=self, title=f"Информация о расписании", message=text_message,
+                                                  yes_text="Ok", btn_no=False, icon=QMessageBox.Icon.Information)
             return
 
         job, str_time = None, None
