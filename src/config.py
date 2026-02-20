@@ -1,8 +1,23 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+class AppData:
+    def __init__(self):
+        self.app_dir = Path() / ".inRat planner"
+        self.app_dir.mkdir(exist_ok=True)
+
+        self.url_db = f"sqlite+pysqlite:///{self.app_dir}/InRat.db"
+        self.path_to_data = self.app_dir / "data"
+        self.preferences_file = self.app_dir / "config.ini"
+        self.path_to_data.mkdir(exist_ok=True)
+
+app_data = AppData()
+
 
 def parse_ble_key(key: str):
     """

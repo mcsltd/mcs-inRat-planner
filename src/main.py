@@ -34,7 +34,7 @@ from ui.manage_experiments import ExperimentCRUDWidget
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
 
-from config import PATH_TO_ICON, PATH_TO_LICENSES
+from config import PATH_TO_ICON, PATH_TO_LICENSES, app_data
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
-    preferences_file: str = "../config.ini"
+    # preferences_file: str = "../config.ini"
     maxConnectDevicesChanged = Signal(int)
 
     def __init__(self, *args, **kwargs):
@@ -126,7 +126,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # загрузка настроек
         self.get_preferences()
 
-
     def debug_show_active_schedule_tasks(self):
         DialogHelper.show_confirmation_dialog(
             parent=self, title="Информация о количестве активных расписаний",
@@ -192,11 +191,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         config = ConfigParser()
 
         # проверка есть ли файл настроек
-        if not os.path.exists(self.preferences_file):
+        if not os.path.exists(app_data.preferences_file):
             self.maxConnectDevicesChanged.emit(2) # по умолчанию
             return None
 
-        config.read(self.preferences_file)
+        config.read(app_data.preferences_file)
         # config.read_file(self.preferences)
         if not (config.has_option("Settings", "max_connected_device")):
             return
@@ -210,13 +209,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         config = ConfigParser()
 
         # проверка есть ли файл настроек и секция
-        if (os.path.exists(self.preferences_file) and config.has_option("Settings", "max_connected_device")):
+        if (os.path.exists(app_data.preferences_file) and config.has_option("Settings", "max_connected_device")):
             config.set("Settings", "max_connected_device", str(cnt_device))
         else:
             config.add_section("Settings")
             config.set("Settings", "max_connected_device", str(cnt_device))
 
-        with open(self.preferences_file, "w") as config_file:
+        with open(app_data.preferences_file, "w") as config_file:
             config.write(config_file)
 
     def about_clicked(self):
