@@ -314,21 +314,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Добавление задачи по съёму ЭКГ в BleManager """
         logger.info(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
 
+        # # проверка на истечение времени расписания
+        # finish_time = schedule.datetime_finish
+        # now_t = start_time + datetime.timedelta(seconds=schedule.sec_duration)
+        # if now_t > finish_time:
+        #     logger.info(f"Расписания {str(schedule.id)} истекло; текущее время {now_t}; время окончания {finish_time}")
+        #     self.scheduler.remove_job(job_id=str(schedule.id))
+        #     self.update_content_table_schedule()
+        #     return
+
         self.ble_manager.add_task(
             task=RecordingTaskData(
-                schedule_id=schedule.id,
-                experiment=schedule.experiment,
-                device=schedule.device,
-                object=schedule.object,
-                start_time=start_time,
-
-                sec_duration=schedule.sec_duration,
-                # finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration),
-
-                file_format=schedule.file_format,
-                sampling_rate=schedule.sampling_rate
-            )
+                schedule_id=schedule.id, experiment=schedule.experiment, device=schedule.device, object=schedule.object,
+                start_time=start_time, sec_duration=schedule.sec_duration, file_format=schedule.file_format, sampling_rate=schedule.sampling_rate)
         )
+
+        # проверка на истечение следующего расписания
+        finish_time = schedule.datetime_finish
+        next_record_time = start_time + datetime.timedelta(seconds=schedule.sec_interval)
+        if next_record_time > finish_time:
+            logger.info(f"Для расписания {str(schedule.id)} истекло время; следующая запись {next_record_time}; время окончания {finish_time}")
+
+            job = self.scheduler.get_job(str(schedule.id))
+            if job is not None:
+                self.scheduler.remove_job(job_id=str(schedule.id))
+            self.update_content_table_schedule()
+            return
+
 
     @connection
     def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState, session):
@@ -409,8 +421,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if schedule.datetime_finish is None or schedule.datetime_start is None:
                 status = ScheduleState.UNPLANNED.value
-            elif schedule.datetime_finish < datetime.datetime.now():
-                status = ScheduleState.EXPIRED.value
+            elif datetime.datetime.now() + datetime.timedelta(seconds=schedule.sec_interval) > schedule.datetime_finish:
+                if self.scheduler.get_job(str(schedule_id)):
+                    status = ScheduleState.DISCONNECT.value
+                else:
+                    status = ScheduleState.EXPIRED.value
             else:
                 status = self.ble_manager.get_device_status(device_id=schedule.device.id)
 
