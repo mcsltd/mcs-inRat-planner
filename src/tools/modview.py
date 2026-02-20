@@ -5,10 +5,10 @@ from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont, QColor, QPen
 from PySide6.QtWidgets import QTableView, QHeaderView, QStyledItemDelegate
 
-from src.constants import MONTHS, ScheduleState
-from src.db.database import connection
-from src.db.models import Record
-from src.structure import RecordData
+from constants import MONTHS, ScheduleState
+from db.database import connection
+from db.models import Record
+from structure import RecordData
 
 
 class _DataTableModel(QAbstractTableModel):

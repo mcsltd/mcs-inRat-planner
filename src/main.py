@@ -3,7 +3,6 @@ import logging
 import os
 import uuid
 from configparser import ConfigParser
-from copy import copy
 
 from uuid import UUID
 
@@ -16,13 +15,13 @@ from PySide6.QtGui import QIcon
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
 
-from src.ble_manager import BleManager
+from ble_manager import BleManager
 
 # table
-from src.constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
-from src.db.database import connection
-from src.db.models import Schedule, Object, Device, Record
-from src.tools.check_bluetooth import is_bluetooth_enabled
+from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
+from db.database import connection
+from db.models import Schedule, Object, Device, Record
+from tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
@@ -31,26 +30,26 @@ from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
 from ui.inrat_controller_dialog import InRatControllerDialog
 from ui.schedule_dialog import DlgCreateSchedule
+from ui.manage_experiments import ExperimentCRUDWidget
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
-from ui.manage_experiments import ExperimentCRUDWidget
 
-from config import PATH_TO_ICON, PATH_TO_LICENSES
+from config import PATH_TO_ICON, PATH_TO_LICENSES, app_data
 
 # database
-from src.db.queries import get_count_records, get_count_error_records, \
+from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     soft_delete_records, get_all_record_time, all_restore
-from src.ui.settings_dialog import DlgMainConfig
-from src.ui.monitor_dialog import SignalMonitor
-from src.ui.stream_dialog import BLESignalViewer
+from ui.settings_dialog import DlgMainConfig
+from ui.monitor_dialog import SignalMonitor
+from ui.stream_dialog import BLESignalViewer
 
 logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
-    preferences_file: str = "../config.ini"
+    # preferences_file: str = "../config.ini"
     maxConnectDevicesChanged = Signal(int)
 
     def __init__(self, *args, **kwargs):
@@ -127,7 +126,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # загрузка настроек
         self.get_preferences()
 
-
     def debug_show_active_schedule_tasks(self):
         DialogHelper.show_confirmation_dialog(
             parent=self, title="Информация о количестве активных расписаний",
@@ -193,11 +191,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         config = ConfigParser()
 
         # проверка есть ли файл настроек
-        if not os.path.exists(self.preferences_file):
+        if not os.path.exists(app_data.preferences_file):
             self.maxConnectDevicesChanged.emit(2) # по умолчанию
             return None
 
-        config.read(self.preferences_file)
+        config.read(app_data.preferences_file)
         # config.read_file(self.preferences)
         if not (config.has_option("Settings", "max_connected_device")):
             return
@@ -211,13 +209,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         config = ConfigParser()
 
         # проверка есть ли файл настроек и секция
-        if (os.path.exists(self.preferences_file) and config.has_option("Settings", "max_connected_device")):
+        if (os.path.exists(app_data.preferences_file) and config.has_option("Settings", "max_connected_device")):
             config.set("Settings", "max_connected_device", str(cnt_device))
         else:
             config.add_section("Settings")
             config.set("Settings", "max_connected_device", str(cnt_device))
 
-        with open(self.preferences_file, "w") as config_file:
+        with open(app_data.preferences_file, "w") as config_file:
             config.write(config_file)
 
     def about_clicked(self):
@@ -316,21 +314,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Добавление задачи по съёму ЭКГ в BleManager """
         logger.info(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
 
+        # # проверка на истечение времени расписания
+        # finish_time = schedule.datetime_finish
+        # now_t = start_time + datetime.timedelta(seconds=schedule.sec_duration)
+        # if now_t > finish_time:
+        #     logger.info(f"Расписания {str(schedule.id)} истекло; текущее время {now_t}; время окончания {finish_time}")
+        #     self.scheduler.remove_job(job_id=str(schedule.id))
+        #     self.update_content_table_schedule()
+        #     return
+
         self.ble_manager.add_task(
             task=RecordingTaskData(
-                schedule_id=schedule.id,
-                experiment=schedule.experiment,
-                device=schedule.device,
-                object=schedule.object,
-                start_time=start_time,
-
-                sec_duration=schedule.sec_duration,
-                # finish_time=start_time + datetime.timedelta(seconds=schedule.sec_duration),
-
-                file_format=schedule.file_format,
-                sampling_rate=schedule.sampling_rate
-            )
+                schedule_id=schedule.id, experiment=schedule.experiment, device=schedule.device, object=schedule.object,
+                start_time=start_time, sec_duration=schedule.sec_duration, file_format=schedule.file_format, sampling_rate=schedule.sampling_rate)
         )
+
+        # проверка на истечение следующего расписания
+        finish_time = schedule.datetime_finish
+        next_record_time = start_time + datetime.timedelta(seconds=schedule.sec_interval)
+        if next_record_time > finish_time:
+            logger.info(f"Для расписания {str(schedule.id)} истекло время; следующая запись {next_record_time}; время окончания {finish_time}")
+
+            job = self.scheduler.get_job(str(schedule.id))
+            if job is not None:
+                self.scheduler.remove_job(job_id=str(schedule.id))
+            self.update_content_table_schedule()
+            return
+
 
     @connection
     def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState, session):
@@ -366,7 +376,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Добавление нового расписания и создание задачи для записи ЭКГ """
         dlg = DlgCreateSchedule()
         code = dlg.exec()
-
         if code == QDialog.DialogCode.Accepted:
             schedule: ScheduleData = dlg.getSchedule()
 
@@ -412,8 +421,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if schedule.datetime_finish is None or schedule.datetime_start is None:
                 status = ScheduleState.UNPLANNED.value
-            elif schedule.datetime_finish < datetime.datetime.now():
-                status = ScheduleState.EXPIRED.value
+            elif datetime.datetime.now() + datetime.timedelta(seconds=schedule.sec_interval) > schedule.datetime_finish:
+                if self.scheduler.get_job(str(schedule_id)):
+                    status = ScheduleState.DISCONNECT.value
+                else:
+                    status = ScheduleState.EXPIRED.value
             else:
                 status = self.ble_manager.get_device_status(device_id=schedule.device.id)
 

@@ -8,17 +8,17 @@ from PySide6.QtCore import QDateTime, Signal, QDate, QTime, QTimer, Qt, QRegular
 from PySide6.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PySide6.QtWidgets import QDialog, QComboBox, QSpinBox, QMessageBox, QWidget
 
-from src.db.database import connection
-from src.db.models import Experiment, Object, Device
-from src.db.queries import get_experiments
+from db.database import connection
+from db.models import Experiment, Object, Device
+from db.queries import get_experiments
 
-from src.structure import ExperimentData, ObjectData, DeviceData, ScheduleData
-from src.constants import Formats, Devices
+from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
+from constants import Formats, Devices
 
-from src.resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
-from src.ui.experiment_dialog import DlgCreateExperiment
+from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from ui.experiment_dialog import DlgCreateExperiment
 
-from src.config import PATH_TO_ICON
+from config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 
