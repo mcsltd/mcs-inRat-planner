@@ -35,14 +35,16 @@ class Storage(QObject):
             logging.warning(f"Для устройства c индексом {task.device.id} уже создана задача на запись")
             return
 
-        logger.info(f"Начало записи данных для устройства с индексом {task.device.id}")
+        now = datetime.datetime.now().replace(microsecond=0)
+        logger.info(f"Начата запись сигнала с {task.device.ble_name} в {str(now)}")
+
         self._devices_id.add(task.device.id)
         self._recording_task_data[task.device.id] = np.array([])
         self._recording_task_property[task.device.id] = task
 
     def accept_data(self, device_id: UUID, data: dict) -> None:
         """ Получение данных от устройства с device_id и сохранение их в _data """
-        logger.debug(f"Получены данные от устройства с индексом: {device_id}")
+        # logger.debug(f"Получены данные от устройства с индексом: {device_id}")
 
         if "signal" in data:
             signal = np.array(data["signal"])
@@ -54,6 +56,10 @@ class Storage(QObject):
             logger.warning(f"Отсутствует задача записи для {device_id}, данные не могут быть сохранены")
             return
 
+        now = datetime.datetime.now().replace(microsecond=0)
+        task_property: RecordingTaskData = self._recording_task_property.get(device_id)
+        logger.info(f"Завершена запись сигнала с устройства {task_property.device.ble_name} в {str(now)}")
+
         try:
             self._save(device_id, acquisition_start_time)
         except Exception as exc:
@@ -61,7 +67,7 @@ class Storage(QObject):
         else:
             logger.info(f"Полученные данные для устройства с индексом {device_id} сохранены")
         finally:
-            ...
+            self._cleanup_task(device_id)
 
     def _save(self, device_id: UUID, acquisition_start_time: float):
         """ Сохранение данных для устройства с device_id """
@@ -115,10 +121,9 @@ class Storage(QObject):
             record_data = task.get_result_record(start_time=start_time, duration=0, status=RecordStatus.ERROR)
             self.signal_success_save.emit(record_data)
 
-        self._cleanup_task(device_id)
+        # self._cleanup_task(device_id)
 
     def _save_to_edf(self, filename: str, write_dir: str, sampling_rate: int, ecg_signal: np.ndarray) -> str | None:
-        logger.debug("Save data to edf.")
 
         file_name = None
         try:
