@@ -84,7 +84,6 @@ class DisplaySignal(PlotWidget):
         else:
             self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
 
-
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
         self.fs = sampling_rate
@@ -119,7 +118,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
     signal_show_dialog = Signal()
     signal_close_dialog = Signal()
 
-    signal_show_info_dialog = Signal()
+    signal_info_dialog = Signal(str)
     signal_accept_data = Signal(object)
 
     def __init__(self, schedule_data: ScheduleData, parent = None,  *args, **kwargs):
@@ -168,7 +167,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # info dialog
         self.dlg_info_connection = InfoConnectionDialog(name=self.schedule_data.device.ble_name, icon_path=PATH_TO_ICON)
-        self.signal_show_info_dialog.connect(self.dlg_info_connection.show)
+        self.signal_info_dialog.connect(self.dlg_info_connection.show_dialog)
 
         # signals
         self.storage.signal_record_saved.connect(self._on_record_saved)
@@ -176,7 +175,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         self.pushButtonConnection.clicked.connect(self._device_connection)
         self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
-        self.pushButtonStart.clicked.connect(self._device_acquisition)
+        self.pushButtonStart.clicked.connect(self._device_start_acquisition)
         self.pushButtonStop.clicked.connect(self._device_stop_acquisition)
 
         self.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
@@ -265,7 +264,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.storage.set_format(frmt)
         logger.info(f"Изменен формат записи на {frmt}")
 
-    # асихронный цикл событий
+    # асинхронный цикл событий
     def _run_async_loop(self):
         """ Создание цикла событий для работы с устройством"""
         self._loop = asyncio.new_event_loop()
@@ -305,7 +304,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         try:
             self.pushButtonConnection.setEnabled(False)
-
             device = await self._find_device()
 
             if device is None:
@@ -320,6 +318,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                 # активация при подключении устройства
                 self.pushButtonStart.setEnabled(True)
                 self.pushButtonDisconnect.setEnabled(True)
+
                 # деактивация при подключении устройства
                 self.comboBoxMode.setEnabled(True)
                 self.comboBoxSampleFreq.setEnabled(True)
@@ -332,9 +331,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         finally:
             self.signal_close_dialog.emit()
 
-            if self.device is None or not self.device.is_connected:
+            if self.device is None:
+                self.signal_info_dialog.emit(
+                    f"Не удалось подключиться к {self.schedule_data.device.ble_name}.\n"
+                    f"Повторите попытку подключения."
+                )
                 self.device = None
-                self.signal_show_info_dialog.emit()
 
     async def _find_device(self) -> BLEDevice | None:
         """ Поиск устройства """
@@ -369,19 +371,15 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _disconnect_device(self):
         """ Отсоединение от устройства """
-        if self.device is None:
-            logger.error("В device установлено None")
-            return
-
         if not self.device.is_connected:
             logger.warning("Устройство уже отключено")
-            return
+            # return
 
-        await self.device.disconnect()
+        if self.device:
+            await self.device.disconnect()
 
         # очистка графика
         self.display.clear_plot()
-
         # активация
         self.pushButtonConnection.setEnabled(True)
         # деактивация
@@ -393,7 +391,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.device = None
 
     # запуск устройства
-    def _device_acquisition(self):
+    def _device_start_acquisition(self):
         """ Запуск устройства для получения данных через асинхронную задачу"""
         logger.debug("Запущено соединение и запуск устройства")
         if self._loop is None:
@@ -404,8 +402,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _start_data_acquisition_impl(self):
         """ Запуск устройства для получения данных """
-        if not self.device.is_connected:
-            logger.error(f"Устройство {self.schedule_data.device.ble_name} не подключено")
+        if not self.device.is_connected:    # обрыв соединения (происходит после команды получения данных)
+            logger.error(f"Устройство {self.device.name} не подключено")
+            self._device_stop_acquisition()
+            self._device_disconnection()
+            return
 
         # активация
         self.pushButtonStop.setEnabled(True)
@@ -428,7 +429,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.is_running = True
             # деактивация в режиме получения данных
             self.pushButtonStart.setEnabled(False)
-
             # активация
             self.pushButtonStop.setEnabled(True)
             self.comboBoxSampleFreq.setEnabled(False)
@@ -471,6 +471,16 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                     logger.error(f"Ошибка обработки данных с устройства {self.schedule_data.device.ble_name}, {exp}")
                     # await self._stop_data_acquisition_impl()
                     break
+
+        if not self.device.is_connected:  # обрыв соединения (происходит после команды получения данных)
+            logger.error(f"Потеряно соединение с {self.device.name}!")
+            self.signal_info_dialog.emit(
+                f"Потеряно соединение с устройством {self.device.name}!\n"
+                f"Повторите попытку подключения."
+            )
+            self._device_stop_acquisition()
+            self._device_disconnection()
+            return
 
     # остановка устройства
     def _device_stop_acquisition(self):
@@ -705,6 +715,11 @@ class InfoConnectionDialog(QDialog):
             button.setMinimumSize(40, 30)
 
         main_layout.addWidget(self.button_box)
+
+    def show_dialog(self, text: None | str = None):
+        if text:
+            self.label.setText(text)
+        self.show()
 
     def accept(self):
         super().accept()
