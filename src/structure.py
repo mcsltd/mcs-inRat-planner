@@ -88,6 +88,9 @@ class RecordData:
 
 @dataclass
 class RecordingTaskData:
+    """
+    Класс, отвечающий за передачу BLEmanager задачи записи
+    """
     schedule_id: UUID
     experiment: ExperimentData
     device: DeviceData

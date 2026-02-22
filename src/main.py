@@ -296,51 +296,53 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         return len(values)
 
-
     def create_job(self, schedule: ScheduleData, start_time: datetime.datetime):
         """ Установка задачи в планировщик """
         self.scheduler.add_job(
-            self._create_record, args=(schedule, start_time),
+            self._create_record, args=(schedule,),
             trigger="interval", seconds=schedule.sec_interval,
             id=str(schedule.id), next_run_time=start_time,
         )
         logger.info(
             f"Создано расписание: {str(schedule.id)};"
-            f" запланированное время старта: {start_time.replace(microsecond=0)};"
-            f" длительность записи: {schedule.sec_duration}"
+            f" начало записи: {start_time.replace(microsecond=0)};"
+            f" длительность: {schedule.sec_duration}"
+            f" периодичность: {schedule.sec_duration}"
         )
 
-    def _create_record(self, schedule: ScheduleData, start_time: datetime.datetime) -> None:
+    def _create_record(self, schedule: ScheduleData) -> None:
         """ Добавление задачи по съёму ЭКГ в BleManager """
-        logger.info(f"Начало записи ЭКГ: {start_time} по расписанию {schedule.id}")
-
-        # # проверка на истечение времени расписания
-        # finish_time = schedule.datetime_finish
-        # now_t = start_time + datetime.timedelta(seconds=schedule.sec_duration)
-        # if now_t > finish_time:
-        #     logger.info(f"Расписания {str(schedule.id)} истекло; текущее время {now_t}; время окончания {finish_time}")
-        #     self.scheduler.remove_job(job_id=str(schedule.id))
-        #     self.update_content_table_schedule()
-        #     return
-
-        self.ble_manager.add_task(
-            task=RecordingTaskData(
-                schedule_id=schedule.id, experiment=schedule.experiment, device=schedule.device, object=schedule.object,
-                start_time=start_time, sec_duration=schedule.sec_duration, file_format=schedule.file_format, sampling_rate=schedule.sampling_rate)
-        )
-
-        # проверка на истечение следующего расписания
-        finish_time = schedule.datetime_finish
-        next_record_time = start_time + datetime.timedelta(seconds=schedule.sec_interval)
-        if next_record_time > finish_time:
-            logger.info(f"Для расписания {str(schedule.id)} истекло время; следующая запись {next_record_time}; время окончания {finish_time}")
-
-            job = self.scheduler.get_job(str(schedule.id))
-            if job is not None:
-                self.scheduler.remove_job(job_id=str(schedule.id))
-            self.update_content_table_schedule()
+        # проверка на достижение времени окончания
+        t_now = datetime.datetime.now()
+        if t_now > schedule.datetime_finish: # t_now + datetime.timedelta(seconds=schedule.sec_duration)
+            logger.info(f"Время выполнения расписания {schedule.id} истекло: {str(schedule.datetime_finish)}")
+            # остановка выполнения расписания
+            schedule_id = str(schedule.id)
+            job = self.scheduler.get_job(schedule_id)
+            if job:
+                job.remove()
             return
 
+        # назначение blemanager задачи
+        t_now = datetime.datetime.now()
+        logger.info(f"Начало записи ЭКГ: {t_now} по расписанию {schedule.id}")
+        self.ble_manager.add_task(
+            RecordingTaskData(
+                schedule_id=schedule.id, experiment=schedule.experiment,
+                device=schedule.device, object=schedule.object,
+                start_time=t_now, sec_duration=schedule.sec_duration,
+                file_format=schedule.file_format, sampling_rate=schedule.sampling_rate
+              )
+        )
+
+        # проверка для следующей итерации
+        if t_now + datetime.timedelta(seconds=schedule.sec_interval) > schedule.datetime_finish:
+            logger.info(f"Для расписания {schedule.id} истекло время выполнения - {str(schedule.datetime_finish)}; выполнение расписания остановлено")
+            # остановка выполнения расписания
+            schedule_id = str(schedule.id)
+            job = self.scheduler.get_job(schedule_id)
+            if job:
+                job.remove()
 
     @connection
     def handle_schedule_state(self, schedule_id: UUID, status: ScheduleState, session):
