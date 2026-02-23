@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_experimentOCjFff.ui'
+## Form generated from reading UI file 'dlg_input_experimentGSvwiM.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -18,6 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QDialogButtonBox,
     QFormLayout, QGridLayout, QLabel, QLineEdit,
     QSizePolicy, QWidget)
+import resources.resources_rc
 
 class Ui_DlgInputExperiment(object):
     def setupUi(self, DlgInputExperiment):
@@ -29,6 +30,9 @@ class Ui_DlgInputExperiment(object):
         font.setFamilies([u"Segoe UI Emoji"])
         font.setPointSize(11)
         DlgInputExperiment.setFont(font)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        DlgInputExperiment.setWindowIcon(icon)
         self.gridLayout = QGridLayout(DlgInputExperiment)
         self.gridLayout.setObjectName(u"gridLayout")
         self.labelExperiment = QLabel(DlgInputExperiment)

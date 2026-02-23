@@ -6,8 +6,6 @@ from PySide6.QtWidgets import QMessageBox
 
 from structure import RecordData, ScheduleData
 
-from config import PATH_TO_ICON
-
 
 from pyqtgraph import PlotWidget, mkPen
 import pyedflib
@@ -15,7 +13,7 @@ import numpy as np
 from typing import List
 import os
 
-from resources.v1.wdt_monitor import Ui_FormMonitor
+from resources.wdt_monitor import Ui_FormMonitor
 
 
 class Display(PlotWidget):
@@ -51,7 +49,6 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowModality(Qt.WindowModality.NonModal)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         title=f"Сигнал ЭКГ с объекта \"{schedule_data.object.name}\""
         self.setWindowTitle(title)

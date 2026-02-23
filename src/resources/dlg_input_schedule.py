@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_input_schedule_v3XIvEMU.ui'
+## Form generated from reading UI file 'dlg_input_scheduleUqGDlF.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit
     QDialog, QFormLayout, QGridLayout, QGroupBox,
     QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QSizePolicy, QSpacerItem, QWidget)
+import resources.resources_rc
 
 class Ui_DlgCreateNewSchedule(object):
     def setupUi(self, DlgCreateNewSchedule):
@@ -26,6 +27,9 @@ class Ui_DlgCreateNewSchedule(object):
             DlgCreateNewSchedule.setObjectName(u"DlgCreateNewSchedule")
         DlgCreateNewSchedule.setWindowModality(Qt.WindowModality.ApplicationModal)
         DlgCreateNewSchedule.resize(492, 582)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        DlgCreateNewSchedule.setWindowIcon(icon)
         DlgCreateNewSchedule.setAutoFillBackground(False)
         DlgCreateNewSchedule.setInputMethodHints(Qt.InputMethodHint.ImhUrlCharactersOnly)
         DlgCreateNewSchedule.setSizeGripEnabled(False)

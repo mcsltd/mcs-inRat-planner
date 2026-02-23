@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'wdt_monitorLYphHD.ui'
+## Form generated from reading UI file 'wdt_monitorHEhRHU.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -17,12 +17,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFormLayout, QFrame, QGridLayout,
     QLabel, QSizePolicy, QVBoxLayout, QWidget)
+import resources.resources_rc
 
 class Ui_FormMonitor(object):
     def setupUi(self, FormMonitor):
         if not FormMonitor.objectName():
             FormMonitor.setObjectName(u"FormMonitor")
         FormMonitor.resize(1271, 604)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        FormMonitor.setWindowIcon(icon)
         self.gridLayout = QGridLayout(FormMonitor)
         self.gridLayout.setObjectName(u"gridLayout")
         self.verticalLayoutInfo = QVBoxLayout()

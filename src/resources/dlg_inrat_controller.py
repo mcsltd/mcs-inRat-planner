@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controller_v1hWzmSx.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerfxNBTl.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -18,12 +18,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFormLayout,
     QGridLayout, QHBoxLayout, QLabel, QPushButton,
     QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+import resources.resources_rc
 
 class Ui_DlgInRatController(object):
     def setupUi(self, DlgInRatController):
         if not DlgInRatController.objectName():
             DlgInRatController.setObjectName(u"DlgInRatController")
         DlgInRatController.resize(1164, 586)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        DlgInRatController.setWindowIcon(icon)
         self.gridLayout = QGridLayout(DlgInRatController)
         self.gridLayout.setObjectName(u"gridLayout")
         self.verticalLayoutPlot = QVBoxLayout()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowRBTWJZ.ui'
+## Form generated from reading UI file 'main_windowHnSCpV.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QLabel,
     QMainWindow, QMenu, QMenuBar, QPushButton,
     QSizePolicy, QSpacerItem, QStatusBar, QVBoxLayout,
     QWidget)
+import resources.resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -29,6 +30,10 @@ class Ui_MainWindow(object):
         font = QFont()
         font.setFamilies([u"Segoe UI"])
         MainWindow.setFont(font)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        MainWindow.setWindowIcon(icon)
+        MainWindow.setWindowOpacity(1.000000000000000)
         self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
         self.actionSettings = QAction(MainWindow)

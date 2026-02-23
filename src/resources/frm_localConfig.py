@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_localConfig_NEWAgOWyT.ui'
+## Form generated from reading UI file 'frm_localConfigJOwqqB.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -17,12 +17,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QListWidget,
     QListWidgetItem, QSizePolicy, QVBoxLayout, QWidget)
+import resources.resources_rc
 
 class Ui_FrmMainConfig(object):
     def setupUi(self, FrmMainConfig):
         if not FrmMainConfig.objectName():
             FrmMainConfig.setObjectName(u"FrmMainConfig")
         FrmMainConfig.resize(762, 534)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        FrmMainConfig.setWindowIcon(icon)
         self.gridLayout = QGridLayout(FrmMainConfig)
         self.gridLayout.setObjectName(u"gridLayout")
         self.verticalLayoutConfig = QVBoxLayout()

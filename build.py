@@ -8,5 +8,5 @@ PyInstaller.__main__.run([
     "--console",
     "--name=inRat planner",
     "--clean",
-    "--icon=src/resources/v1/icon_app.ico"
+    "--icon=src/resources/images/icon.ico",
 ])
