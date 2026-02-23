@@ -109,7 +109,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionLicenses.triggered.connect(self.licenses_clicked)
         self.actionAbout.triggered.connect(self.about_clicked)
         self.actionExit.triggered.connect(self.close)
+
         self.actionDEBUGActiveSchedule.triggered.connect(self.debug_show_active_schedule_tasks)
+        self.actionDEBUGActiveSchedule.setVisible(False)
 
         self.installEventFilter(self)
 
