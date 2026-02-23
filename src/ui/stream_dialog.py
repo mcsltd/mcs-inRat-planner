@@ -79,7 +79,6 @@ class PlotSignal(PlotWidget):
     def __init__(self, fs, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setBackground("w")
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
         self.setDisabled(True)
 
         pen = mkPen("k")
@@ -146,7 +145,6 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self.setupUi(self)
         self.setWindowTitle(f"Регистрация ЭКГ сигнала объекта \"{schedule_data.object.name}\"")
         self.setWindowModality(Qt.WindowModality.NonModal)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         self.schedule_data = schedule_data
 

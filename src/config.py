@@ -8,7 +8,7 @@ load_dotenv()
 
 class AppData:
     def __init__(self):
-        self.app_dir = Path() / ".inRat planner"
+        self.app_dir = Path.home() / ".inRat planner"
         self.app_dir.mkdir(exist_ok=True)
 
         self.url_db = f"sqlite+pysqlite:///{self.app_dir}/InRat.db"
@@ -31,9 +31,3 @@ def parse_ble_key(key: str):
 
 
 BLE_KEY_IN_RAT = parse_ble_key(os.getenv("INRAT"))
-DB_PATH = os.getenv('DB_PATH')
-DB_NAME = os.getenv('DB_NAME')
-SAVE_DIR = os.getenv("SAVE_DIR")
-
-os.makedirs(DB_PATH, exist_ok=True)
-os.makedirs(SAVE_DIR, exist_ok=True)

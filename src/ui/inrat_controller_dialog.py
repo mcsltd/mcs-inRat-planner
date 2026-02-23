@@ -5,8 +5,8 @@ import threading
 import time
 
 import numpy as np
-from PySide6.QtCore import Signal, QTimer, Qt, QSize
-from PySide6.QtWidgets import QFileDialog, QVBoxLayout, QProgressBar, QSizePolicy, QLabel, QMessageBox, QPushButton, \
+from PySide6.QtCore import Signal, QTimer, Qt
+from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, QMessageBox, QPushButton, \
     QHBoxLayout, QSpacerItem, QDialogButtonBox
 from PySide6 import QtCore
 
@@ -24,6 +24,8 @@ from tools.inrat_storage import InRatStorage
 from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
 from structure import RecordData
+
+from src.config import app_data
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
@@ -128,7 +130,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.schedule_data = schedule_data
         self.device: None | InRat = None
         self.storage = InRatStorage(
-            path_to_save=SAVE_DIR,
+            path_to_save=app_data.path_to_data,
             device_name=self.schedule_data.device.ble_name,
             object_name=self.schedule_data.object.name,
             experiment_name=self.schedule_data.experiment.name,
@@ -160,12 +162,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.recording_timer.setInterval(1000)
 
         # waiting dialog
-        self.dlg_waiting_connection = WaitingDialog(name=self.schedule_data.device.ble_name)
+        self.dlg_waiting_connection = WaitingDialog(name=self.schedule_data.device.ble_name, parent=self)
         self.signal_show_dialog.connect(self.dlg_waiting_connection.show)
         self.signal_close_dialog.connect(self.dlg_waiting_connection.close)
 
         # info dialog
-        self.dlg_info_connection = InfoConnectionDialog(name=self.schedule_data.device.ble_name, icon_path=PATH_TO_ICON)
+        self.dlg_info_connection = InfoConnectionDialog(name=self.schedule_data.device.ble_name, parent=self)
         self.signal_info_dialog.connect(self.dlg_info_connection.show_dialog)
 
         # signals
@@ -647,7 +649,6 @@ class WaitingDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Поиск и подключение к {name}")
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         font = QFont()
         font.setPointSize(10)
@@ -672,11 +673,10 @@ class WaitingDialog(QDialog):
 
 
 class InfoConnectionDialog(QDialog):
-    def __init__(self, name, icon_path):
-        super().__init__(parent=None)
+    def __init__(self, name, parent):
+        super().__init__(parent=parent)
         self.setWindowTitle(f"Информация о соединении с {name}")
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setWindowIcon(QIcon(icon_path))
 
         self.setMinimumSize(300, 120)
 

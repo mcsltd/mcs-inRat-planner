@@ -12,7 +12,7 @@ from transliterate import detect_language, translit
 
 from constants import Formats, RecordStatus
 from structure import RecordingTaskData, RecordData
-from config import SAVE_DIR
+from config import app_data
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class Storage(QObject):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.path_to_save = os.path.abspath(SAVE_DIR)
+        self.path_to_save = os.path.abspath(app_data.path_to_data)
 
         self._devices_id: set[UUID] = set()
         self._recording_task_data: dict[UUID, np.ndarray] = {}
@@ -191,11 +191,59 @@ class Storage(QObject):
         return filename
 
     @staticmethod
-    def to_latin(string: str) -> str:
-        if detect_language(string) == "ru":
-            string = translit(string, reversed=True)
-            string = string.replace("'", "")
-        return string
+    def to_latin(text):
+        """
+        Преобразование кириллицы в латиницу (транслитерация)
+        Без использования внешних модулей
+        """
+        if not text or not isinstance(text, str):
+            return text or ""
+
+        # Словарь транслитерации
+        translit_dict = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+            'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+
+            'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+            'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+            'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+            'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch',
+            'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
+
+            # Специальные символы
+            ' ': '_', '-': '-', '.': '.', ',': '', '(': '', ')': '',
+            ':': '', ';': '', '!': '', '?': '', '"': '', "'": '',
+        }
+
+        # Транслитерируем каждый символ
+        result = ''
+        for char in text:
+            result += translit_dict.get(char, char)
+
+        # Удаляем лишние подчеркивания и символы
+        while '__' in result:
+            result = result.replace('__', '_')
+
+        # Удаляем подчеркивания в начале и конце
+        result = result.strip('_')
+
+        # Если результат пустой, возвращаем исходный текст без спецсимволов
+        if not result:
+            # Убираем только самые проблемные символы
+            import re
+            result = re.sub(r'[^\w\-.]', '', text)
+
+        return result
+
+    # @staticmethod
+    # def to_latin(string: str) -> str:
+    #     if detect_language(string) == "ru":
+    #         string = translit(string, reversed=True)
+    #         string = string.replace("'", "")
+    #     return string
 
     @staticmethod
     def signal_truncation(signal: np.ndarray, sampling_rate: int, seconds_duration: int) -> np.ndarray:

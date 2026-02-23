@@ -55,7 +55,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
-        # self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         # init ble manager
         self.ble_manager = BleManager()
