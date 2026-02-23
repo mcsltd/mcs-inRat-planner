@@ -8,12 +8,11 @@ from PySide6.QtWidgets import (
 
 from db.database import connection
 from db.models import Schedule, Experiment
-from resources.v1.frm_localConfig import Ui_FrmMainConfig
+from resources.frm_localConfig import Ui_FrmMainConfig
 from tools.modview import GenericTableWidget
 from ui.experiment_dialog import DlgCreateExperiment
 from ui.helper_dialog import DialogHelper
 
-from config import PATH_TO_ICON
 
 class ConfigSignals(QObject):
     """ Сигналы настроек """
@@ -58,7 +57,6 @@ class DlgMainConfig(QDialog, Ui_FrmMainConfig):
     def __init__(self, cnt_device, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
         self.signals = ConfigSignals()
 
         self._idx_selected_widget = 0

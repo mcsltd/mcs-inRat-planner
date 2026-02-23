@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'widget_crud_experimentxiiWKe.ui'
+## Form generated from reading UI file 'widget_crud_experimentakrloK.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -17,12 +17,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QGridLayout, QSizePolicy, QVBoxLayout,
     QWidget)
+import resources.resources_rc
 
 class Ui_WidgetCrudExperiment(object):
     def setupUi(self, WidgetCrudExperiment):
         if not WidgetCrudExperiment.objectName():
             WidgetCrudExperiment.setObjectName(u"WidgetCrudExperiment")
         WidgetCrudExperiment.resize(700, 500)
+        icon = QIcon()
+        icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        WidgetCrudExperiment.setWindowIcon(icon)
         self.gridLayout = QGridLayout(WidgetCrudExperiment)
         self.gridLayout.setObjectName(u"gridLayout")
         self.verticalLayout = QVBoxLayout()

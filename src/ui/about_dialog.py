@@ -7,10 +7,10 @@ from PySide6.QtWidgets import (QApplication, QWidget,
 from PySide6.QtGui import QPixmap, QFont
 from PySide6.QtCore import Qt, QSize
 
-from config import PATH_TO_ICON_MCS
-from resources.v1.dlg_show_licenses import Ui_DlgLicenses
-
-from config import PATH_TO_LICENSES
+import resources.resources_rc
+from resources.dlg_show_licenses import Ui_DlgLicenses
+from PySide6.QtCore import QFile
+import json
 
 FONT = "Arial"
 
@@ -35,7 +35,8 @@ class AboutDialog(QDialog):
 
         image_label = QLabel()
         try:
-            pixmap = QPixmap(PATH_TO_ICON_MCS)
+            pixmap = QPixmap(u":/images/logo.ico")
+
             if pixmap.isNull():
                 pixmap = QPixmap(200, 200)
                 pixmap.fill(Qt.lightGray)
@@ -123,7 +124,7 @@ class AboutDialog(QDialog):
 
 
 class DialogLicenses(QDialog, Ui_DlgLicenses):
-    def __init__(self, path_to_licenses, parent=None,  *args, **kwargs):
+    def __init__(self, parent=None,  *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.setupUi(self)
 
@@ -134,39 +135,36 @@ class DialogLicenses(QDialog, Ui_DlgLicenses):
         header.setSectionResizeMode(0, QHeaderView.Stretch)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
 
-        self.load_licenses(path_to_licenses)
-
+        self.load_licenses(":/licenses.json")
 
     def load_licenses(self, json_file):
-        if not os.path.exists(json_file):
-            QMessageBox.warning(
-                self,
-                "Файл не найден",
-                f"Файл {json_file} не найден.",
-                QMessageBox.StandardButton.Ok
-            )
-            return
 
-        try:
+        file = QFile(json_file)
+        if file.exists() and file.open(QFile.ReadOnly):
+            try:
+                data = json.loads(bytes(file.readAll()).decode("utf-16"))
+                file.close()
+            except:
+                file.close()
+                QMessageBox.critical(self, "Ошибка", "Не удалось прочитать файл с лицензиями.")
+                return
+        else:
+            if not os.path.exists(json_file):
+                QMessageBox.warning(self, "Файл не найден", f"Файл {json_file} не найден.")
+                return
+            try:
+                with open(json_file, 'r', encoding='utf-8-sig') as f:
+                    data = json.load(f)
+            except:
+                QMessageBox.critical(self, "Ошибка", "Не удалось прочитать файл с лицензиями.")
+                return
 
-            with open(json_file, 'br') as f:
-                data = json.load(f)
-
-            self.tableWidgetLicense.setRowCount(len(data))
-
-            for i, lib in enumerate(data):
-                name_item = QTableWidgetItem(lib.get('Name', 'Неизвестно'))
-                license_item = QTableWidgetItem(lib.get('License', 'Отсутствует'))
-                self.tableWidgetLicense.setItem(i, 0, name_item)
-                self.tableWidgetLicense.setItem(i, 1, license_item)
-        except Exception:
-            QMessageBox.critical(
-                self,
-                "Ошибка чтения",
-                "Не удалось прочитать файл с лицензиями.",
-                QMessageBox.StandardButton.Ok
-            )
-
+        self.tableWidgetLicense.setRowCount(len(data))
+        for i, lib in enumerate(data):
+            name_item = QTableWidgetItem(lib.get('Name', 'Неизвестно'))
+            license_item = QTableWidgetItem(lib.get('License', 'Отсутствует'))
+            self.tableWidgetLicense.setItem(i, 0, name_item)
+            self.tableWidgetLicense.setItem(i, 1, license_item)
 
 
 if __name__ == "__main__":

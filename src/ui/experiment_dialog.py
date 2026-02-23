@@ -5,10 +5,9 @@ from PySide6.QtCore import QRegularExpression
 from db.database import connection
 from db.models import Experiment
 
-from resources.v1.dlg_input_experiment import Ui_DlgInputExperiment
+from resources.dlg_input_experiment import Ui_DlgInputExperiment
 from structure import ExperimentData
 
-PATH_TO_ICON = "resources/v1/icon_app.svg"
 
 class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
 
@@ -17,7 +16,6 @@ class DlgCreateExperiment(Ui_DlgInputExperiment, QDialog):
     def __init__(self, experiment_data: ExperimentData | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         pattern = r'^[a-zA-Zа-яА-ЯёЁ0-9\s\-_\.\,]*$'
         input_validator = QRegularExpressionValidator(QRegularExpression(pattern))

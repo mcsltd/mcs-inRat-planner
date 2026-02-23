@@ -6,7 +6,6 @@ from configparser import ConfigParser
 
 from uuid import UUID
 
-import numpy as np
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog, QTableView
 from PySide6.QtGui import QIcon
@@ -25,7 +24,7 @@ from tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
-from resources.v1.main_window import Ui_MainWindow
+from src.resources.main_window import Ui_MainWindow
 from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
 from ui.inrat_controller_dialog import InRatControllerDialog
@@ -34,7 +33,7 @@ from ui.manage_experiments import ExperimentCRUDWidget
 from tools.modview import GenericTableWidget
 from util import delete_file, copy_file
 
-from config import PATH_TO_ICON, PATH_TO_LICENSES, app_data
+from config import app_data
 
 # database
 from db.queries import get_count_records, get_count_error_records, \
@@ -56,7 +55,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowTitle("InRat Planner")
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
+        # self.setWindowIcon(QIcon(PATH_TO_ICON))
 
         # init ble manager
         self.ble_manager = BleManager()
@@ -729,7 +728,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         job.modify(next_run_time=next_run)
 
     def experiments_clicked(self):
-        dlg = ExperimentCRUDWidget()
+        dlg = ExperimentCRUDWidget(self)
         dlg.signals.data_changed.connect(self.update_content_table_schedule)
         dlg.show()
 
@@ -745,7 +744,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         ok = dlg.exec()
 
     def licenses_clicked(self):
-        dlg = DialogLicenses(parent=self, path_to_licenses=PATH_TO_LICENSES)
+        dlg = DialogLicenses(parent=self)
         dlg.exec()
 
     def on_max_devices_changed(self, cnt_device):

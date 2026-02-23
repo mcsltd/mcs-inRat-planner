@@ -15,10 +15,9 @@ from db.queries import get_experiments
 from structure import ExperimentData, ObjectData, DeviceData, ScheduleData
 from constants import Formats, Devices
 
-from resources.v1.dlg_input_schedule import Ui_DlgCreateNewSchedule
+from resources.dlg_input_schedule import Ui_DlgCreateNewSchedule
 from ui.experiment_dialog import DlgCreateExperiment
 
-from config import PATH_TO_ICON
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,6 @@ class DlgCreateSchedule(Ui_DlgCreateNewSchedule, QDialog):
             self.setWindowTitle("Изменение расписания")
 
         self.setupUi(self)
-        self.setWindowIcon(QIcon(PATH_TO_ICON))
         self.setFixedSize(self.size())
 
         self.default_schedule: ScheduleData = schedule

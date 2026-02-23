@@ -15,11 +15,10 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from config import SAVE_DIR, PATH_TO_ICON
 from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
 from device.inrat.inrat import InRat
 from device.inrat.structures import InRatSettings
-from resources.v1.dlg_inrat_controller import Ui_DlgInRatController
+from resources.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
 from tools.inrat_storage import InRatStorage
 from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
