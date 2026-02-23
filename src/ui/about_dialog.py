@@ -76,7 +76,7 @@ class AboutDialog(QDialog):
         # description_label.setWordWrap(True)
 
         # Версия (бета)
-        version_label = QLabel("Версия v.0.0.4 - beta")
+        version_label = QLabel("Версия v.0.0.5 - beta")
         version_font = QFont("Arial")
         version_font.setPointSize(10)
         # version_font.setBold(True)
@@ -153,7 +153,7 @@ class DialogLicenses(QDialog, Ui_DlgLicenses):
                 QMessageBox.warning(self, "Файл не найден", f"Файл {json_file} не найден.")
                 return
             try:
-                with open(json_file, 'r', encoding='utf-8-sig') as f:
+                with open(json_file, 'r', encoding="utf-16") as f:
                     data = json.load(f)
             except:
                 QMessageBox.critical(self, "Ошибка", "Не удалось прочитать файл с лицензиями.")
