@@ -26,6 +26,7 @@ from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 from structure import RecordData
 
 from src.config import app_data
+from src.device.inrat.structures import InRatUsage
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
@@ -185,6 +186,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStartRecording.clicked.connect(self._start_recording)
         self.pushButtonStopRecording.clicked.connect(self._stop_recording)
 
+        self.battery_check_time = 0
+
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
         """ Обработчик таймера записи сигнала """
@@ -314,6 +317,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
             if await self._connect_device(device):
                 status = await self.device.get_status()
+                self.set_level_battery(status.Usage)
                 self._set_mode_combobox(mode=status.Activated)
 
                 # активация при подключении устройства
@@ -338,6 +342,28 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                     f"Повторите попытку подключения."
                 )
                 self.device = None
+
+    def set_level_battery(self, usage: InRatUsage):
+        """ Установка уровня батареи """
+        battery_capacity = 504 * (10 ** 6)  # мкА * c
+        # параметры потребления
+        i_adv, eff_adv, t_adv = 0.02, 1, usage.AdvertisingSeconds
+        i_con, eff_con, t_con = 15, 0.9, usage.ConnectionSeconds
+        i_send, eff_send, t_send = 470, 0.7, usage.DataSendSeconds
+
+        logger.info(f"\nВ режиме Advertising: {t_adv} с.\n"
+                    f"В режиме ConnectionSeconds: {t_con} с.\n"
+                    f"В режиме DataSendSeconds: {t_send} с.\n"
+                    f"Общее время работы: {t_send + t_adv + t_con} с")
+
+        # расчёт потребленной ёмкости в разных режимах
+        consump_adv = t_adv * i_adv * eff_adv
+        consump_con = t_con * i_con * eff_con
+        consump_send = t_send * i_send * eff_send
+
+        remain_capacity = battery_capacity - consump_con - consump_send - consump_adv
+        level = int(remain_capacity / battery_capacity * 100)
+        self.progressBarLevel.setValue(level)
 
     async def _find_device(self) -> BLEDevice | None:
         """ Поиск устройства """
@@ -426,6 +452,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         data_queue = asyncio.Queue()
         logger.debug(f"{self.schedule_data.device.ble_name} запущен на частоте: {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
+
         if await self.device.start_acquisition(data_queue=data_queue, settings=self._settings):
             self.is_running = True
             # деактивация в режиме получения данных
@@ -434,6 +461,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.pushButtonStop.setEnabled(True)
             self.comboBoxSampleFreq.setEnabled(False)
             self.pushButtonStartRecording.setEnabled(True)
+
+            # установка времени таймеру проверки уровня заряда
+            self.battery_check_time = time.time()
 
             while self.is_running:
                 try:
@@ -464,6 +494,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                             self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Freefall")
 
                     data_queue.task_done()
+
+                    # узнать статус уровня батареи
+                    if time.time() - self.battery_check_time > 10.0:
+                        status = await self.device.get_status()
+                        self.set_level_battery(status.Usage)
+                        self.battery_check_time = time.time()
 
                 except asyncio.TimeoutError:
                     continue
@@ -501,6 +537,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             return
 
         if await self.device.stop_acquisition():
+            self.battery_check_time = 0
+
             if self.storage.is_recording:
                 self.pushButtonStopRecording.click()
 
