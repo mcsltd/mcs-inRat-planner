@@ -405,6 +405,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if self.device:
             await self.device.disconnect()
 
+        # сбросить уровень батареи (когда устр-во отключено)
+        self.progressBarLevel.setValue(0)
         # очистка графика
         self.display.clear_plot()
         # активация
