@@ -25,8 +25,8 @@ from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 
 from structure import RecordData
 
-from src.config import app_data
-from src.device.inrat.structures import InRatUsage
+from config import app_data
+from device.inrat.structures import InRatUsage
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
@@ -123,8 +123,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
     signal_info_dialog = Signal(str)
     signal_accept_data = Signal(object)
 
-    def __init__(self, schedule_data: ScheduleData, parent = None,  *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, schedule_data: ScheduleData, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.setupUi(self)
 
         # backend
@@ -273,7 +273,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         """ Создание цикла событий для работы с устройством"""
         self._loop = asyncio.new_event_loop()
         self._loop.set_debug(True)
-        # asyncio.set_event_loop(self._loop)
+        asyncio.set_event_loop(self._loop)
 
         self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
         self._loop_thread.start()

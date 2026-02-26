@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFormLayout,
     QGridLayout, QHBoxLayout, QLabel, QProgressBar,
     QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
     QWidget)
-import resources_rc
+import resources.resources_rc
 
 class Ui_DlgInRatController(object):
     def setupUi(self, DlgInRatController):
