@@ -24,7 +24,7 @@ from tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
 # ui
-from src.resources.main_window import Ui_MainWindow
+from resources.main_window import Ui_MainWindow
 from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
 from ui.inrat_controller_dialog import InRatControllerDialog
@@ -715,7 +715,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     job.pause()
 
                 try:
-                    dlg = InRatControllerDialog(parent=self, schedule_data=schedule_data)
+                    dlg = InRatControllerDialog(schedule_data=schedule_data)
                     dlg.signal_record_saved.connect(self.handle_record_result)
                     dlg.exec()
                 except Exception as exp:
