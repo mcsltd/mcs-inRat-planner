@@ -8,10 +8,10 @@ from bleak import BleakClient, BLEDevice, BleakScanner
 
 from config import BLE_KEY_IN_RAT
 from device.crypt import get_control_sum
-from device.inrat.constants import Command, InRatDataRateEcg, ScaleAccelerometer, EnabledChannels, EventType, \
+from device.inrat_v0.constants import Command, InRatDataRateEcg, ScaleAccelerometer, EnabledChannels, EventType, \
     InRatEventEnum
-from device.inrat.decoder import Decoder
-from device.inrat.structures import InRatSettings, InRatStatus, InRatEvent
+from device.inrat_v0.decoder import Decoder
+from device.inrat_v0.structures import InRatSettings, InRatStatus, InRatEvent
 
 logger = logging.getLogger(__name__)
 
