@@ -86,15 +86,18 @@ class inRat:
                 await qevent.put({"counter": event.Counter, "event": event})
 
         async def signal_handler(sender, data: bytearray):
+            # print(f"{sender=}, {data=}")
+            time_received = time.time()
             cnt, sig = decode_ecg(data)
-            await qsignal.put({"counter": cnt, "signal": sig})
+            await qsignal.put({"start_time": time_received, "counter": cnt, "signal": sig})
 
         settings = Settings(
             DataRateEcg=SamplingRate.HZ_500,
             HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2,
             EnabledChannels=EnabledChannels.ECG,
-            EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
+            # EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
+            EnabledEvents=0,
             ActivityThreshold=1
         )
 
@@ -103,7 +106,6 @@ class inRat:
             await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
         if qevent:
             await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
-
 
     async def stop_acquisition(self) -> None:
         """ Запуск inRat на регистрацию сигнала и событий """
@@ -121,12 +123,16 @@ class inRat:
 
     async def disconnect(self) -> bool:
         """ Отключение от устройства """
-        await self._setup(Command.AcquisitionStop)
+        if not self.is_connected:
+            return True
+
+        await self._setup(Command.ConnectionClose)
         await self._client.disconnect()
+        return True
 
 
 async def main():
-    device = await BleakScanner.find_device_by_name(name="inRat-1-1022")
+    device = await BleakScanner.find_device_by_name(name="inRat-1-1038")
 
     device = inRat(device)
     if await device.connect():
