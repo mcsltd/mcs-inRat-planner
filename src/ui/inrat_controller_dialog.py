@@ -15,9 +15,9 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
-from device.inrat.inrat import InRat
-from device.inrat.structures import InRatSettings
+from device.inrat_v0.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
+from device.inrat_v0.inrat import InRat
+from device.inrat_v0.structures import InRatSettings
 from resources.dlg_inrat_controller import Ui_DlgInRatController
 from structure import ScheduleData
 from tools.inrat_storage import InRatStorage
@@ -26,7 +26,7 @@ from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
 from structure import RecordData
 
 from config import app_data
-from device.inrat.structures import InRatUsage
+from device.inrat_v0.structures import InRatUsage
 
 SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
                 ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
