@@ -15,7 +15,7 @@ def decode_ecg(raw_data: bytearray) -> (int, np.ndarray):
     offset += 4
 
     # decode ecg
-    ecg = np.zeros(Pkt.SamplesCountEcg, dtype=np.float64)
+    ecg = np.zeros(Pkt.SamplesCountEcg, dtype=np.int32)
     prev = 0
     for i in range(Pkt.SamplesCountEcg):
         if (code >> i) & 0x1 == 0x0:
@@ -27,6 +27,4 @@ def decode_ecg(raw_data: bytearray) -> (int, np.ndarray):
             offset += 2
 
         prev = ecg[i]
-
-    ecg *= Const.EcgResolution  # in V
     return counter, ecg
