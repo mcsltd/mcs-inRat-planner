@@ -2,6 +2,7 @@ import asyncio
 import copy
 import logging
 import os
+import queue
 import threading
 import time
 from asyncio import Future, AbstractEventLoop
@@ -19,100 +20,61 @@ from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 from src.resources.dlg_inrat_controller import Ui_DlgInRatController
 from src.structure import ScheduleData
 from src.tools.inrat_storage import InRatStorage
-from src.util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
-
-from src.structure import RecordData
 
 from src.config import app_data
-
-from src.device.device import ECG_DataBlock
-from src.device.device_v1 import inRatDevice
-
-from src.device.inrat_v1.enums import Command, SamplingRate, ScaleAccelerometer, EnabledChannels, EventType
-from src.device.inrat_v1.structures import Settings
-
-SAMPLE_RATES = [("500 Гц", 0),
-                ("1000 Гц", 1),
-                ("2000 Гц", 2), ]
-
-MODE = [("Деактивирован", Command.Deactivate),
-        ("Активирован", Command.Activate)]
-
+from src.device.device import inRatDevice, EcgDataBlock
 
 logger = logging.getLogger(__name__)
 
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        self.setBackground("w")
-        self.setDisabled(True)
 
-        pen = mkPen("k")
-        font = QFont("Arial", 11)
+        self.ecg = EcgDataBlock()
+        self.ecg_plot = self.plot()
 
-        self.time = np.array([])
-        self.ecg = np.array([])
-        self.plot_signal = self.plot(self.time, self.ecg, pen=mkPen("b"))
+        self._running = False
+        self._work = None
+        self._input_queue = queue.Queue()
 
-        self.setLabel("left", "V (мкВ)", pen=mkPen(color='k'), font=font)
-        self.setLabel("bottom", "Время (с)", pen=mkPen(color='k'), font=font)
-        for ax in ["bottom", "left"]:
-            self.getAxis(ax).label.setFont(font)
-            self.getAxis(ax).setPen(pen)
-            self.getAxis(ax).setTextPen(pen)
-            self.getAxis(ax).setTickPen(pen)
-            self.getAxis(ax).setTickFont(font)
+    def start(self):
+        while not self._input_queue.empty():
+            self._input_queue.get_nowait()
 
-        self.timebase_s = 5  # окно отображения сигнала
-        self.fs = 500
+        if self._running:
+            self._running = True
+            self._work = threading.Thread(target=self._worker_thread)
+            self._work.start()
 
-        self._markers = []
+    def process_input(self, datablock: EcgDataBlock):
+        self.ecg = datablock
 
-    def set_data(self, time: np.ndarray, signal: np.ndarray):
-        """ Отображение сигнала на графике """
-        if time.shape != signal.shape:
-            logger.error("Время и сигнал ЭКГ имеют разную размерность")
-            return
 
-        max_len = self.timebase_s * self.fs
-        if len(self.time) < max_len:
-            self.time = np.append(self.time, time)
-            self.ecg = np.append(self.ecg, signal)
-        else:
-            self.time = np.append(self.time[len(time):], time)
-            self.ecg = np.append(self.ecg[len(signal):], signal)
+    def _transmit_data(self, data):
+        self._input_queue.put(data, False)
 
-        self.plot_signal.setData(self.time, self.ecg, antialias=True, clipToView=True)
+    def _worker_thread(self):
+        while self._running:
+            try:
+                data = self._input_queue.get(block=False)
+                self.process_input(data)
+            except:
+                pass
 
-        if self.time[-1] < self.timebase_s:
-            self.setXRange(self.time[0], self.timebase_s)
-        else:
-            self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
+            try:
+                data = self.process_output()
+            except:
+                pass
 
-    def set_sampling_rate(self, sampling_rate: int):
-        """ Установка частоты оцифровки """
-        self.fs = sampling_rate
-        logger.info(f"Установлен новая частота: {self.fs} Гц")
+    def stop(self):
+        self._running = False
+        if self._work:
+            self._work.join(1.0)
+            self._work = None
+        self.process_stop()
 
-    def set_marker(self, pos, text):
-        """ Add vertical line and text on the plot."""
-        line = InfiniteLine(
-            pos=pos, angle=90, pen=mkPen('gray', width=2, style=QtCore.Qt.PenStyle.DashLine),
-            movable=False, label=text, labelOpts={'color': 'k', 'position': 0.1})
-        self.addItem(line)
-        self._markers.append(line)
 
-    def clear_plot(self):
-        """Очистка графика"""
-        logger.debug("Очистка графика")
-        self.time = np.array([])
-        self.ecg = np.array([])
 
-        for marker in self._markers:
-            self.removeItem(marker)
-        self.markers = []
-
-        self.plot_signal.clear()
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
@@ -172,6 +134,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonDisconnect.clicked.connect(self.device_disconnect)
         self.pushButtonStart.clicked.connect(self.device_start_acquisition)
         self.pushButtonStop.clicked.connect(self.device_stop_acquisition)
+
+        self.device.add_receiver(self.display)
 
     # асинхронный цикл событий
     def _run_async_loop(self):
@@ -247,69 +211,14 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         """ Запуск устройства на получение данных """
         self.device.start()
 
-    def _process_device_data(self, ecg_data: ECG_DataBlock):
+    def _process_device_data(self):
         """ обработка получения данных от inRatDevice (должно быть вынесено в класс Display)"""
-        start_time = ecg_data.start_time
-        signal = copy.copy(ecg_data.ecg_channels)
-
-        st = start_time
-        ft = start_time + len(signal) / self.display.fs
-        time_arr = np.linspace(st, ft,32)
-
-        self.display.set_data(time=time_arr, signal=signal)
+        ...
 
     def device_stop_acquisition(self):
         """ Остановка получения сигнала с inRat """
         self.device.stop()
 
-
-    # управление записью сигнала
-    def _start_recording(self):
-        """ Начало записи сигнала """
-        logger.info("Начало записи сигнала")
-
-        # запуск таймера
-        self.recording_timer.start()
-
-        # connect
-        self.signal_start_recording.connect(self.storage.start_recording)
-        self.signal_stop_recording.connect(self.storage.stop_recording)
-        self.signal_accept_data.connect(self.storage.accept_data)
-
-        self.signal_start_recording.emit()
-
-        if self.start_acquisition_time is not None:
-            self.display.set_marker(text="Запись начата", pos=time.time() - self.start_acquisition_time)
-
-        # ui
-        self.pushButtonStartRecording.setEnabled(False)
-        self.comboBoxFormat.setEnabled(False)
-        self.pushButtonStopRecording.setEnabled(True)
-
-    def _stop_recording(self):
-        """ Остановка записи сигнала """
-        logger.info("Остановка записи сигнала")
-        self.signal_stop_recording.emit()
-
-        # остановка таймера
-        self.recording_timer.stop()
-        self._on_timeout_expired()
-
-        # disconnect
-        self.signal_start_recording.disconnect(self.storage.start_recording)
-        self.signal_stop_recording.disconnect(self.storage.stop_recording)
-        self.signal_accept_data.disconnect(self.storage.accept_data)
-
-        if self.start_acquisition_time is not None:
-            self.display.set_marker(text="Запись остановлена", pos=time.time() - self.start_acquisition_time)
-
-        # ui
-        self.pushButtonStartRecording.setEnabled(True)
-        self.comboBoxFormat.setEnabled(True)
-        self.pushButtonStopRecording.setEnabled(False)
-
-    def _on_record_saved(self, record_data: RecordData) -> None:
-        self.signal_record_saved.emit(record_data)
 
     # остановка и закрытие окна
     def closeEvent(self, event, /):
