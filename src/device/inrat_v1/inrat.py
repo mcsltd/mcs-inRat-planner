@@ -43,7 +43,11 @@ class inRat:
 
     def __init__(self, ble_device: BLEDevice):
         self._client: BleakClient = BleakClient(ble_device)
+        self._name = ble_device.name
 
+    @property
+    def name(self) -> str | None:
+        return self._name
     @property
     def is_connected(self) -> bool:
         return self._client.is_connected
@@ -74,7 +78,7 @@ class inRat:
 
         return res
 
-    async def start_acquisition(self, qsignal: Queue | None = None, qevent: Queue | None = None) -> None:
+    async def start_acquisition(self, data_queue) -> bool:
         """ Запуск inRat на регистрацию сигнала и событий """
         async def event_handler(sender, data: bytearray):
             event_size = ctypes.sizeof(Event)
@@ -83,29 +87,27 @@ class inRat:
             logger.debug(f"Получено событий: {cnt}")
             for idx in range(cnt):
                 event = Event.from_buffer(data[idx: (idx + 1) * event_size])
-                await qevent.put({"counter": event.Counter, "event": event})
+                await data_queue.put({"type": "event", "counter": event.Counter, "event": event})
 
         async def signal_handler(sender, data: bytearray):
             # print(f"{sender=}, {data=}")
             time_received = time.time()
             cnt, sig = decode_ecg(data)
-            await qsignal.put({"start_time": time_received, "counter": cnt, "signal": sig})
+            await data_queue.put({"type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
 
         settings = Settings(
             DataRateEcg=SamplingRate.HZ_500,
             HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2,
             EnabledChannels=EnabledChannels.ECG,
-            # EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
-            EnabledEvents=0,
+            EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
             ActivityThreshold=1
         )
 
         await self._setup(Command.AcquisitionStart, settings)
-        if qsignal:
-            await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
-        if qevent:
-            await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
+        await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
+        await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
+        return True
 
     async def stop_acquisition(self) -> None:
         """ Запуск inRat на регистрацию сигнала и событий """

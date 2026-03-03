@@ -1,135 +1,107 @@
 import asyncio
-import copy
 import logging
-import time
-import numpy as np
+import copy
+import queue
+from asyncio import AbstractEventLoop
+from threading import Lock, Thread
 
-from asyncio import AbstractEventLoop, Future
 from PySide6.QtCore import QObject, Signal
-from bleak import BLEDevice, BleakScanner
+from bleak import BLEDevice
 
-from src.device.inrat_v1.constants import Pkt
+from src.device.device import ECG_DataBlock
 from src.device.inrat_v1.inrat import inRat
 
 logger = logging.getLogger(__name__)
 
-
-class ECG_DataBlock:
-    def __init__(self, ecg=1):
-        self.sample_counter = 0
-        self.sample_rate = 500.0
-        self.ecg_channels = np.zeros((ecg, Pkt.SamplesCountEcg))
-        self.start_time = None
-
 class inRatDevice(QObject):
 
-    device_connected = Signal(object)
-    device_disconnected = Signal(object)
-    device_data_received = Signal(object)
-    device_stopped = Signal(object)
+    device_connected = Signal()
+    device_started = Signal()
+    device_stopped = Signal()
+    device_disconnected = Signal()
 
     def __init__(self, loop: AbstractEventLoop, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._ecg_data = ECG_DataBlock()
+        self.inrat: inRat | None = None
 
         self._loop: AbstractEventLoop = loop
-        self._inrat: inRat | None = None
+        self._receivers = []
+        self._running = False
+        # self._lock = Lock()
+        self._input_queue = queue.Queue()
+        self._async_queue = asyncio.Queue()
 
-        self._is_running = False
-        self._queue_signal = asyncio.Queue()
-        self._queue_event = asyncio.Queue()
 
-    def process_connect(self, ble_device: BLEDevice, wait: int = 10):
-        """ соединение с устройством """
-        self._inrat = inRat(ble_device)
-        future = asyncio.run_coroutine_threadsafe(self._inrat.connect(wait), self._loop)
-        future.add_done_callback(self.device_connected.emit)
 
+    def process_connect(self, ble_device: BLEDevice, wait=10):
+        """ обработка соединение с устройством """
+        if self.inrat and self.inrat.is_connected:
+            logger.warning(f"{self.inrat.name} уже подсоединено!")
+            return
+        self.inrat = inRat(ble_device)
+        future = asyncio.run_coroutine_threadsafe(self.inrat.connect(wait=wait), loop=self._loop)
+        future.add_done_callback(self._on_device_connected)
+    def _on_device_connected(self, future):
+        """ обработка результата подключения к устройству """
+        if future.result() and self.inrat.is_connected:
+            logger.debug(f"{self.inrat.name} подсоединено")
+            self.device_connected.emit()
+            return
+        logger.debug(f"Не удалось открыть {self.inrat.name}")
+        self.inrat = None
+
+
+
+    def start(self):
+        """ запуск обработки очереди """
+        # очистка очередей
+        while not self._input_queue.empty():
+            self._input_queue.get_nowait()
+        while not self._async_queue.empty():
+            self._async_queue.get_nowait()
+            self._async_queue.task_done()
+
+        self.process_start()
+
+        if not self._running:
+            self._running = True
     def process_start(self):
-        """ запуск устройства """
-        if not self._inrat:
-            return
-
-        if not self._inrat.is_connected:
-            return
-
-        # future = asyncio.run_coroutine_threadsafe(
-        #     self._inrat.start_acquisition(qevent=self._queue_event, qsignal=self._queue_signal), self._loop
-        # )
-
-        future = asyncio.run_coroutine_threadsafe(
-            self._inrat.start_acquisition(qevent=None, qsignal=self._queue_signal), self._loop
-        )
+        """ запуск устройства на регистрацию сигналов """
+        future = asyncio.run_coroutine_threadsafe(self.inrat.start_acquisition(self._async_queue), self._loop)
+        future.add_done_callback(self._on_device_started)
+    def _on_device_started(self, future):
+        print(f"Устройство запущено на регистрацию данных - {future=}")
+        self.device_started.emit()
 
 
-        future = asyncio.run_coroutine_threadsafe(
-            self.process_acquisition(), self._loop
-        )
 
-    async def process_acquisition(self):
-        """ обработка получения сигналов и событий """
-        self._is_running = True
-        while self._is_running:
-            # ev = await self._queue_event.get()
-            # self._queue_event.task_done()
-            # print(f"{ev=}")
-
-            sig = await self._queue_signal.get()
-
-            self._ecg_data.ecg_channels = sig["signal"]
-            self._ecg_data.sample_counter = sig["counter"]
-            self._ecg_data.start_time = sig["start_time"]
-
-            ecg_data = copy.copy(self._ecg_data)
-            self.device_data_received.emit(ecg_data)
-
-            self._queue_signal.task_done()
-
+    def stop(self):
+        """ остановка регистрации сигналов устройством """
+        self.process_stop()
     def process_stop(self):
-        """ остановка устройства """
-        self._is_running = False
-        future = asyncio.run_coroutine_threadsafe(
-            self._inrat.stop_acquisition(), self._loop
-        )
-        future.add_done_callback(self.on_device_stopped)
+        """ обработка остановки устройства """
+        future = asyncio.run_coroutine_threadsafe(self.inrat.stop_acquisition(), self._loop)
+        future.add_done_callback(self._on_device_stopped)
+    def _on_device_stopped(self, future):
+        """ обработка результата завершения задачи остановки устройства """
+        print(f"Результат выполнения задачи остановки {future=}")
+        self.device_stopped.emit()
 
-    def on_device_stopped(self, future: Future):
-        """ остановка получения данных с устройства """
-        self.device_stopped.emit(future)
+
 
     def process_disconnect(self):
-        """ отсоединение от устройства """
-        if not self._inrat:
-            return
-
-        future = asyncio.run_coroutine_threadsafe(self._inrat.disconnect(), self._loop)
-        future.add_done_callback(self.on_device_disconnected)
-
-    def on_device_disconnected(self, future):
-        self.device_disconnected.emit(future)
-
-
-async def main():
-    ble_device = await BleakScanner.find_device_by_name(name="inRat-1-1022")
+        """ обработка отсоединения от устройства """
+        future = asyncio.run_coroutine_threadsafe(self.inrat.disconnect(), self._loop)
+        future.add_done_callback(self._on_device_disconnected)
+    def _on_device_disconnected(self, future):
+        """ обработка выполнения отсоединения от устройства """
+        logger.info(f"Соединение с {self.inrat.name} закрыто!")
+        self.inrat = None
+        self.device_disconnected.emit()
 
 
-    if ble_device:
-        loop = asyncio.get_event_loop()
-        device = Device(loop=loop)
-        device.process_connect(ble_device=ble_device)
-        await asyncio.sleep(30)
-        device.process_start()
-        await asyncio.sleep(30)
-        device.process_stop()
-        await asyncio.sleep(10)
-        device.process_disconnect()
 
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
-    )
-
-    asyncio.run(main(), debug=True)
+    async def process_output(self) -> ECG_DataBlock:
+        """ обработка асинхронной очереди от inrat и формирование блоков данных """
+        ...
