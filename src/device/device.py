@@ -141,3 +141,8 @@ class inRatDevice(QObject):
         self.inrat = None
         self.device_disconnected.emit()
 
+
+    def add_receiver(self, receiver):
+        if self._running:
+            receiver.start()
+        self._receivers.append(receiver)
