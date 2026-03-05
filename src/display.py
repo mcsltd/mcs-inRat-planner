@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 
-from pyqtgraph import PlotWidget, PlotDataItem
+from pyqtgraph import PlotWidget, PlotDataItem, mkPen
 
 from src.device.device import EcgDataBlock
 from src.device.inrat_v1.constants import Pkt
@@ -23,7 +23,10 @@ class DisplayScope(PlotWidget):
         self._work = None
         self._input_queue = queue.Queue()
 
-        # self.set_display()
+        self.setLabel("left", "V")
+        self.setLabel("bottom", "t (с)")
+
+        self.set_display()
 
     def start(self):
         """ запуск обработки очереди """
@@ -51,8 +54,9 @@ class DisplayScope(PlotWidget):
 
     def process_stop(self):
         """ обработка остановки """
-        print("process_stop")
-        self.plot_ecg.clear()
+        self.clear()
+        self.plot_ecg: PlotDataItem = self.plot()   # Todo: плохое решение
+
 
     def _transmit_data(self, data):
         """ получение данных от класса inrat"""

@@ -16,9 +16,9 @@ from src.device.inrat_v1.inrat import inRat
 logger = logging.getLogger(__name__)
 
 class EcgDataBlock:
-    def __init__(self, ecg=Pkt.ChannelsCountEcg):
+    def __init__(self):
         self.sample_counter = 0
-        self.ecg_channels = np.zeros((ecg, Pkt.SamplesCountEcg))
+        self.ecg_channels = np.zeros(Pkt.SamplesCountEcg)
 
 
 class inRatDevice(QObject):
@@ -121,12 +121,14 @@ class inRatDevice(QObject):
         if not self._work.done:
             self._work.cancel()
         self.process_stop()
+        for receiver in self._receivers:
+            receiver.stop()
     def process_stop(self):
         """ обработка остановки устройства """
         future = asyncio.run_coroutine_threadsafe(self.inrat.stop_acquisition(), self._loop)
         future.add_done_callback(self._on_device_stopped)
     def _on_device_stopped(self, future):
-        """ обработка результата завершения задачи остановки устройства """
+        """ обработка результата задачи остановки устройства """
         print(f"Регистрация данных с устройства остановлена")
         self.device_stopped.emit()
 
