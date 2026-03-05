@@ -8,72 +8,20 @@ import time
 from asyncio import Future, AbstractEventLoop
 
 import numpy as np
-from PySide6.QtCore import Signal, QTimer, Qt
-from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, QMessageBox, QPushButton, \
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, \
     QHBoxLayout, QSpacerItem, QDialogButtonBox
-from PySide6 import QtCore
-from PySide6.QtGui import QFont, QIcon
+
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
-from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
+from src.display import DisplayScope
 from src.resources.dlg_inrat_controller import Ui_DlgInRatController
 from src.structure import ScheduleData
-from src.tools.inrat_storage import InRatStorage
-
-from src.config import app_data
-from src.device.device import inRatDevice, EcgDataBlock
+from src.device.device import inRatDevice
 
 logger = logging.getLogger(__name__)
-
-class DisplaySignal(PlotWidget):
-    def __init__(self, parent=None, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-
-        self.ecg = EcgDataBlock()
-        self.ecg_plot = self.plot()
-
-        self._running = False
-        self._work = None
-        self._input_queue = queue.Queue()
-
-    def start(self):
-        while not self._input_queue.empty():
-            self._input_queue.get_nowait()
-
-        if self._running:
-            self._running = True
-            self._work = threading.Thread(target=self._worker_thread)
-            self._work.start()
-
-    def process_input(self, datablock: EcgDataBlock):
-        self.ecg = datablock
-
-
-    def _transmit_data(self, data):
-        self._input_queue.put(data, False)
-
-    def _worker_thread(self):
-        while self._running:
-            try:
-                data = self._input_queue.get(block=False)
-                self.process_input(data)
-            except:
-                pass
-
-            try:
-                data = self.process_output()
-            except:
-                pass
-
-    def stop(self):
-        self._running = False
-        if self._work:
-            self._work.join(1.0)
-            self._work = None
-        self.process_stop()
-
-
 
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
@@ -94,13 +42,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # backend
         self.schedule_data = schedule_data
-        self.storage = InRatStorage(
-            path_to_save=app_data.path_to_data,
-            device_name=self.schedule_data.device.ble_name,
-            object_name=self.schedule_data.object.name,
-            experiment_name=self.schedule_data.experiment.name,
-            schedule_id=self.schedule_data.id
-        )
 
         self._loop: AbstractEventLoop | None = None
         self._run_async_loop()
@@ -118,7 +59,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.labelDeviceName.setText(str(self.schedule_data.device.ble_name))
 
         self.setWindowTitle(f"Ручной режим: {self.schedule_data.device.ble_name}")
-        self.display = DisplaySignal(self)
+        self.display = DisplayScope(self)
         self.verticalLayoutPlot.addWidget(self.display)
 
         # waiting dialog
