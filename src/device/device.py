@@ -43,7 +43,6 @@ class inRatDevice(QObject):
         self._work: concurrent.futures.Future | None = None
 
 
-
     def process_connect(self, ble_device: BLEDevice, wait=10):
         """ обработка соединение с устройством """
         if self.inrat and self.inrat.is_connected:
@@ -62,7 +61,6 @@ class inRatDevice(QObject):
         self.inrat = None
 
 
-
     def start(self):
         """ запуск обработки очереди """
         # очистка очередей
@@ -71,6 +69,10 @@ class inRatDevice(QObject):
         while not self._async_queue.empty():
             self._async_queue.get_nowait()
             self._async_queue.task_done()
+
+        # запуск всех прикрепленных классов-получателей
+        for receiver in self._receivers:
+            receiver.start()
 
         self.process_start()
         if not self._running:
@@ -110,7 +112,6 @@ class inRatDevice(QObject):
     def process_signal(self, signal):
         self.ecg_data.sample_counter = signal["counter"]
         self.ecg_data.ecg_channels = signal["signal"]
-        print(f"{signal['signal']=}")
         return copy.copy(self.ecg_data)
 
 
