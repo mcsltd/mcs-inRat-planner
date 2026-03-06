@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class EcgDataBlock:
     def __init__(self):
+        self.sample_rate = 500.0
         self.sample_counter = 0
         self.ecg_channels = np.zeros(Pkt.SamplesCountEcg)
 

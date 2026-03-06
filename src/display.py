@@ -14,6 +14,8 @@ class DisplayScope(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
+
+
         self.plot_ecg: PlotDataItem = self.plot()
 
         # настройки подписи к графикам
@@ -23,7 +25,7 @@ class DisplayScope(PlotWidget):
         self.ecg = EcgDataBlock()
 
         self.offset = 0
-        self.timebase = 10  # in seconds
+        self.timebase = 10.0  # in seconds
         self.dt_x = 1 / self.ecg.sample_rate
         self.x_values = np.arange(0.0, self.timebase, self.dt_x)
         self.ecg_buffer = np.zeros(len(self.x_values))
@@ -33,7 +35,9 @@ class DisplayScope(PlotWidget):
         self._work = None
         self._input_queue = queue.Queue()
 
-        self.set_display()
+        self.setXRange(0.0, self.timebase, padding=0.0)
+        self.setMenuEnabled(False)
+        self.setMouseEnabled(False, False)
 
     def start(self):
         """ запуск обработки очереди """
@@ -53,7 +57,7 @@ class DisplayScope(PlotWidget):
     def set_display(self):
         """ отображение ЭКГ на графике """
         offset = len(self.ecg.ecg_channels)
-        if self.offset + offset < len(self.ecg_buffer): # переполнение буфера
+        if self.offset + offset < len(self.ecg_buffer):
             self.ecg_buffer[self.offset:self.offset+offset] = self.ecg.ecg_channels
             self.offset += offset
         else:
@@ -70,7 +74,7 @@ class DisplayScope(PlotWidget):
     def process_stop(self):
         """ обработка остановки """
         self.clear()
-        self.plot_ecg: PlotDataItem = self.plot()   # Todo: плохое решение
+        self.plot_ecg: PlotDataItem = self.plot()
 
         self.offset = 0
         self.dt_x = 1 / self.ecg.sample_rate
