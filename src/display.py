@@ -13,18 +13,25 @@ from src.device.inrat_v1.constants import Pkt
 class DisplayScope(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        self.timebase = 10 # in seconds
-        self.buffer_ecg = np.zeros(Pkt.SamplesCountEcg)
 
         self.plot_ecg: PlotDataItem = self.plot()
+
+        # настройки подписи к графикам
+        self.setLabel("left", "V")
+        self.setLabel("bottom", "t (с)")
+
         self.ecg = EcgDataBlock()
+
+        self.offset = 0
+        self.timebase = 10  # in seconds
+        self.dt_x = 1 / self.ecg.sample_rate
+        self.x_values = np.arange(0.0, self.timebase, self.dt_x)
+        self.ecg_buffer = np.zeros(len(self.x_values))
+        self.max_size_buffer = len(self.ecg_buffer)
 
         self._running = False
         self._work = None
         self._input_queue = queue.Queue()
-
-        self.setLabel("left", "V")
-        self.setLabel("bottom", "t (с)")
 
         self.set_display()
 
@@ -45,8 +52,16 @@ class DisplayScope(PlotWidget):
 
     def set_display(self):
         """ отображение ЭКГ на графике """
-        self.buffer_ecg = self.ecg.ecg_channels
-        self.plot_ecg.setData(self.buffer_ecg)
+        offset = len(self.ecg.ecg_channels)
+        if self.offset + offset < len(self.ecg_buffer): # переполнение буфера
+            self.ecg_buffer[self.offset:self.offset+offset] = self.ecg.ecg_channels
+            self.offset += offset
+        else:
+            self.ecg_buffer[:self.max_size_buffer - offset] = self.ecg_buffer[offset:] # отсекаем старую часть
+            self.ecg_buffer[self.max_size_buffer - offset:] = self.ecg.ecg_channels # добавляем новую часть сигнала
+
+        self.plot_ecg.setData(self.x_values, self.ecg_buffer)
+        self.replot()
 
     def process_output(self):
         """ обработка остановки """
@@ -57,6 +72,10 @@ class DisplayScope(PlotWidget):
         self.clear()
         self.plot_ecg: PlotDataItem = self.plot()   # Todo: плохое решение
 
+        self.offset = 0
+        self.dt_x = 1 / self.ecg.sample_rate
+        self.x_values = np.arange(0.0, self.timebase, self.dt_x)
+        self.ecg_buffer = np.zeros(len(self.x_values))
 
     def _transmit_data(self, data):
         """ получение данных от класса inrat"""
