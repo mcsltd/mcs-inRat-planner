@@ -58,9 +58,10 @@ class inRat:
             """Convert the ID to a full UUID and cache."""
             return UUID(inRat.UUID_TEMPLATE.format(self.value))
 
-        def __repr__(self) -> str:
+        def __str__(self) -> str:
             """Convert UUID to string value."""
             return str(self.uuid)
+
 
     def __init__(self, ble_device: BLEDevice):
         self._client: BleakClient = BleakClient(ble_device)
@@ -105,7 +106,7 @@ class inRat:
 
     async def _read_property(self, characteristic: inRatCharacteristic) -> str:
         """ чтение свойств устройства"""
-        rawdata = await self._client.read_gatt_char(characteristic)
+        rawdata = await self._client.read_gatt_char(str(characteristic))
         data = rawdata.decode()
         return data
 
