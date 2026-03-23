@@ -4,6 +4,9 @@ import ctypes
 import hashlib
 import logging
 import time
+from enum import IntEnum
+from functools import cached_property
+from uuid import UUID
 
 from bleak import BLEDevice, BleakClient, BleakScanner, BleakError
 from asyncio import Queue
@@ -18,6 +21,7 @@ BLE_KEY = BLE_KEY_IN_RAT
 
 
 logger = logging.getLogger(__name__)
+
 
 
 def get_control_sum(data: bytes, key: bytearray) -> bytes:
@@ -41,16 +45,57 @@ class inRat:
     UUID_CHARACTERISTIC_CONTROL = "7395ca15-5997-5a1b-a138-75a7a573b8e5"
     UUID_CHARACTERISTIC_STATUS = "c3571b1b-e17e-5195-9fd3-8119cb153187"
 
+    UUID_TEMPLATE = "0000{:0>4x}-0000-1000-8000-00805f9b34fb"
+    class inRatCharacteristic(IntEnum):
+        MANUFACTURER_NAME = 0x2A29
+        MODEL = 0x2A24
+        SERIAL = 0x2A25
+        FIRMWARE = 0x2A26
+        HARDWARE = 0x2A27
+
+        @cached_property
+        def uuid(self) -> UUID:
+            """Convert the ID to a full UUID and cache."""
+            return UUID(inRat.UUID_TEMPLATE.format(self.value))
+
+        def __repr__(self) -> str:
+            """Convert UUID to string value."""
+            return str(self.uuid)
+
     def __init__(self, ble_device: BLEDevice):
         self._client: BleakClient = BleakClient(ble_device)
         self._name = ble_device.name
 
+        self._manufacturer = None
+        self._model = None
+        self._serial = None
+        self._firmware = None
+        self._hardware = None
+
+    # свойства клиента
+    @property
+    def is_connected(self) -> bool:
+        return self._client.is_connected
+
+    # свойства полученные от подключенного устройства
     @property
     def name(self) -> str | None:
         return self._name
     @property
-    def is_connected(self) -> bool:
-        return self._client.is_connected
+    def manufacturer(self) -> str | None:
+        return self._manufacturer
+    @property
+    def model(self) -> str | None:
+        return self._model
+    @property
+    def serial(self) -> str | None:
+        return self._serial
+    @property
+    def hardware(self) -> str | None:
+        return self._hardware
+    @property
+    def firmware(self) -> str | None:
+        return self._firmware
 
     async def _setup(self, cmd: Command, settings: Settings | bytes = b''):
         """ Установка команд и настроек inRat """
@@ -58,24 +103,38 @@ class inRat:
         data += get_control_sum(data, BLE_KEY)
         await self._client.write_gatt_char(inRat.UUID_CHARACTERISTIC_CONTROL, data)
 
+    async def _read_property(self, characteristic: inRatCharacteristic) -> str:
+        """ чтение свойств устройства"""
+        rawdata = await self._client.read_gatt_char(characteristic)
+        data = rawdata.decode()
+        return data
+
+    async def _read_device_properties(self) -> None:
+        """ чтение свойств подключенного устройства """
+        self._serial = await self._read_property(inRat.inRatCharacteristic.SERIAL)
+        self._model = await self._read_property(inRat.inRatCharacteristic.MODEL)
+        self._manufacturer = await self._read_property(inRat.inRatCharacteristic.MANUFACTURER_NAME)
+        self._firmware = await self._read_property(inRat.inRatCharacteristic.FIRMWARE)
+        self._hardware = await self._read_property(inRat.inRatCharacteristic.HARDWARE)
+        logger.info(f"{self._name}; manufacturer: {self._manufacturer}; serial: {self._serial}; model: {self._model}; firmware: {self._firmware}; hardware: {self._firmware};")
+
     async def connect(self, wait: int = 10) -> bool:
-        """ Подключение к inRat """
-        res = True
+        """ подключение к inRat """
         if self.is_connected:
             logger.warning("Устройство уже подключено!")
-            return res
+            return True
 
+        res = True
         try:
             await asyncio.wait_for(self._client.connect(), timeout=wait)
+            await self._read_device_properties()
             logger.info("Устройство подключено")
-
         except asyncio.TimeoutError:
             logger.warning("Не удалось подключиться к устройству!")
             res = False
         except Exception as exc:
             logger.error(f"Возникла ошибка во время подключения к устройству! {exc}")
             res = False
-
         return res
 
     async def start_acquisition(self, data_queue) -> bool:
@@ -100,7 +159,8 @@ class inRat:
             HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2,
             EnabledChannels=EnabledChannels.ECG,
-            EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
+            # EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
+            EnabledEvents = 0,
             ActivityThreshold=1
         )
 
