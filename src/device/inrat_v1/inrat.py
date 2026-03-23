@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
 from src.config import BLE_KEY_IN_RAT
 from src.device.inrat_v1.decoder import decode_ecg
 from src.device.inrat_v1.enums import Command, EnabledChannels, EventType, SamplingRate, ScaleAccelerometer
-from src.device.inrat_v1.structures import Settings, Event
+from src.device.inrat_v1.structures import Settings, Event, Status
 
 BLE_KEY = BLE_KEY_IN_RAT
 
@@ -65,13 +65,25 @@ class inRat:
 
     def __init__(self, ble_device: BLEDevice):
         self._client: BleakClient = BleakClient(ble_device)
-        self._name = ble_device.name
 
+        # свойства для настройки и запуска inrat
+        self._is_activated: None | bool  = None
+        self._sample_rate: None | SamplingRate = None
+        # self._high_pass_filter_ecg: None |  = None
+        # self._full_scale_accelerometer: None |  = None
+        # self._enabled_channels: None |  = None
+        # self._enabled_events: None |  = None
+        # self._activity_threshold: None |  = None
+
+        # свойства устройства
+        self._name = ble_device.name
+        self._address = ble_device.address
         self._manufacturer = None
         self._model = None
         self._serial = None
         self._firmware = None
         self._hardware = None
+
 
     # свойства клиента
     @property
@@ -97,6 +109,42 @@ class inRat:
     @property
     def firmware(self) -> str | None:
         return self._firmware
+    @property
+    def address(self) -> str | None:
+        return self._address
+
+    # свойства для настройки подключенного устройства
+    @property
+    def sample_rate(self) -> None | float:
+        if self._sample_rate == SamplingRate.HZ_500:
+            return 500.0
+        if self._sample_rate == SamplingRate.HZ_1000:
+            return 1000.0
+        if self._sample_rate == SamplingRate.HZ_2000:
+            return 2000.0
+        return None
+    @sample_rate.setter
+    def sample_rate(self, value: int | float) -> None:
+        if value == 500:
+            self._sample_rate = SamplingRate.HZ_500
+            logger.info("Установлена частота HZ_500")
+        if value == 1000:
+            self._sample_rate = SamplingRate.HZ_1000
+            logger.info("Установлена частота HZ_1000")
+        if value == 2000:
+            self._sample_rate = SamplingRate.HZ_2000
+            logger.info("Установлена частота HZ_2000")
+
+    @property
+    def is_activated(self):
+        return self._is_activated
+
+    async def activate(self, value: bool):
+        """ активация устройства """
+        if value:
+            await self._setup(cmd=Command.Activate)
+        if not value:
+            await self._setup(cmd=Command.Deactivate)
 
     async def _setup(self, cmd: Command, settings: Settings | bytes = b''):
         """ Установка команд и настроек inRat """
@@ -119,6 +167,13 @@ class inRat:
         self._hardware = await self._read_property(inRat.inRatCharacteristic.HARDWARE)
         logger.info(f"{self._name}; manufacturer: {self._manufacturer}; serial: {self._serial}; model: {self._model}; firmware: {self._firmware}; hardware: {self._firmware};")
 
+    async def _read_device_status(self):
+        """ чтение статуса устройства """
+        rawbytes = await self._client.read_gatt_char(inRat.UUID_CHARACTERISTIC_STATUS)
+        status = Status.from_buffer(rawbytes).to_dataclass()
+        self._is_activated = status.activated
+        logger.info(f"Прочитана структура Status: {status}")
+
     async def connect(self, wait: int = 10) -> bool:
         """ подключение к inRat """
         if self.is_connected:
@@ -129,6 +184,7 @@ class inRat:
         try:
             await asyncio.wait_for(self._client.connect(), timeout=wait)
             await self._read_device_properties()
+            await self._read_device_status()
             logger.info("Устройство подключено")
         except asyncio.TimeoutError:
             logger.warning("Не удалось подключиться к устройству!")
@@ -138,7 +194,7 @@ class inRat:
             res = False
         return res
 
-    async def start_acquisition(self, data_queue) -> bool:
+    async def start_acquisition(self, data_queue: asyncio.Queue) -> bool:
         """ Запуск inRat на регистрацию сигнала и событий """
         async def event_handler(sender, data: bytearray):
             event_size = ctypes.sizeof(Event)
@@ -156,18 +212,21 @@ class inRat:
             await data_queue.put({"type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
 
         settings = Settings(
-            DataRateEcg=SamplingRate.HZ_500,
+            DataRateEcg=self._sample_rate,
             HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2,
             EnabledChannels=EnabledChannels.ECG,
             # EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
-            EnabledEvents = 0,
+            EnabledEvents=0,
             ActivityThreshold=1
         )
 
-        await self._setup(Command.AcquisitionStart, settings)
-        await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
-        await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
+        try:
+            await self._setup(Command.AcquisitionStart, settings)
+            await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
+            await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
+        except Exception as err:
+            logger.error(f"{err=}")
         return True
 
     async def stop_acquisition(self) -> None:
@@ -186,11 +245,17 @@ class inRat:
 
     async def disconnect(self) -> bool:
         """ Отключение от устройства """
-        if not self.is_connected:
-            return True
 
-        await self._setup(Command.ConnectionClose)
-        await self._client.disconnect()
+        try:
+            await self._setup(Command.ConnectionClose)
+        except Exception:
+            ...
+
+        try:
+            await self._client.disconnect()
+        except Exception:
+            ...
+
         return True
 
 
