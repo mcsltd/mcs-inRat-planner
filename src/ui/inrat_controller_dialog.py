@@ -317,7 +317,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
             if await self._connect_device(device):
                 status = await self.device.get_status()
-                self.set_level_battery(status.Usage)
+                # self.set_level_battery(status.Usage)
                 self._set_mode_combobox(mode=status.Activated)
 
                 # активация при подключении устройства
@@ -363,7 +363,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         remain_capacity = battery_capacity - consump_con - consump_send - consump_adv
         level = int(remain_capacity / battery_capacity * 100)
-        self.progressBarLevel.setValue(level)
+        # self.progressBarLevel.setValue(level)
 
     async def _find_device(self) -> BLEDevice | None:
         """ Поиск устройства """
@@ -500,7 +500,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                     # узнать статус уровня батареи
                     if time.time() - self.battery_check_time > 10.0:
                         status = await self.device.get_status()
-                        self.set_level_battery(status.Usage)
+                        # self.set_level_battery(status.Usage)
                         self.battery_check_time = time.time()
 
                 except asyncio.TimeoutError:
