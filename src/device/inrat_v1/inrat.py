@@ -68,7 +68,7 @@ class inRat:
 
         # свойства для настройки и запуска inrat
         self._is_activated: None | bool  = None
-        self._sample_rate: None | SamplingRate = None
+        self._sampling_rate: None | SamplingRate = None
         # self._high_pass_filter_ecg: None |  = None
         # self._full_scale_accelerometer: None |  = None
         # self._enabled_channels: None |  = None
@@ -115,24 +115,24 @@ class inRat:
 
     # свойства для настройки подключенного устройства
     @property
-    def sample_rate(self) -> None | float:
-        if self._sample_rate == SamplingRate.HZ_500:
+    def sampling_rate(self) -> None | float:
+        if self._sampling_rate == SamplingRate.HZ_500:
             return 500.0
-        if self._sample_rate == SamplingRate.HZ_1000:
+        if self._sampling_rate == SamplingRate.HZ_1000:
             return 1000.0
-        if self._sample_rate == SamplingRate.HZ_2000:
+        if self._sampling_rate == SamplingRate.HZ_2000:
             return 2000.0
         return None
-    @sample_rate.setter
-    def sample_rate(self, value: int | float) -> None:
+    @sampling_rate.setter
+    def sampling_rate(self, value: int | float) -> None:
         if value == 500:
-            self._sample_rate = SamplingRate.HZ_500
+            self._sampling_rate = SamplingRate.HZ_500
             logger.info("Установлена частота HZ_500")
         if value == 1000:
-            self._sample_rate = SamplingRate.HZ_1000
+            self._sampling_rate = SamplingRate.HZ_1000
             logger.info("Установлена частота HZ_1000")
         if value == 2000:
-            self._sample_rate = SamplingRate.HZ_2000
+            self._sampling_rate = SamplingRate.HZ_2000
             logger.info("Установлена частота HZ_2000")
 
     @property
@@ -206,13 +206,13 @@ class inRat:
                 await data_queue.put({"type": "event", "counter": event.Counter, "event": event})
 
         async def signal_handler(sender, data: bytearray):
-            # print(f"{sender=}, {data=}")
             time_received = time.time()
             cnt, sig = decode_ecg(data)
             await data_queue.put({"type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
 
+        # todo: check properties before start acquisition
         settings = Settings(
-            DataRateEcg=self._sample_rate,
+            DataRateEcg=self._sampling_rate,
             HighPassFilterEcg=0,
             FullScaleAccelerometer=ScaleAccelerometer.G_2,
             EnabledChannels=EnabledChannels.ECG,
@@ -234,18 +234,20 @@ class inRat:
         try:
             await self._client.stop_notify(self.UUID_CHARACTERISTIC_DATA_ECG)
         except Exception as exc:
-            logger.debug(f"Возникла ошибка описки от сервиса рассылки сигналов:\n{exc}")
+            logger.debug(f"Возникла ошибка отписки от сервиса рассылки сигналов:\n{exc}")
 
         try:
             await self._client.stop_notify(self.UUID_CHARACTERISTIC_EVENT)
         except Exception as exc:
-            logger.debug(f"Возникла ошибка описки от сервиса рассылки событий:\n{exc}")
+            logger.debug(f"Возникла ошибка отписки от сервиса рассылки событий:\n{exc}")
 
-        await self._setup(Command.AcquisitionStop)
+        try:
+            await self._setup(Command.AcquisitionStop)
+        except Exception as err:
+            logger.debug(f"Возникла ошибка отписки от сервиса рассылки событий:\n{err}")
 
     async def disconnect(self) -> bool:
         """ Отключение от устройства """
-
         try:
             await self._setup(Command.ConnectionClose)
         except Exception:
