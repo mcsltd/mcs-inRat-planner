@@ -77,8 +77,10 @@ class DisplaySignal(PlotWidget):
         self.fs = sampling_rate
         logger.info(f"Установлен новая частота: {self.fs} Гц")
 
-    def set_marker(self, pos, text):
+    def set_marker(self, pos: float | None, text: str):
         """ Add vertical line and text on the plot."""
+        if not pos:
+            pos = self.time_buffer[self.current_position]
         line = InfiniteLine(
             pos=pos, angle=90, pen=mkPen('gray', width=2, style=QtCore.Qt.PenStyle.DashLine),
             movable=False, label=text, labelOpts={'color': 'k', 'position': 0.1})
@@ -148,10 +150,16 @@ class DisplaySignal(PlotWidget):
 
     def clear_plot(self):
         """Очистка графика"""
+        # очистка графика от сигнала
         self.plot_signal.setData(np.array([]), np.array([]))  # clear signal
         self.plot_signal.clear()
 
-        # data
+        # очистка графика от маркеров
+        for marker in self._markers:
+            self.removeItem(marker)
+        self._markers = []
+
+        # сброс данных
         self.max_timebase = 60
         self.timebase = 10
         self.dt = 1 / self.fs
@@ -271,6 +279,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         text_sample_rate = f"{self.schedule_data.sampling_rate} Гц"
         idx = self.comboBoxSampleFreq.findText(text_sample_rate)
         self.comboBoxSampleFreq.setCurrentIndex(idx)
+
+        value = self.comboBoxSampleFreq.currentData()
+        self.storage.set_sampling_rate(int(value))
         # self._on_samplerate_changed()
 
     def _set_default_format(self):
@@ -479,6 +490,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         logger.debug(f"{self.schedule_data.device.ble_name} будет запущен на частоте {self.device.sampling_rate}")
 
         if await self.device.start_acquisition(data_queue=data_queue):
+            self.start_acquisition_time = time.time()
+
             self.display.clear_plot()
 
             self.is_running = True
@@ -493,8 +506,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                 try:
                     data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
 
-                    if self.start_acquisition_time is None and "start_timestamp" in data:
-                        self.start_acquisition_time = data["start_timestamp"]
 
                     if "signal" in data:
                         self.display.set_data(data)
@@ -540,6 +551,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             return
 
         await self.device.stop_acquisition()
+
+        # остановка записи
         if self.storage.is_recording:
             self.pushButtonStopRecording.click()
 
@@ -559,11 +572,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
 
-
     # управление записью сигнала
     def _start_recording(self):
         """ Начало записи сигнала """
         logger.info("Начало записи сигнала")
+        self.storage.start_recording()
 
         # запуск таймера
         self.recording_timer.start()
@@ -574,9 +587,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.signal_accept_data.connect(self.storage.accept_data)
 
         self.signal_start_recording.emit()
-
-        if self.start_acquisition_time is not None:
-            self.display.set_marker(text="Запись начата", pos=time.time() - self.start_acquisition_time)
+        self.display.set_marker(text="Запись начата", pos=time.time() - self.start_acquisition_time)
 
         # ui
         self.pushButtonStartRecording.setEnabled(False)
@@ -597,8 +608,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.signal_stop_recording.disconnect(self.storage.stop_recording)
         self.signal_accept_data.disconnect(self.storage.accept_data)
 
-        if self.start_acquisition_time is not None:
+        if self.start_acquisition_time:
             self.display.set_marker(text="Запись остановлена", pos=time.time() - self.start_acquisition_time)
+        else:
+            self.display.set_marker(text="Запись остановлена", pos=None)
 
         # ui
         self.pushButtonStartRecording.setEnabled(True)
