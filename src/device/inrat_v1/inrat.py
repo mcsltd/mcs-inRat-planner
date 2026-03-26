@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import ctypes
 import hashlib
 import logging
@@ -8,8 +7,7 @@ from enum import IntEnum
 from functools import cached_property
 from uuid import UUID
 
-from bleak import BLEDevice, BleakClient, BleakScanner, BleakError
-from asyncio import Queue
+from bleak import BLEDevice, BleakClient
 from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
 
 from src.config import BLE_KEY_IN_RAT
@@ -210,7 +208,6 @@ class inRat:
             cnt, sig = decode_ecg(data)
             await data_queue.put({"type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
 
-        # todo: check properties before start acquisition
         settings = Settings(
             DataRateEcg=self._sampling_rate,
             HighPassFilterEcg=0,
@@ -259,23 +256,3 @@ class inRat:
             ...
 
         return True
-
-
-async def main():
-    device = await BleakScanner.find_device_by_name(name="inRat-1-1038")
-
-    device = inRat(device)
-    if await device.connect():
-        queue_signal, queue_event = Queue(maxsize=50), Queue(maxsize=50)
-        await device.start_acquisition(queue_signal, queue_event)
-        await asyncio.sleep(30)
-        await device.stop_acquisition()
-        await device.disconnect()
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
-    )
-
-    asyncio.run(main())
