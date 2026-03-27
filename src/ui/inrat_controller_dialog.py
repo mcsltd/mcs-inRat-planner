@@ -45,6 +45,12 @@ class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
+        timebases = [("1", 1), ("5", 5), ("10", 10), ("30", 30), ("60", 60),]
+        for t in timebases:
+            self.comboBoxTimebase.addItem(t[0], userData=t[1])
+
+
+
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -81,10 +87,15 @@ class DisplaySignal(PlotWidget):
         self.pending_update = False
 
         self._control_pane = ControlParamDisplay()
+        self._control_pane.comboBoxTimebase.activated.connect(self.set_timebase)
 
     @property
     def control_panel(self):
         return self._control_pane
+
+    def set_timebase(self):
+        self.timebase = self.control_panel.comboBoxTimebase.currentData()
+        logger.info(f"Изменен масштаб по оси времени: {self.timebase} секунд")
 
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
