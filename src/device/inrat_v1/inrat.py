@@ -65,11 +65,10 @@ class inRat:
 
         # свойства для настройки и запуска inrat
         self._is_activated: None | bool = None
+        self._is_notifying = False
         self._sampling_rate = SamplingRate.HZ_500
         self._high_pass_filter_ecg: int = 0
         self._full_scale_accelerometer = ScaleAccelerometer.G_2
-        # self._enabled_channels: None |  = None
-        # self._enabled_events: None |  = None
         self._activity_threshold = 1
 
         # свойства устройства
@@ -221,6 +220,7 @@ class inRat:
             await self._setup(Command.AcquisitionStart, settings)
             await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
             await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
+            self._is_notifying = True
         except Exception as err:
             logger.error(f"{err=}")
         return True
@@ -242,8 +242,13 @@ class inRat:
         except Exception as err:
             logger.debug(f"Возникла ошибка отписки от сервиса рассылки событий:\n{err}")
 
+        self._is_notifying = True
+
     async def disconnect(self) -> bool:
         """ Отключение от устройства """
+        if self._is_notifying:
+            await self.stop_acquisition()
+
         try:
             await self._setup(Command.ConnectionClose)
         except Exception:

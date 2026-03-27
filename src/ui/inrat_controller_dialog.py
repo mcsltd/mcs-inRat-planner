@@ -110,7 +110,6 @@ class DisplaySignal(PlotWidget):
 
         self.pending_update = True
 
-
     def update_plot(self):
         """Обновление графика по таймеру"""
         if not self.pending_update:
@@ -228,6 +227,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.storage.signal_record_saved.connect(self._on_record_saved)
         self.recording_timer.timeout.connect(self._on_timeout_expired)
 
+        # управление устройством
         self.pushButtonConnection.clicked.connect(self._device_connection)
         self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
         self.pushButtonStart.clicked.connect(self._device_start_acquisition)
@@ -317,7 +317,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         logger.debug(f"Установлен режим: {text_mode}, {value}")
 
-    def _set_mode_combobox(self, activated: bool):
+    def _set_value_activate_combobox(self, activated: bool):
         """ Установка текущего режима установленного на устройстве """
         if activated:
             logger.info(f"Устройство {self.schedule_data.device.ble_name}: активировано")
@@ -366,10 +366,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                 return
 
             if await self._connect_device(device):
-                # status = await self.device.get_status()
-                # self.set_level_battery(status.Usage)
-                self._set_mode_combobox(activated=self.device.is_activated)
+                self._set_value_activate_combobox(activated=self.device.is_activated)
 
+                # установка частоты
                 self.device.sampling_rate = self.schedule_data.sampling_rate
                 self.display.set_sampling_rate(int(self.device.sampling_rate))
 
@@ -387,25 +386,13 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             else:
                 self.pushButtonConnection.setEnabled(True)
         except:
-            ...
+            pass
         finally:
             self.signal_close_dialog.emit()
 
-            if self.device is None:
-                self.signal_info_dialog.emit(
-                    f"Не удалось подключиться к {self.schedule_data.device.ble_name}.\n"
-                    f"Повторите попытку подключения."
-                )
-                self.device = None
-
-    # async def _find_device(self) -> BLEDevice | None:
-    #     """ Поиск устройства """
-    #     logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
-    #     ble_device = await BleakScanner.find_device_by_name(self.schedule_data.device.ble_name, timeout=5)
-    #     if ble_device is None:
-    #         return None
-    #     logger.debug(f"Найдено устройство: {ble_device}")
-    #     return ble_device
+            if not self.device:
+                self.signal_info_dialog.emit(f"Не удалось подключиться к {self.schedule_data.device.ble_name}.\n"
+                                             f"Повторите попытку подключения.")
 
     async def _find_device(self, timeout: float):
         """ поиск устройства за время равное timeout """
@@ -439,18 +426,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _disconnect_device(self):
         """ Отсоединение от устройства """
-        if not self.device.is_connected:
-            logger.warning("Устройство уже отключено")
-            # return
-
         # очистка графика
         self.display.clear_plot()
 
         if self.device:
             await self.device.disconnect()
-
-        # сбросить уровень батареи (когда устр-во отключено)
-        # self.progressBarLevel.setValue(0)
 
         # активация
         self.pushButtonConnection.setEnabled(True)
@@ -460,6 +440,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStop.setEnabled(False)
         self.comboBoxSampleFreq.setEnabled(False)
         self.comboBoxMode.setEnabled(False)
+
         self.device = None
 
     # запуск устройства
@@ -474,9 +455,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _start_data_acquisition_impl(self):
         """ Запуск устройства для получения данных """
-        if not self.device.is_connected:    # обрыв соединения (происходит после команды получения данных)
+        if not self.device.is_connected:
             logger.error(f"Устройство {self.device.name} не подключено")
-            self._device_stop_acquisition()
             self._device_disconnection()
             return
 
@@ -514,7 +494,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             while self.is_running:
                 try:
                     data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
-
 
                     if "signal" in data:
                         self.display.set_data(data)
