@@ -60,18 +60,17 @@ class inRat:
             """Convert UUID to string value."""
             return str(self.uuid)
 
-
     def __init__(self, ble_device: BLEDevice):
         self._client: BleakClient = BleakClient(ble_device)
 
         # свойства для настройки и запуска inrat
-        self._is_activated: None | bool  = None
-        self._sampling_rate: None | SamplingRate = None
-        # self._high_pass_filter_ecg: None |  = None
-        # self._full_scale_accelerometer: None |  = None
+        self._is_activated: None | bool = None
+        self._sampling_rate = SamplingRate.HZ_500
+        self._high_pass_filter_ecg: int = 0
+        self._full_scale_accelerometer = ScaleAccelerometer.G_2
         # self._enabled_channels: None |  = None
         # self._enabled_events: None |  = None
-        # self._activity_threshold: None |  = None
+        self._activity_threshold = 1
 
         # свойства устройства
         self._name = ble_device.name
@@ -192,6 +191,15 @@ class inRat:
             res = False
         return res
 
+    def _get_settings(self) -> Settings:
+        """ генерация структуры настроек для запуска inRat на регистрацию данных """
+        settings = Settings(
+            DataRateEcg=self._sampling_rate, HighPassFilterEcg=self._high_pass_filter_ecg,
+            FullScaleAccelerometer=self._full_scale_accelerometer, EnabledChannels=EnabledChannels.ECG,
+            EnabledEvents=0, ActivityThreshold=1
+        )
+        return settings
+
     async def start_acquisition(self, data_queue: asyncio.Queue) -> bool:
         """ Запуск inRat на регистрацию сигнала и событий """
         async def event_handler(sender, data: bytearray):
@@ -208,16 +216,7 @@ class inRat:
             cnt, sig = decode_ecg(data)
             await data_queue.put({"type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
 
-        settings = Settings(
-            DataRateEcg=self._sampling_rate,
-            HighPassFilterEcg=0,
-            FullScaleAccelerometer=ScaleAccelerometer.G_2,
-            EnabledChannels=EnabledChannels.ECG,
-            # EnabledEvents=EventType.BUTTON | EventType.ACTIVITY | EventType.FREEFALL | EventType.ORIENTATION | EventType.START | EventType.TEMP,
-            EnabledEvents=0,
-            ActivityThreshold=1
-        )
-
+        settings = self._get_settings()
         try:
             await self._setup(Command.AcquisitionStart, settings)
             await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)

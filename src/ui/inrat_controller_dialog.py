@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import os
 import threading
@@ -357,7 +358,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         try:
             self.pushButtonConnection.setEnabled(False)
-            device = await self._find_device()
+            device = await self._find_device(timeout=5)
 
             if device is None:
                 logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено")
@@ -397,16 +398,24 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                 )
                 self.device = None
 
-    async def _find_device(self) -> BLEDevice | None:
-        """ Поиск устройства """
-        logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
-        ble_device = await BleakScanner.find_device_by_name(self.schedule_data.device.ble_name, timeout=5)
+    # async def _find_device(self) -> BLEDevice | None:
+    #     """ Поиск устройства """
+    #     logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
+    #     ble_device = await BleakScanner.find_device_by_name(self.schedule_data.device.ble_name, timeout=5)
+    #     if ble_device is None:
+    #         return None
+    #     logger.debug(f"Найдено устройство: {ble_device}")
+    #     return ble_device
 
-        if ble_device is None:
-            return None
-
-        logger.debug(f"Найдено устройство: {ble_device}")
-        return ble_device
+    async def _find_device(self, timeout: float):
+        """ поиск устройства за время равное timeout """
+        async with BleakScanner() as scanner:
+            with contextlib.suppress(asyncio.TimeoutError):
+                async with asyncio.timeout(timeout):
+                    async for ble_device, _ in scanner.advertisement_data():
+                        if ble_device and ble_device.name == self.schedule_data.device.ble_name:
+                            return ble_device
+        return None
 
     async def _connect_device(self, device: BLEDevice) -> bool:
         """ Соединение с устройством """
