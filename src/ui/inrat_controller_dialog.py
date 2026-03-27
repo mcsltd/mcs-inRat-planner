@@ -1,39 +1,39 @@
 import asyncio
+import contextlib
 import logging
 import os
 import threading
 import time
+import pyqtgraph as pg
 
 import numpy as np
 from PySide6.QtCore import Signal, QTimer, Qt
-from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, QMessageBox, QPushButton, \
+from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, \
     QHBoxLayout, QSpacerItem, QDialogButtonBox
 from PySide6 import QtCore
 
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from device.inrat.constants import InRatDataRateEcg, Command, ScaleAccelerometer, EnabledChannels, EventType
-from device.inrat.inrat import InRat
-from device.inrat.structures import InRatSettings
-from resources.dlg_inrat_controller import Ui_DlgInRatController
-from structure import ScheduleData
-from tools.inrat_storage import InRatStorage
-from util import convert_in_rat_sample_rate_to_str, seconds_to_label_time
+from src.device.inrat_v1.constants import Pkt
+from src.device.inrat_v1.inrat import inRat
+from src.resources.dlg_inrat_controller import Ui_DlgInRatController
+from src.structure import ScheduleData
+from src.tools.inrat_storage import InRatStorage
+from src.util import seconds_to_label_time
 
-from structure import RecordData
+from src.structure import RecordData
 
-from config import app_data
-from device.inrat.structures import InRatUsage
+from src.config import app_data
 
-SAMPLE_RATES = [("500 Гц", InRatDataRateEcg.HZ_500.value),
-                ("1000 Гц", InRatDataRateEcg.HZ_1000.value),
-                ("2000 Гц", InRatDataRateEcg.HZ_2000.value), ]
+SAMPLE_RATES = [("500 Гц", 500),
+                ("1000 Гц", 1000),
+                ("2000 Гц", 2000)]
 
-MODE = [("Деактивирован", Command.Deactivate),
-        ("Активирован", Command.Activate)]
+MODE = [("Деактивирован", False),
+        ("Активирован", True)]
 
 
 logger = logging.getLogger(__name__)
@@ -47,12 +47,21 @@ class DisplaySignal(PlotWidget):
         pen = mkPen("k")
         font = QFont("Arial", 11)
 
-        self.time = np.array([])
-        self.ecg = np.array([])
-        self.plot_signal = self.plot(self.time, self.ecg, pen=mkPen("b"))
+        # data
+        self.fs = 500
+        self.max_timebase = 60
+        self.timebase = 10
+        self.dt = 1 / self.fs
+        self.ecg_buffer = np.zeros(int(self.max_timebase * self.fs))
+        self.time_buffer = np.arange(0, self.max_timebase, self.dt)
+        # переменные для управления отображением
+        self.buffer_filled = False  # флаг заполнения буфера
+        self.current_position = 0  # текущая позиция для заполнения буфера
 
-        self.setLabel("left", "V (мкВ)", pen=mkPen(color='k'), font=font)
-        self.setLabel("bottom", "Время (с)", pen=mkPen(color='k'), font=font)
+        self.plot_signal = self.plot(pen=pg.mkPen(color=(255, 0, 0), width=1.5))
+
+        self.setLabel("left", "ЭКГ", units="V", pen=mkPen(color='k'), font=font)
+        self.setLabel("bottom", "Время", units="s", pen=mkPen(color='k'), font=font)
         for ax in ["bottom", "left"]:
             self.getAxis(ax).label.setFont(font)
             self.getAxis(ax).setPen(pen)
@@ -60,56 +69,105 @@ class DisplaySignal(PlotWidget):
             self.getAxis(ax).setTickPen(pen)
             self.getAxis(ax).setTickFont(font)
 
-        self.timebase_s = 5  # окно отображения сигнала
-        self.fs = 500
-
         self._markers = []
 
-    def set_data(self, time: np.ndarray, signal: np.ndarray):
-        """ Отображение сигнала на графике """
-        if time.shape != signal.shape:
-            logger.error("Время и сигнал ЭКГ имеют разную размерность")
-            return
-
-        max_len = self.timebase_s * self.fs
-        if len(self.time) < max_len:
-            self.time = np.append(self.time, time)
-            self.ecg = np.append(self.ecg, signal)
-        else:
-            self.time = np.append(self.time[len(time):], time)
-            self.ecg = np.append(self.ecg[len(signal):], signal)
-
-        self.plot_signal.setData(self.time, self.ecg, antialias=True, clipToView=True)
-
-        if self.time[-1] < self.timebase_s:
-            self.setXRange(self.time[0], self.timebase_s)
-        else:
-            self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
+        self.pending_update = False
 
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
         self.fs = sampling_rate
         logger.info(f"Установлен новая частота: {self.fs} Гц")
 
-    def set_marker(self, pos, text):
+    def set_marker(self, pos: float | None, text: str):
         """ Add vertical line and text on the plot."""
+        if not pos:
+            pos = self.time_buffer[self.current_position]
         line = InfiniteLine(
             pos=pos, angle=90, pen=mkPen('gray', width=2, style=QtCore.Qt.PenStyle.DashLine),
             movable=False, label=text, labelOpts={'color': 'k', 'position': 0.1})
         self.addItem(line)
         self._markers.append(line)
 
+    def set_data(self, ecg: dict):
+        """ добавление данных сигнала в буфер """
+        signal, counter = ecg["signal"], ecg["counter"]
+        if not self.buffer_filled:
+            # вставка данных в незаполненный буфер
+            if self.current_position + Pkt.SamplesCountEcg < len(self.ecg_buffer):
+                self.ecg_buffer[self.current_position:self.current_position + Pkt.SamplesCountEcg] = signal
+                self.current_position += Pkt.SamplesCountEcg
+            else:
+                offset = len(self.ecg_buffer) - self.current_position
+                self.ecg_buffer[self.current_position:] = signal[:offset]
+                signal = signal[offset:]
+                self.buffer_filled = True
+
+        # вставка данных в заполненный буфер
+        if self.buffer_filled and len(signal) != 0:
+            self.ecg_buffer = np.roll(self.ecg_buffer, -len(signal))
+            self.ecg_buffer[-len(signal):] = signal
+            self.time_buffer += len(signal) * self.dt
+
+        self.pending_update = True
+
+    def update_plot(self):
+        """Обновление графика по таймеру"""
+        if not self.pending_update:
+            return
+
+        if not self.buffer_filled:
+            end_idx = self.current_position
+            start_idx = 0
+
+            if end_idx > self.timebase * self.fs:
+                start_idx = end_idx - int(self.timebase * self.fs)
+        else:
+            end_idx = len(self.ecg_buffer)
+            start_idx = end_idx - int(self.timebase * self.fs)
+        visible_time = self.time_buffer[start_idx:end_idx]
+        visible_ecg = self.ecg_buffer[start_idx:end_idx]
+
+        # установка данных из буфера на дисплей
+        self.plot_signal.setData(visible_time, visible_ecg)
+
+        # отображение по оси времени
+        if not self.buffer_filled and end_idx <= self.timebase * self.fs:
+            self.setXRange(0, self.timebase, padding=0)
+        else:
+            current_time = visible_time[-1] if len(visible_time) > 0 else 0
+            self.setXRange(current_time - self.timebase, current_time, padding=0)
+
+        # отображение по оси напряжения
+        if len(visible_ecg) > 0:
+            data_min = visible_ecg.min()
+            data_max = visible_ecg.max()
+            if data_max > data_min:
+                padding = (data_max - data_min) * 0.05
+                self.setYRange(data_min - padding, data_max + padding)
+
+        self.replot()
+        self.pending_update = False
+
     def clear_plot(self):
         """Очистка графика"""
-        logger.debug("Очистка графика")
-        self.time = np.array([])
-        self.ecg = np.array([])
+        # очистка графика от сигнала
+        self.plot_signal.setData(np.array([]), np.array([]))  # clear signal
+        self.plot_signal.clear()
 
+        # очистка графика от маркеров
         for marker in self._markers:
             self.removeItem(marker)
-        self.markers = []
+        self._markers = []
 
-        self.plot_signal.clear()
+        # сброс данных
+        self.max_timebase = 60
+        self.timebase = 10
+        self.dt = 1 / self.fs
+        self.ecg_buffer = np.zeros(int(self.max_timebase * self.fs))
+        self.time_buffer = np.arange(0, self.max_timebase, self.dt)
+        self.buffer_filled = False  # флаг заполнения буфера
+        self.current_position = 0  # текущая позиция для заполнения буфера
+
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
@@ -129,7 +187,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # backend
         self.schedule_data = schedule_data
-        self.device: None | InRat = None
+        self.device: None | inRat = None
         self.storage = InRatStorage(
             path_to_save=app_data.path_to_data,
             device_name=self.schedule_data.device.ble_name,
@@ -139,12 +197,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         )
         self.start_acquisition_time = None
 
-        self._settings = InRatSettings(
-            DataRateEcg=InRatDataRateEcg.HZ_500.value, HighPassFilterEcg=0,
-            FullScaleAccelerometer=ScaleAccelerometer.G_2.value, EnabledChannels=EnabledChannels.ECG,
-            EnabledEvents=EventType.TEMP,
-            ActivityThreshold=1
-        )
         self._loop = None
         self.is_running = False
 
@@ -175,6 +227,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.storage.signal_record_saved.connect(self._on_record_saved)
         self.recording_timer.timeout.connect(self._on_timeout_expired)
 
+        # управление устройством
         self.pushButtonConnection.clicked.connect(self._device_connection)
         self.pushButtonDisconnect.clicked.connect(self._device_disconnection)
         self.pushButtonStart.clicked.connect(self._device_start_acquisition)
@@ -186,7 +239,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStartRecording.clicked.connect(self._start_recording)
         self.pushButtonStopRecording.clicked.connect(self._stop_recording)
 
-        self.battery_check_time = 0
+        # установка таймера для обновления графика
+        self.update_timer = QtCore.QTimer()
+        self.update_timer.timeout.connect(self.display.update_plot)
+        self.update_timer.start(16)
 
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
@@ -224,7 +280,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         text_sample_rate = f"{self.schedule_data.sampling_rate} Гц"
         idx = self.comboBoxSampleFreq.findText(text_sample_rate)
         self.comboBoxSampleFreq.setCurrentIndex(idx)
-        self._on_samplerate_changed()
+
+        value = self.comboBoxSampleFreq.currentData()
+        self.storage.set_sampling_rate(int(value))
+        # self._on_samplerate_changed()
 
     def _set_default_format(self):
         """ Установка частоты по умолчанию из schedule_data """
@@ -239,11 +298,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         text_sr = self.comboBoxSampleFreq.currentText()
         value = self.comboBoxSampleFreq.currentData()
 
-        self._settings.DataRateEcg = value
-        logger.debug(f"В структуру настроек установлена частота {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
-        self.display.set_sampling_rate(sampling_rate=int(text_sr.split()[0]))
-        self.storage.set_sampling_rate(int(text_sr.split()[0]))
-
+        if self.device:
+            self.device.sampling_rate = value
+            logger.debug(f"Для {self.device.name} установлена частота {value} Гц")
+        self.display.set_sampling_rate(sampling_rate=int(value))
+        self.storage.set_sampling_rate(int(value))
         logger.debug(f"Установлена частота: {text_sr}, {value}")
 
     def _on_mode_changed(self):
@@ -251,16 +310,21 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         text_mode = self.comboBoxMode.currentText()
         value = self.comboBoxMode.currentData()
 
-        future = asyncio.run_coroutine_threadsafe(self._set_device_mode(value), self._loop)
+        if value:
+            _ = asyncio.run_coroutine_threadsafe(self.device.activate(True), self._loop)
+        else:
+            _ = asyncio.run_coroutine_threadsafe(self.device.activate(False), self._loop)
+
         logger.debug(f"Установлен режим: {text_mode}, {value}")
 
-    def _set_mode_combobox(self, mode: int):
+    def _set_value_activate_combobox(self, activated: bool):
         """ Установка текущего режима установленного на устройстве """
-        logger.debug(f"Текущий режим на {self.schedule_data.device.ble_name}: {mode}")
-        if mode == 0:
-            self.comboBoxMode.setCurrentIndex(0)
-        elif mode == 1:
+        if activated:
+            logger.info(f"Устройство {self.schedule_data.device.ble_name}: активировано")
             self.comboBoxMode.setCurrentIndex(1)
+        else:
+            logger.info(f"Устройство {self.schedule_data.device.ble_name}: деактивировано")
+            self.comboBoxMode.setCurrentIndex(0)
 
     def _on_format_changed(self):
         """ Изменен формат сохранения сигналов """
@@ -279,20 +343,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self._loop_thread.start()
         logger.debug(f"Создан цикл событий: {self._loop}")
 
-    # установка статуса устройству - Activated/Deactivated
-    async def _set_device_mode(self, mode: Command):
-        """ Изменение режима у устройства - Activated/Deactivated"""
-        if await self.device.set_status(mode):
-            status = await self.device.get_status()
-            self._set_mode_combobox(mode=status.Activated)
-            return
-        logger.error(f"Не удалось установить режим для устройства: {self.schedule_data.device.ble_name}")
-
-        if mode == Command.Activate:
-            self.comboBoxMode.setCurrentIndex(0)
-        if mode == Command.Deactivate:
-            self.comboBoxMode.setCurrentIndex(1)
-
     # соединение с устройством
     def _device_connection(self):
         """ Соединение с устройством через асинхронную задачу """
@@ -308,7 +358,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         try:
             self.pushButtonConnection.setEnabled(False)
-            device = await self._find_device()
+            device = await self._find_device(timeout=5)
 
             if device is None:
                 logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено")
@@ -316,9 +366,13 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                 return
 
             if await self._connect_device(device):
-                status = await self.device.get_status()
-                self.set_level_battery(status.Usage)
-                self._set_mode_combobox(mode=status.Activated)
+                self._set_value_activate_combobox(activated=self.device.is_activated)
+
+                # установка частоты
+                self.device.sampling_rate = self.schedule_data.sampling_rate
+                self.display.set_sampling_rate(int(self.device.sampling_rate))
+
+                logger.debug(f"{self.device.name} установлена частота {self.device.sampling_rate} Гц")
 
                 # активация при подключении устройства
                 self.pushButtonStart.setEnabled(True)
@@ -332,55 +386,29 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             else:
                 self.pushButtonConnection.setEnabled(True)
         except:
-            ...
+            pass
         finally:
             self.signal_close_dialog.emit()
 
-            if self.device is None:
-                self.signal_info_dialog.emit(
-                    f"Не удалось подключиться к {self.schedule_data.device.ble_name}.\n"
-                    f"Повторите попытку подключения."
-                )
-                self.device = None
+            if not self.device:
+                self.signal_info_dialog.emit(f"Не удалось подключиться к {self.schedule_data.device.ble_name}.\n"
+                                             f"Повторите попытку подключения.")
 
-    def set_level_battery(self, usage: InRatUsage):
-        """ Установка уровня батареи """
-        battery_capacity = 504 * (10 ** 6)  # мкА * c
-        # параметры потребления
-        i_adv, eff_adv, t_adv = 0.02, 1, usage.AdvertisingSeconds
-        i_con, eff_con, t_con = 15, 0.9, usage.ConnectionSeconds
-        i_send, eff_send, t_send = 470, 0.7, usage.DataSendSeconds
-
-        logger.info(f"\nВ режиме Advertising: {t_adv} с.\n"
-                    f"В режиме ConnectionSeconds: {t_con} с.\n"
-                    f"В режиме DataSendSeconds: {t_send} с.\n"
-                    f"Общее время работы: {t_send + t_adv + t_con} с")
-
-        # расчёт потребленной ёмкости в разных режимах
-        consump_adv = t_adv * i_adv * eff_adv
-        consump_con = t_con * i_con * eff_con
-        consump_send = t_send * i_send * eff_send
-
-        remain_capacity = battery_capacity - consump_con - consump_send - consump_adv
-        level = int(remain_capacity / battery_capacity * 100)
-        self.progressBarLevel.setValue(level)
-
-    async def _find_device(self) -> BLEDevice | None:
-        """ Поиск устройства """
-        logger.debug(f"Идёт поиск устройства: {self.schedule_data.device.ble_name}")
-        ble_device = await BleakScanner.find_device_by_name(self.schedule_data.device.ble_name, timeout=5)
-
-        if ble_device is None:
-            return None
-
-        logger.debug(f"Найдено устройство: {ble_device}")
-        return ble_device
+    async def _find_device(self, timeout: float):
+        """ поиск устройства за время равное timeout """
+        async with BleakScanner() as scanner:
+            with contextlib.suppress(asyncio.TimeoutError):
+                async with asyncio.timeout(timeout):
+                    async for ble_device, _ in scanner.advertisement_data():
+                        if ble_device and ble_device.name == self.schedule_data.device.ble_name:
+                            return ble_device
+        return None
 
     async def _connect_device(self, device: BLEDevice) -> bool:
         """ Соединение с устройством """
         # соединение
-        self.device = InRat(ble_device=device)
-        if await self.device.connect(timeout=10):
+        self.device = inRat(ble_device=device)
+        if await self.device.connect(wait=10):
             logger.debug(f"Выполнено соединение с устройством: {self.device.name}, {self.device.address}")
             return True
         return False
@@ -398,17 +426,12 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _disconnect_device(self):
         """ Отсоединение от устройства """
-        if not self.device.is_connected:
-            logger.warning("Устройство уже отключено")
-            # return
+        # очистка графика
+        self.display.clear_plot()
 
         if self.device:
             await self.device.disconnect()
 
-        # сбросить уровень батареи (когда устр-во отключено)
-        self.progressBarLevel.setValue(0)
-        # очистка графика
-        self.display.clear_plot()
         # активация
         self.pushButtonConnection.setEnabled(True)
         # деактивация
@@ -417,12 +440,13 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.pushButtonStop.setEnabled(False)
         self.comboBoxSampleFreq.setEnabled(False)
         self.comboBoxMode.setEnabled(False)
+
         self.device = None
 
     # запуск устройства
     def _device_start_acquisition(self):
         """ Запуск устройства для получения данных через асинхронную задачу"""
-        logger.debug("Запущено соединение и запуск устройства")
+        logger.debug(f"Запуск {self.device.name} на регистрацию ЭКГ")
         if self._loop is None:
             self._run_async_loop()
 
@@ -431,9 +455,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     async def _start_data_acquisition_impl(self):
         """ Запуск устройства для получения данных """
-        if not self.device.is_connected:    # обрыв соединения (происходит после команды получения данных)
+        if not self.device.is_connected:
             logger.error(f"Устройство {self.device.name} не подключено")
-            self._device_stop_acquisition()
             self._device_disconnection()
             return
 
@@ -453,9 +476,13 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             return
 
         data_queue = asyncio.Queue()
-        logger.debug(f"{self.schedule_data.device.ble_name} запущен на частоте: {convert_in_rat_sample_rate_to_str(self._settings.DataRateEcg)}")
+        logger.debug(f"{self.schedule_data.device.ble_name} будет запущен на частоте {self.device.sampling_rate}")
 
-        if await self.device.start_acquisition(data_queue=data_queue, settings=self._settings):
+        if await self.device.start_acquisition(data_queue=data_queue):
+            self.start_acquisition_time = time.time()
+
+            self.display.clear_plot()
+
             self.is_running = True
             # деактивация в режиме получения данных
             self.pushButtonStart.setEnabled(False)
@@ -464,44 +491,17 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             self.comboBoxSampleFreq.setEnabled(False)
             self.pushButtonStartRecording.setEnabled(True)
 
-            # установка времени таймеру проверки уровня заряда
-            self.battery_check_time = time.time()
-
             while self.is_running:
                 try:
                     data = await asyncio.wait_for(data_queue.get(), timeout=1.0)
 
-                    if self.start_acquisition_time is None and "start_timestamp" in data:
-                        self.start_acquisition_time = data["start_timestamp"]
+                    if "signal" in data:
+                        self.display.set_data(data)
 
-                    if "signal" in data and "timestamp" in data and "start_timestamp" in data and "counter" in data:
-                        start_time = data["start_timestamp"]
                         signal = data["signal"]
-                        time_arr = np.linspace(
-                            start_time + len(data["signal"]) * (data["counter"] - 1) / self.display.fs,
-                            start_time + len(data["signal"]) * data["counter"] / self.display.fs, len(signal)) - start_time
-
-                        self.display.set_data(time=time_arr, signal=signal)
                         self.signal_accept_data.emit(signal)
 
-                    if "event" in data:
-                        if data["event"] == "Temp":
-                            temp_in_cels = np.round(data["temp"] / 1000, 2)
-                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text=f"{temp_in_cels} °С")
-                        if data["event"] == "Activity":
-                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Activity")
-                        if data["event"] == "Orientation":
-                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Orientation")
-                        if data["event"] == "Freefall":
-                            self.display.set_marker(pos=data["timestamp"] - data["start_timestamp"], text="Freefall")
-
                     data_queue.task_done()
-
-                    # узнать статус уровня батареи
-                    if time.time() - self.battery_check_time > 10.0:
-                        status = await self.device.get_status()
-                        self.set_level_battery(status.Usage)
-                        self.battery_check_time = time.time()
 
                 except asyncio.TimeoutError:
                     continue
@@ -538,32 +538,33 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             logger.debug(f"Получение данных с {self.schedule_data.device.ble_name} уже остановлено")
             return
 
-        if await self.device.stop_acquisition():
-            self.battery_check_time = 0
+        await self.device.stop_acquisition()
 
-            if self.storage.is_recording:
-                self.pushButtonStopRecording.click()
+        # остановка записи
+        if self.storage.is_recording:
+            self.pushButtonStopRecording.click()
 
-            self.is_running = False
-            self.start_acquisition_time = None
+        self.is_running = False
+        self.start_acquisition_time = None
 
-            # активация при остановке получения данных
-            self.pushButtonDisconnect.setEnabled(True)
-            self.pushButtonStart.setEnabled(True)
-            self.comboBoxMode.setEnabled(True)
-            self.comboBoxSampleFreq.setEnabled(True)
+        # активация при остановке получения данных
+        self.pushButtonDisconnect.setEnabled(True)
+        self.pushButtonStart.setEnabled(True)
+        self.comboBoxMode.setEnabled(True)
+        self.comboBoxSampleFreq.setEnabled(True)
 
-            # деактивация при остановке устройства
-            self.pushButtonStop.setEnabled(False)
-            self.pushButtonStartRecording.setEnabled(False)
-            self.pushButtonStopRecording.setEnabled(False)
+        # деактивация при остановке устройства
+        self.pushButtonStop.setEnabled(False)
+        self.pushButtonStartRecording.setEnabled(False)
+        self.pushButtonStopRecording.setEnabled(False)
 
-            logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
+        logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
 
     # управление записью сигнала
     def _start_recording(self):
         """ Начало записи сигнала """
         logger.info("Начало записи сигнала")
+        self.storage.start_recording()
 
         # запуск таймера
         self.recording_timer.start()
@@ -574,9 +575,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.signal_accept_data.connect(self.storage.accept_data)
 
         self.signal_start_recording.emit()
-
-        if self.start_acquisition_time is not None:
-            self.display.set_marker(text="Запись начата", pos=time.time() - self.start_acquisition_time)
+        self.display.set_marker(text="Запись начата", pos=time.time() - self.start_acquisition_time)
 
         # ui
         self.pushButtonStartRecording.setEnabled(False)
@@ -597,8 +596,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.signal_stop_recording.disconnect(self.storage.stop_recording)
         self.signal_accept_data.disconnect(self.storage.accept_data)
 
-        if self.start_acquisition_time is not None:
+        if self.start_acquisition_time:
             self.display.set_marker(text="Запись остановлена", pos=time.time() - self.start_acquisition_time)
+        else:
+            self.display.set_marker(text="Запись остановлена", pos=None)
 
         # ui
         self.pushButtonStartRecording.setEnabled(True)

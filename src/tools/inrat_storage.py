@@ -8,10 +8,9 @@ import numpy as np
 import wfdb
 from PySide6.QtCore import QObject, Signal
 from pyedflib import EdfWriter
-from transliterate import detect_language, translit
 
-from constants import RecordStatus
-from structure import RecordData
+from src.constants import RecordStatus
+from src.structure import RecordData
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class InRatStorage(QObject):
 
         self.signal = np.array([])
         self.path_to_save = os.path.abspath(path_to_save)
-        self.is_recording = True
+        self.is_recording = False
 
         self._schedule_id: UUID = schedule_id
         self._object_name: str = object_name

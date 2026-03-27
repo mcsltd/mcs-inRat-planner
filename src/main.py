@@ -8,12 +8,10 @@ from uuid import UUID
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QMessageBox, QFileDialog, QTableView
-from PySide6.QtGui import QIcon
 
 # scheduler
 from apscheduler.schedulers.qt import QtScheduler
 from sqlalchemy.orm import Session
-
 from ble_manager import BleManager
 
 # table
@@ -27,7 +25,10 @@ from structure import ScheduleData, RecordData, RecordingTaskData
 from resources.main_window import Ui_MainWindow
 from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
+
+# from ui.inrat_controller_dialog_v1 import InRatControllerDialog
 from ui.inrat_controller_dialog import InRatControllerDialog
+
 from ui.schedule_dialog import DlgCreateSchedule
 from ui.manage_experiments import ExperimentCRUDWidget
 from tools.modview import GenericTableWidget

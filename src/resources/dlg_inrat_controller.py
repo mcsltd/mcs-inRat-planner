@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllerqQUSRU.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerBayKuF.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -16,9 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFormLayout,
-    QGridLayout, QHBoxLayout, QLabel, QProgressBar,
-    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
-    QWidget)
+    QGridLayout, QHBoxLayout, QLabel, QPushButton,
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 import resources.resources_rc
 
 class Ui_DlgInRatController(object):
@@ -50,6 +49,16 @@ class Ui_DlgInRatController(object):
 
         self.formLayoutInfo.setWidget(0, QFormLayout.ItemRole.FieldRole, self.labelExperimentName)
 
+        self.labelObject = QLabel(DlgInRatController)
+        self.labelObject.setObjectName(u"labelObject")
+
+        self.formLayoutInfo.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelObject)
+
+        self.labelObjectName = QLabel(DlgInRatController)
+        self.labelObjectName.setObjectName(u"labelObjectName")
+
+        self.formLayoutInfo.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labelObjectName)
+
         self.labelDevice = QLabel(DlgInRatController)
         self.labelDevice.setObjectName(u"labelDevice")
         self.labelDevice.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -61,32 +70,6 @@ class Ui_DlgInRatController(object):
 
         self.formLayoutInfo.setWidget(2, QFormLayout.ItemRole.FieldRole, self.labelDeviceName)
 
-        self.labelObject = QLabel(DlgInRatController)
-        self.labelObject.setObjectName(u"labelObject")
-
-        self.formLayoutInfo.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelObject)
-
-        self.labelObjectName = QLabel(DlgInRatController)
-        self.labelObjectName.setObjectName(u"labelObjectName")
-
-        self.formLayoutInfo.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labelObjectName)
-
-        self.labelBatteryLevel = QLabel(DlgInRatController)
-        self.labelBatteryLevel.setObjectName(u"labelBatteryLevel")
-
-        self.formLayoutInfo.setWidget(3, QFormLayout.ItemRole.LabelRole, self.labelBatteryLevel)
-
-        self.progressBarLevel = QProgressBar(DlgInRatController)
-        self.progressBarLevel.setObjectName(u"progressBarLevel")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.progressBarLevel.sizePolicy().hasHeightForWidth())
-        self.progressBarLevel.setSizePolicy(sizePolicy)
-        self.progressBarLevel.setValue(0)
-
-        self.formLayoutInfo.setWidget(3, QFormLayout.ItemRole.FieldRole, self.progressBarLevel)
-
 
         self.verticalLayout.addLayout(self.formLayoutInfo)
 
@@ -95,11 +78,11 @@ class Ui_DlgInRatController(object):
         self.pushButtonStart = QPushButton(DlgInRatController)
         self.pushButtonStart.setObjectName(u"pushButtonStart")
         self.pushButtonStart.setEnabled(False)
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.pushButtonStart.sizePolicy().hasHeightForWidth())
-        self.pushButtonStart.setSizePolicy(sizePolicy1)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButtonStart.sizePolicy().hasHeightForWidth())
+        self.pushButtonStart.setSizePolicy(sizePolicy)
         self.pushButtonStart.setMinimumSize(QSize(100, 0))
 
         self.gridLayoutControlPanel.addWidget(self.pushButtonStart, 0, 1, 1, 1)
@@ -118,8 +101,8 @@ class Ui_DlgInRatController(object):
         self.pushButtonStop = QPushButton(DlgInRatController)
         self.pushButtonStop.setObjectName(u"pushButtonStop")
         self.pushButtonStop.setEnabled(False)
-        sizePolicy1.setHeightForWidth(self.pushButtonStop.sizePolicy().hasHeightForWidth())
-        self.pushButtonStop.setSizePolicy(sizePolicy1)
+        sizePolicy.setHeightForWidth(self.pushButtonStop.sizePolicy().hasHeightForWidth())
+        self.pushButtonStop.setSizePolicy(sizePolicy)
         self.pushButtonStop.setMinimumSize(QSize(100, 0))
 
         self.gridLayoutControlPanel.addWidget(self.pushButtonStop, 1, 1, 1, 1)
@@ -173,11 +156,11 @@ class Ui_DlgInRatController(object):
         self.comboBoxFormat.addItem("")
         self.comboBoxFormat.setObjectName(u"comboBoxFormat")
         self.comboBoxFormat.setEnabled(True)
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.comboBoxFormat.sizePolicy().hasHeightForWidth())
-        self.comboBoxFormat.setSizePolicy(sizePolicy2)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.comboBoxFormat.sizePolicy().hasHeightForWidth())
+        self.comboBoxFormat.setSizePolicy(sizePolicy1)
         self.comboBoxFormat.setMaximumSize(QSize(100, 16777215))
         font = QFont()
         font.setPointSize(9)
@@ -244,11 +227,10 @@ class Ui_DlgInRatController(object):
         DlgInRatController.setWindowTitle(QCoreApplication.translate("DlgInRatController", u"Dialog", None))
         self.labelExperiment.setText(QCoreApplication.translate("DlgInRatController", u"\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442:", None))
         self.labelExperimentName.setText("")
-        self.labelDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e:", None))
-        self.labelDeviceName.setText("")
         self.labelObject.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0431\u044a\u0435\u043a\u0442:", None))
         self.labelObjectName.setText("")
-        self.labelBatteryLevel.setText(QCoreApplication.translate("DlgInRatController", u"\u0417\u0430\u0440\u044f\u0434 \u0431\u0430\u0442\u0430\u0440\u0435\u0438:", None))
+        self.labelDevice.setText(QCoreApplication.translate("DlgInRatController", u"\u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e:", None))
+        self.labelDeviceName.setText("")
         self.pushButtonStart.setText(QCoreApplication.translate("DlgInRatController", u"\u0421\u0442\u0430\u0440\u0442", None))
         self.pushButtonConnection.setText(QCoreApplication.translate("DlgInRatController", u"\u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))
         self.pushButtonDisconnect.setText(QCoreApplication.translate("DlgInRatController", u"\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))

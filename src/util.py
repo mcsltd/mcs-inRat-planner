@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from device.inrat.constants import InRatDataRateEcg
+from device.inrat_v0.constants import InRatDataRateEcg
 from structure import RecordData
 
 
