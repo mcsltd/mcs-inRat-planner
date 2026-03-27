@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import numpy as np
 from PySide6.QtCore import Signal, QTimer, Qt
 from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, \
-    QHBoxLayout, QSpacerItem, QDialogButtonBox
+    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame
 from PySide6 import QtCore
 
 from PySide6.QtGui import QFont
@@ -20,6 +20,7 @@ from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 from src.device.inrat_v1.constants import Pkt
 from src.device.inrat_v1.inrat import inRat
 from src.resources.dlg_inrat_controller import Ui_DlgInRatController
+from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
 from src.structure import ScheduleData
 from src.tools.inrat_storage import InRatStorage
 from src.util import seconds_to_label_time
@@ -35,8 +36,14 @@ SAMPLE_RATES = [("500 Гц", 500),
 MODE = [("Деактивирован", False),
         ("Активирован", True)]
 
-
 logger = logging.getLogger(__name__)
+
+
+class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setupUi(self)
 
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
@@ -72,6 +79,12 @@ class DisplaySignal(PlotWidget):
         self._markers = []
 
         self.pending_update = False
+
+        self._control_pane = ControlParamDisplay()
+
+    @property
+    def control_panel(self):
+        return self._control_pane
 
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
@@ -238,6 +251,9 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.comboBoxFormat.currentIndexChanged.connect(self._on_format_changed)
         self.pushButtonStartRecording.clicked.connect(self._start_recording)
         self.pushButtonStopRecording.clicked.connect(self._stop_recording)
+
+        self.verticalLayout.addWidget(self.display.control_panel)
+        self.verticalLayout.addStretch()
 
         # установка таймера для обновления графика
         self.update_timer = QtCore.QTimer()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'dlg_inrat_controllerBayKuF.ui'
+## Form generated from reading UI file 'dlg_inrat_controllerCBMtlS.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -17,8 +17,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFormLayout,
     QGridLayout, QHBoxLayout, QLabel, QPushButton,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
-import resources.resources_rc
+    QSizePolicy, QVBoxLayout, QWidget)
+import src.resources
 
 class Ui_DlgInRatController(object):
     def setupUi(self, DlgInRatController):
@@ -209,10 +209,6 @@ class Ui_DlgInRatController(object):
 
 
         self.verticalLayout.addLayout(self.horizontalLayoutRecording)
-
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.verticalLayout.addItem(self.verticalSpacer)
 
 
         self.gridLayout.addLayout(self.verticalLayout, 0, 1, 1, 1)
