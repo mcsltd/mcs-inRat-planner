@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_plotTCDIhk.ui'
+## Form generated from reading UI file 'frm_online_control_plotItEtxD.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -23,7 +23,7 @@ class Ui_FrmOnlineControlPane(object):
     def setupUi(self, FrmOnlineControlPane):
         if not FrmOnlineControlPane.objectName():
             FrmOnlineControlPane.setObjectName(u"FrmOnlineControlPane")
-        FrmOnlineControlPane.resize(287, 122)
+        FrmOnlineControlPane.resize(342, 122)
         FrmOnlineControlPane.setFrameShape(QFrame.Shape.Panel)
         FrmOnlineControlPane.setFrameShadow(QFrame.Shadow.Raised)
         self.gridLayout_2 = QGridLayout(FrmOnlineControlPane)
@@ -46,16 +46,23 @@ class Ui_FrmOnlineControlPane(object):
         self.horizontalLayout.setContentsMargins(4, -1, 4, -1)
         self.labelAxisX = QLabel(self.groupBox)
         self.labelAxisX.setObjectName(u"labelAxisX")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.labelAxisX.sizePolicy().hasHeightForWidth())
+        self.labelAxisX.setSizePolicy(sizePolicy1)
+        self.labelAxisX.setMinimumSize(QSize(60, 0))
 
         self.horizontalLayout.addWidget(self.labelAxisX)
 
         self.comboBoxTimebase = QComboBox(self.groupBox)
         self.comboBoxTimebase.setObjectName(u"comboBoxTimebase")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.comboBoxTimebase.sizePolicy().hasHeightForWidth())
-        self.comboBoxTimebase.setSizePolicy(sizePolicy1)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.comboBoxTimebase.sizePolicy().hasHeightForWidth())
+        self.comboBoxTimebase.setSizePolicy(sizePolicy2)
+        self.comboBoxTimebase.setMinimumSize(QSize(40, 0))
 
         self.horizontalLayout.addWidget(self.comboBoxTimebase)
 
@@ -79,7 +86,7 @@ class Ui_FrmOnlineControlPane(object):
     def retranslateUi(self, FrmOnlineControlPane):
         FrmOnlineControlPane.setWindowTitle(QCoreApplication.translate("FrmOnlineControlPane", u"Frame", None))
         self.groupBox.setTitle(QCoreApplication.translate("FrmOnlineControlPane", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u0433\u0440\u0430\u0444\u0438\u043a\u0430", None))
-        self.labelAxisX.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u041c\u0430\u0441\u0448\u0442\u0430\u0431 \u0432\u0440\u0435\u043c\u0435\u043d\u0438", None))
-        self.labelAxisXDim.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0441\u0435\u043a\u0443\u043d\u0434", None))
+        self.labelAxisX.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u043e\u0435 \u043e\u043a\u043d\u043e", None))
+        self.labelAxisXDim.setText(QCoreApplication.translate("FrmOnlineControlPane", u"/\u0441", None))
     # retranslateUi
 

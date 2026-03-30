@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>287</width>
+    <width>342</width>
     <height>122</height>
    </rect>
   </property>
@@ -66,25 +66,43 @@
         </property>
         <item>
          <widget class="QLabel" name="labelAxisX">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Масштаб времени</string>
+           <string>Временное окно</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QComboBox" name="comboBoxTimebase">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>0</height>
+           </size>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="labelAxisXDim">
           <property name="text">
-           <string>секунд</string>
+           <string>/с</string>
           </property>
          </widget>
         </item>
