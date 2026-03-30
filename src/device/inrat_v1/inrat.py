@@ -213,10 +213,11 @@ class inRat:
         async def signal_handler(sender, data: bytearray):
             time_received = time.time()
             cnt, sig = decode_ecg(data)
-            await data_queue.put({"type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
+            await data_queue.put({"start_timestamp": start_timestamp, "type": "signal", "start_time": time_received, "counter": cnt, "signal": sig})
 
         settings = self._get_settings()
         try:
+            start_timestamp = time.time()
             await self._setup(Command.AcquisitionStart, settings)
             await self._client.start_notify(self.UUID_CHARACTERISTIC_DATA_ECG, signal_handler)
             await self._client.start_notify(self.UUID_CHARACTERISTIC_EVENT, event_handler)
