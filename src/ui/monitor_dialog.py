@@ -23,8 +23,8 @@ class Display(PlotWidget):
         pen = mkPen("k")
         font = QFont("Arial", 11)
 
-        self.setLabel("left", "V (мкВ)", pen=mkPen(color='k'), font=font)
-        self.setLabel("bottom", "Время (с)", pen=mkPen(color='k'), font=font)
+        self.setLabel("left", "ЭКГ", units="V", pen=mkPen(color='k'), font=font)
+        self.setLabel("bottom", "Время", units="s", pen=mkPen(color='k'), font=font)
         for ax in ["bottom", "left"]:
             self.getAxis(ax).label.setFont(font)
             self.getAxis(ax).setPen(pen)
@@ -206,7 +206,9 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
 
             # Нормализуем и смещаем сигнал для лучшего отображения
             normalized_signal = self._normalize_signal(signal)
-            display_signal = normalized_signal
+
+            # todo: test it
+            display_signal = normalized_signal / 1e3
 
             # Выбираем цвет
             color = self.signal_colors[0]
@@ -248,15 +250,14 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
                                 signal_headers: List[dict], vertical_offset: float):
         """Настройка отображения графика"""
 
-
         # Автоматическое масштабирование
         self.display.enableAutoRange()
 
-        # Устанавливаем подписи осей для первого сигнала
-        if signal_headers:
-            first_header = signal_headers[0]
-            unit = first_header.get('physical_dim', 'мкВ')
-            self.display.setLabel("left", f"Амплитуда ({unit})")
+        # # Устанавливаем подписи осей для первого сигнала
+        # if signal_headers:
+        #     first_header = signal_headers[0]
+        #     unit = first_header.get('physical_dim', 'мкВ')
+        #     self.display.setLabel("left", f"ЭКГ", units="mV")
 
         # Добавляем сетку
         self.display.showGrid(x=True, y=True, alpha=0.3)
