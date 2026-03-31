@@ -86,6 +86,10 @@ class inRat:
     def is_connected(self) -> bool:
         return self._client.is_connected
 
+    @property
+    def is_activated(self):
+        return self._is_activated
+
     # свойства полученные от подключенного устройства
     @property
     def name(self) -> str | None:
@@ -131,16 +135,18 @@ class inRat:
             self._sampling_rate = SamplingRate.HZ_2000
             logger.info("Установлена частота HZ_2000")
 
-    @property
-    def is_activated(self):
-        return self._is_activated
-
     async def activate(self, value: bool):
         """ активация устройства """
         if value:
             await self._setup(cmd=Command.Activate)
+
         if not value:
             await self._setup(cmd=Command.Deactivate)
+
+        try:
+            await self._read_device_status()
+        except Exception as err:
+            logger.error(f"Возникла ошибка чтения свойств {self.name}: err")
 
     async def _setup(self, cmd: Command, settings: Settings | bytes = b''):
         """ Установка команд и настроек inRat """
@@ -227,7 +233,7 @@ class inRat:
         return True
 
     async def stop_acquisition(self) -> None:
-        """ Запуск inRat на регистрацию сигнала и событий """
+        """ Остановка inRat и отписка от сервисов """
         try:
             await self._client.stop_notify(self.UUID_CHARACTERISTIC_DATA_ECG)
         except Exception as exc:
@@ -243,7 +249,7 @@ class inRat:
         except Exception as err:
             logger.debug(f"Возникла ошибка отписки от сервиса рассылки событий:\n{err}")
 
-        self._is_notifying = True
+        self._is_notifying = False
 
     async def disconnect(self) -> bool:
         """ Отключение от устройства """
