@@ -133,7 +133,8 @@ class Storage(QObject):
                 n_channels=1, file_name=file_name,
             )
 
-            self.signal = np.round(ecg_signal * 1e6, decimals=3)
+            self.signal = np.round(ecg_signal * 1e6, decimals=2)
+            # self.signal = np.round(ecg_signal, decimals=3)  # test
 
             margin = 0.15
             signal_max = np.max(self.signal)
@@ -166,6 +167,7 @@ class Storage(QObject):
         """ Сохранение данных в формате WFDB """
         path_to_save = None
         try:
+            ecg_signal = np.round(ecg_signal * 1e6, decimals=2) # from V to uV
             wfdb.io.wrsamp(
                 record_name=filename,
                 fs=sampling_rate, units=units, p_signal=ecg_signal[np.newaxis].T,
