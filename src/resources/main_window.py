@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowHnSCpV.ui'
+## Form generated from reading UI file 'main_windowDEYTAQ.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QLabel,
     QMainWindow, QMenu, QMenuBar, QPushButton,
     QSizePolicy, QSpacerItem, QStatusBar, QVBoxLayout,
     QWidget)
-import resources.resources_rc
+import src.resources
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -105,11 +105,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.pushButtonUpdateSchedule)
 
-        self.pushButtonDeleteSchedule = QPushButton(self.centralwidget)
-        self.pushButtonDeleteSchedule.setObjectName(u"pushButtonDeleteSchedule")
-        self.pushButtonDeleteSchedule.setFont(font1)
+        self.pushButtonArchiveSchedule = QPushButton(self.centralwidget)
+        self.pushButtonArchiveSchedule.setObjectName(u"pushButtonArchiveSchedule")
+        self.pushButtonArchiveSchedule.setFont(font1)
 
-        self.horizontalLayout_2.addWidget(self.pushButtonDeleteSchedule)
+        self.horizontalLayout_2.addWidget(self.pushButtonArchiveSchedule)
 
 
         self.verticalLayoutSchedule.addLayout(self.horizontalLayout_2)
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
         self.labelSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435", None))
         self.pushButtonAddSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
         self.pushButtonUpdateSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0437\u043c\u0435\u043d\u0438\u0442\u044c", None))
-        self.pushButtonDeleteSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c", None))
+        self.pushButtonArchiveSchedule.setText(QCoreApplication.translate("MainWindow", u"\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c", None))
         self.file.setTitle(QCoreApplication.translate("MainWindow", u"\u0424\u0430\u0439\u043b", None))
         self.help.setTitle(QCoreApplication.translate("MainWindow", u"\u041f\u043e\u043c\u043e\u0449\u044c", None))
         self.manage.setTitle(QCoreApplication.translate("MainWindow", u"\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435", None))

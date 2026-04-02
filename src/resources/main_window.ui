@@ -143,7 +143,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButtonDeleteSchedule">
+         <widget class="QPushButton" name="pushButtonArchiveSchedule">
           <property name="font">
            <font>
             <family>Segoe UI</family>
