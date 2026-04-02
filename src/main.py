@@ -26,7 +26,6 @@ from resources.main_window import Ui_MainWindow
 from ui.about_dialog import AboutDialog, DialogLicenses
 from ui.helper_dialog import DialogHelper
 
-# from ui.inrat_controller_dialog_v1 import InRatControllerDialog
 from ui.inrat_controller_dialog import InRatControllerDialog
 
 from ui.schedule_dialog import DlgCreateSchedule
@@ -55,7 +54,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.setWindowTitle("InRat Planner")
+        self.setWindowTitle("inRat planner")
 
         # init ble manager
         self.ble_manager = BleManager()
@@ -102,7 +101,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # buttons
         self.pushButtonAddSchedule.clicked.connect(self.add_schedule)
         self.pushButtonUpdateSchedule.clicked.connect(self.update_schedule)
-        self.pushButtonDeleteSchedule.clicked.connect(self.delete_schedule)
+        self.pushButtonArchiveSchedule.clicked.connect(self.archive_schedule)
         self.pushButtonDownloadRecords.clicked.connect(self.copy_records)
 
         self.actionExperiments.triggered.connect(self.experiments_clicked)
@@ -122,7 +121,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # деактивация кнопок
         self.pushButtonUpdateSchedule.setEnabled(False)
-        self.pushButtonDeleteSchedule.setEnabled(False)
+        self.pushButtonArchiveSchedule.setEnabled(False)
 
         # загрузка настроек
         self.get_preferences()
@@ -140,7 +139,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         current_index = self.tableModelSchedule.currentIndex()
         if current_index.isValid():
             self.pushButtonUpdateSchedule.setEnabled(True)
-            self.pushButtonDeleteSchedule.setEnabled(True)
+            self.pushButtonArchiveSchedule.setEnabled(True)
 
     def eventFilter(self, watched, event, /):
         """ Фильтр событий для обработки кликов вне таблицы """
@@ -149,7 +148,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if not self.tableModelSchedule.geometry().contains(event.scenePosition().toPoint()):
                 self.tableModelSchedule.clearSelection()
                 self.pushButtonUpdateSchedule.setEnabled(False)
-                self.pushButtonDeleteSchedule.setEnabled(False)
+                self.pushButtonArchiveSchedule.setEnabled(False)
 
                 self.update_content_table_history()
 
@@ -570,7 +569,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return None
 
     @connection
-    def delete_schedule(self, session) -> None:
+    def archive_schedule(self, session) -> None:
         """ Обработчик кнопки удаления расписаний """
         # получить удаляемую строку из таблицы
         schedule_data = self.tableModelSchedule.get_selected_data()
@@ -587,14 +586,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         device_id = schedule_data.device.id
         if self.ble_manager.has_recording_task(device_id=device_id):
             DialogHelper.show_confirmation_dialog(
-                    parent=self, title="Удаление расписания",
+                    parent=self, title="Архивирование расписания",
                     message=f"На текущий момент для объекта \"{schedule_data.object.name}\" ведётся регистрация ЭКГ.\n"
-                            f"Нельзя удалить расписание. Дождитесь конца регистрации ЭКГ.", btn_no=False, yes_text="Ok")
+                            f"Нельзя архивировать расписание. Дождитесь конца регистрации ЭКГ.", btn_no=False, yes_text="Ok")
             return None
         else:
             if not DialogHelper.show_confirmation_dialog(
-                parent=self, title="Удаление расписания",
-                message=f"Вы уверены что хотите удалить расписание для объекта \"{schedule_data.object.name}\"?"):
+                parent=self, title="Архивирование расписания",
+                message=f"Вы уверены что хотите архивировать расписание для объекта \"{schedule_data.object.name}\"?"):
                 return None
 
         # остановить и удалить задачи из расписания
@@ -603,18 +602,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             logger.debug(f"Удалено расписание из планировщика с индексом: {str(schedule_id)}")
             self.scheduler.remove_job(job_id=str(schedule_id))
 
-        # удалить (пометить) расписание из БД
+        # архивировать расписания в БД
         schedule.soft_delete(session)
 
         self.update_content_table_schedule()
-        logger.debug(f"Удалено расписание из базы данных с индексом: {str(schedule_id)}")
-        logger.debug(f"Удалено расписание из таблицы с индексом: {str(schedule_id)}")
+        logger.debug(f"Архивировано расписание {str(schedule_id)}")
 
         # удалить записи для расписания в history
         soft_delete_records(schedule_id, session)
 
         self.update_content_table_history()
-        logger.debug(f"Удалены записи для расписания с индексом: {str(schedule_id)}")
+        logger.debug(f"Для расписания {str(schedule_id)} архивированы записи")
 
         Device.find([Device.id==schedule_data.device.id], session).soft_delete(session)
         Object.find([Object.id==schedule_data.object.id], session).soft_delete(session)

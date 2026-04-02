@@ -59,7 +59,7 @@ class AboutDialog(QDialog):
         right_layout.setAlignment(Qt.AlignTop)
 
         # Название программы
-        title_label = QLabel("InRat Planner")
+        title_label = QLabel("inRat planner")
         title_font = QFont(FONT)
         title_font.setPointSize(20)
         title_font.setBold(True)

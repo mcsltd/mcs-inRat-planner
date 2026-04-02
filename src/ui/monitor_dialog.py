@@ -211,7 +211,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
             display_signal = normalized_signal / 1e3
 
             # Выбираем цвет
-            color = self.signal_colors[0]
+            color = self.signal_colors[1]
 
             # Строим график
             plot = self.display.plot(

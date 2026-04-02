@@ -197,9 +197,4 @@ class InRatStorage(QObject):
             result = re.sub(r'[^\w\-.]', '', text)
 
         return result
-    # @staticmethod
-    # def to_latin(string: str) -> str:
-    #     if detect_language(string) == "ru":
-    #         string = translit(string, reversed=True)
-    #         string = string.replace("'", "")
-    #     return string
+
