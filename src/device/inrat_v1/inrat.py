@@ -185,15 +185,23 @@ class inRat:
         res = True
         try:
             await asyncio.wait_for(self._client.connect(), timeout=wait)
-            await self._read_device_properties()
-            await self._read_device_status()
             logger.info("Устройство подключено")
+
+            try:
+                await self._read_device_properties()
+                await self._read_device_status()
+            except Exception as err:
+                logger.error(f"Ошибка во время получения статуса и свойств: {err}")
+                await self.disconnect()
+                res = False
+
         except asyncio.TimeoutError:
             logger.warning("Не удалось подключиться к устройству!")
             res = False
         except Exception as exc:
             logger.error(f"Возникла ошибка во время подключения к устройству! {exc}")
             res = False
+
         return res
 
     def _get_settings(self) -> Settings:
