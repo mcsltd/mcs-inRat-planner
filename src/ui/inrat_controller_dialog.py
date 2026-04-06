@@ -17,8 +17,8 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from src.device.inrat_v1.constants import Pkt
-from src.device.inrat_v1.inrat import inRat
+from src.device.inrat.constants import Pkt
+from src.device.inrat.inrat import inRat
 from src.resources.dlg_inrat_controller import Ui_DlgInRatController
 from src.resources.frm_online_control_device import Ui_FrmOnlineControlDevice
 from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
