@@ -86,7 +86,9 @@ class GenericTableWidget(QTableView):
 
         self.setItemDelegate(_DataItemDelegate())
 
+        self.setWordWrap(True)
         self.setShowGrid(True)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
 

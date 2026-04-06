@@ -218,7 +218,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
                 time_axis,
                 display_signal,
                 pen=mkPen(color=color, width=1),
-                name=header_info['label']
+                # name=header_info['label']
             )
             self.plots.append(plot)
 
