@@ -43,6 +43,7 @@ from ui.settings_dialog import DlgMainConfig
 from ui.monitor_dialog import SignalMonitor
 from ui.stream_dialog import BLESignalViewer
 
+__version__ = "v1.0.0"
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +55,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.setWindowTitle("inRat planner")
+        self.setWindowTitle(f"inRat planner {__version__}")
 
         # init ble manager
         self.ble_manager = BleManager()
