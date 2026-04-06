@@ -6,7 +6,7 @@ PyInstaller.__main__.run([
     "--onefile",
     "--windowed",
     # "--console",
-    "--name=inRat planner",
+    "--name=inRat planner v1.0.0",
     "--clean",
     "--icon=src/resources/images/icon.ico",
 ])
