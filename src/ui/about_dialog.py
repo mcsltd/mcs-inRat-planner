@@ -76,7 +76,7 @@ class AboutDialog(QDialog):
         # description_label.setWordWrap(True)
 
         # Версия (бета)
-        version_label = QLabel("Версия v.0.0.5 - beta")
+        version_label = QLabel(f"Версия v1.0.0")
         version_font = QFont("Arial")
         version_font.setPointSize(10)
         # version_font.setBold(True)
