@@ -254,6 +254,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     def __init__(self, schedule_data: ScheduleData, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setWindowFlags(Qt.Window)
         self.setupUi(self)
 
         # backend
