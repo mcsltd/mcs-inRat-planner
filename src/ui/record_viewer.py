@@ -50,10 +50,11 @@ class DisplaySignal(pg.PlotWidget):
 
         # self.showGrid(x=True, y=False)
         self.setBackground("w")
-        self.setDisabled(True)
+        self.setMouseTracking(True)
 
     def set_data(self, x: np.ndarray, y: np.ndarray):
         self.plot_signal.setData(x, y)
+        self.setXRange(x[0], x[-1], padding=0)
 
     # def set_scale(self, value: float):
     #     self._scale = value
@@ -104,10 +105,9 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.comboBoxSens.activated.connect(self._on_sens_changed)
         self.horizontalSlider.valueChanged.connect(self._on_slider_moved)
 
-
     def load_record(self, record: RecordData):
         """ загрузка записей """
-        # проверка существования файлов
+        # todo проверка существования файлов
         # if (record.file_format == "WFDB" or
         #         not (os.path.exists(f"{record.path}.hea") and os.path.exists(f"{record.path}.dat"))):
         #     QMessageBox.critical(self, "Ошибка загрузки", f"Файл не найден: {record.path}")
