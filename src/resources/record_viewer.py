@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'record_viewernfPfrp.ui'
+## Form generated from reading UI file 'record_vieweriHpyJv.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -16,7 +16,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QHBoxLayout,
-    QLabel, QScrollBar, QSizePolicy, QSpacerItem,
+    QLabel, QSizePolicy, QSlider, QSpacerItem,
     QVBoxLayout, QWidget)
 import src.resources.resources_rc
 
@@ -63,11 +63,11 @@ class Ui_frmRecordViewer(object):
 
         self.verticalLayoutMonitor.addLayout(self.horizontalLayout)
 
-        self.ScrollBarWindow = QScrollBar(frmRecordViewer)
-        self.ScrollBarWindow.setObjectName(u"ScrollBarWindow")
-        self.ScrollBarWindow.setOrientation(Qt.Orientation.Horizontal)
+        self.horizontalSlider = QSlider(frmRecordViewer)
+        self.horizontalSlider.setObjectName(u"horizontalSlider")
+        self.horizontalSlider.setOrientation(Qt.Orientation.Horizontal)
 
-        self.verticalLayoutMonitor.addWidget(self.ScrollBarWindow)
+        self.verticalLayoutMonitor.addWidget(self.horizontalSlider)
 
 
         self.gridLayout.addLayout(self.verticalLayoutMonitor, 0, 0, 1, 1)

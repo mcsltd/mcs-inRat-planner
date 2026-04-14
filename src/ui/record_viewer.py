@@ -17,6 +17,7 @@ from src.resources.wdt_monitor import Ui_FormMonitor
 
 class FormatterTimeAxisItem(pg.AxisItem):
     """ формат mm:ss по оси x """
+    # todo: разобраться с ошибкой обозначения интервала внутри секунд
     def tickStrings(self, values, scale, spacing) -> list[str]:
         strings = []
         for value in values:
@@ -30,6 +31,9 @@ class DisplaySignal(pg.PlotWidget):
     def __init__(self, *args, **kwargs):
         kwargs['axisItems'] = {'bottom': FormatterTimeAxisItem(orientation="bottom")}
         super().__init__(*args, **kwargs)
+
+        self._scale = None
+        self._timebase = None
 
         # настройка подписей к графику
         pen = pg.mkPen("k")
@@ -51,6 +55,12 @@ class DisplaySignal(pg.PlotWidget):
     def set_data(self, x: np.ndarray, y: np.ndarray):
         self.plot_signal.setData(x, y)
 
+    # def set_scale(self, value: float):
+    #     self._scale = value
+    #     self.setYRange(-self._scale, self._scale)
+
+    def set_timebase(self, value):
+        self._timebase = value
 
 
 class RecordViewer(QDialog, Ui_frmRecordViewer):
@@ -75,15 +85,24 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.idx_finish = 0
         self._timebase = self.display_ecg.width() / 12.5  # in seconds
 
+        self.pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+
         # настройка выпадающих списков
         speed = [("12.5 мм/c", 12.5), ("25 мм/c", 25.5), ("50 мм/c", 50), ("100 мм/c", 100)]
         for v, d in speed:
             self.comboBoxSpeed.addItem(v, userData=d)
         self.comboBoxSpeed.setCurrentIndex(0)
 
+        sens = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
+        for v, d in sens:
+            self.comboBoxSens.addItem(v, userData=d)
+        self.comboBoxSens.setCurrentIndex(1)
+
         # signals
         # self.ScrollBarWindow.valueChanged.connect(self._on_scrollbar_moved)
         self.comboBoxSpeed.activated.connect(self._on_speed_changed)
+        self.comboBoxSens.activated.connect(self._on_sens_changed)
+        self.horizontalSlider.valueChanged.connect(self._on_slider_moved)
 
 
     def load_record(self, record: RecordData):
@@ -106,30 +125,30 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
 
         # загрузка в буфер
         if signal is not None and header is not None:
-            self._buffer_ecg = signal.squeeze()
+            self._buffer_ecg = self._normalize_signal(signal.squeeze()) / 1e3
             self._datetime_start = header["recording_date"]
             self._sample_rate = header["sample_rate"]
             self._duration = header["duration"]
             self._buffer_time = np.arange(0, self._duration, 1 / self._sample_rate)
 
             # настройка полосы прокрутки
-            # self.setup_scrollbar()
+            self.setup_slider()
 
             # вывод сигнала в пределах 0 до timebase
-            self.idx_start = 0
-            self.idx_finish = int(self._timebase * self._sample_rate)
+            idx_start = 0
+            idx_finish = int(self._timebase * self._sample_rate)
+            self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
 
-            self.display_ecg.set_data(
-                x=self._buffer_time[self.idx_start:self.idx_finish],
-                y=self._buffer_ecg[self.idx_start:self.idx_finish]
-            )
-        _ = 1
-
-    # def setup_scrollbar(self):
-    #     """ настройка полосы прокрутки для просмотра сигнала """
-    #     self.ScrollBarWindow.setRange(0, self._duration)    # диапазон от 0 до duration
-    #     self.ScrollBarWindow.setSingleStep(0.5)   # шаг
-    #     self.ScrollBarWindow.setPageStep(10)
+    def _read_edf(self, file_path: str) -> (list[np.ndarray], dict):
+        """ чтение edf файла """
+        with pyedflib.EdfReader(file_path) as file:
+            # чтение заголовков
+            header = {"patient_name": file.getPatientName(), "recording_date": file.getStartdatetime(),
+                      "duration": file.getFileDuration(), "signals_count": file.signals_in_file,
+                      "sample_rate": file.getSampleFrequency(0)}
+            # чтение сигнала
+            signal_data = file.readSignal(0)
+        return signal_data, header
 
     def _read_wfdb(self, file_path: str):
         """ чтение wfdb файла """
@@ -150,47 +169,58 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         }
         return signals, header
 
-    def _read_edf(self, file_path: str) -> (list[np.ndarray], dict):
-        """ чтение edf файла """
-        with pyedflib.EdfReader(file_path) as file:
-            # чтение заголовков
-            header = {"patient_name": file.getPatientName(), "recording_date": file.getStartdatetime(),
-                      "duration": file.getFileDuration(), "signals_count": file.signals_in_file,
-                      "sample_rate": file.getSampleFrequency(0)}
+    def _on_slider_moved(self, value_sec: int):
+        """ обработка движения полосы прокрутки """
+        idx_start = int(self._sample_rate * value_sec)
+        idx_finish = int(self._sample_rate * (value_sec + self._timebase))
 
-            # чтение сигнала
-            signals = []
-            for i in range(file.signals_in_file):
-                signal_data = file.readSignal(i)
-                signals.append(signal_data)
+        if value_sec + self._timebase >= self._duration:
+            idx_start = int((self._duration - self._timebase) * self._sample_rate)
+            idx_finish = int(self._duration * self._sample_rate)
 
-        return signals, header
+        self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
 
-    # def _on_scrollbar_moved(self, value: int):
-    #     """ обработка движения полосы прокрутки """
-    #     self.idx_start = self._sample_rate * (value * self._timebase)
-    #     self.idx_finish = self._sample_rate * ((value + 1) * self._timebase)
-    #
-    #     # todo: debug
-    #     # print(f"{value=} {self.idx_start=} {self.idx_finish=}")
-    #
-    #     self.display_ecg.set_data(
-    #         x=self._buffer_time[self.idx_start:self.idx_finish],
-    #         y=self._buffer_ecg[self.idx_start:self.idx_finish]
-    #     )
+    def setup_slider(self):
+        self.horizontalSlider.setMinimum(0)
+        self.horizontalSlider.setMaximum(self._duration)
+        self.horizontalSlider.setPageStep(10)
+
+    def _normalize_signal(self, signal: np.ndarray) -> np.ndarray:
+        """ нормализация сигнала для отображения """
+        if len(signal) == 0:
+            return signal
+        signal_clean = signal - np.mean(signal)
+        signal_std = np.std(signal_clean)
+        if signal_std > 0:
+            return signal_clean / signal_std
+        else:
+            return signal_clean
 
     def _on_speed_changed(self, index=None):
         """ обработка изменения скорости """
+        # print("_on_speed_changed")
         speed = self.comboBoxSpeed.currentData()
-        size = self.display_ecg.width()
-        self._timebase = int(size / speed)
 
-        self.display_ecg.set_data(x=self._buffer_time[0:self._timebase * self._sample_rate],
-                                  y=self._buffer_ecg[0:self._timebase * self._sample_rate])
+        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        width_mm = self.display_ecg.width() / pixels_per_mm
+        self._timebase = int(width_mm / speed)
 
+        self.display_ecg.set_timebase(self._timebase)
+        self.display_ecg.set_data(x=self._buffer_time[0:int(self._timebase * self._sample_rate)],
+                                  y=self._buffer_ecg[0:int(self._timebase * self._sample_rate)])
+
+    def _on_sens_changed(self, index=None):
+        """ обработка изменения скорости """
+        # print("_on_sens_changed")
+        sens = self.comboBoxSens.currentData()
+        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        height_mm = self.display_ecg.height() / pixels_per_mm
+        scale = sens / height_mm
+        # self.display_ecg.set_scale(scale)
 
     def resizeEvent(self, arg__1, /):
         self._on_speed_changed()
+        self._on_sens_changed()
 
 
 if __name__ == "__main__":
