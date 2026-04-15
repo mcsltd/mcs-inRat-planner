@@ -1,7 +1,7 @@
 import struct
 import numpy as np
 
-from src.device.inrat.constants import Pkt, Const
+from device.inrat.constants import Pkt, Const
 
 
 def decode_ecg(raw_data: bytearray) -> (int, np.ndarray):
