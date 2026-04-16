@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'record_viewerDxBFUN.ui'
+## Form generated from reading UI file 'record_viewerILJyLQ.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -15,9 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QGroupBox,
-    QHBoxLayout, QLabel, QSizePolicy, QSlider,
-    QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGridLayout,
+    QGroupBox, QHBoxLayout, QLabel, QSizePolicy,
+    QSlider, QSpacerItem, QVBoxLayout, QWidget)
 import src.resources.resources_rc
 
 class Ui_frmRecordViewer(object):
@@ -88,11 +88,29 @@ class Ui_frmRecordViewer(object):
 
         self.verticalLayoutMonitor.addLayout(self.horizontalLayout)
 
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.horizontalLayout_4.setContentsMargins(5, 5, 5, 5)
         self.horizontalSlider = QSlider(frmRecordViewer)
         self.horizontalSlider.setObjectName(u"horizontalSlider")
         self.horizontalSlider.setOrientation(Qt.Orientation.Horizontal)
 
-        self.verticalLayoutMonitor.addWidget(self.horizontalSlider)
+        self.horizontalLayout_4.addWidget(self.horizontalSlider)
+
+        self.line = QFrame(frmRecordViewer)
+        self.line.setObjectName(u"line")
+        self.line.setFrameShape(QFrame.Shape.VLine)
+        self.line.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.horizontalLayout_4.addWidget(self.line)
+
+        self.labelCurrentTime = QLabel(frmRecordViewer)
+        self.labelCurrentTime.setObjectName(u"labelCurrentTime")
+
+        self.horizontalLayout_4.addWidget(self.labelCurrentTime)
+
+
+        self.verticalLayoutMonitor.addLayout(self.horizontalLayout_4)
 
 
         self.gridLayout.addLayout(self.verticalLayoutMonitor, 0, 0, 1, 1)
@@ -109,5 +127,6 @@ class Ui_frmRecordViewer(object):
         self.labelSpeed.setText(QCoreApplication.translate("frmRecordViewer", u"\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c:", None))
         self.groupBoxAmplitude.setTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u0430\u0441\u0448\u0442\u0430\u0431 \u0430\u043c\u043f\u043b\u0438\u0442\u0443\u0434\u044b", None))
         self.labelSens.setText(QCoreApplication.translate("frmRecordViewer", u"\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c:", None))
+        self.labelCurrentTime.setText(QCoreApplication.translate("frmRecordViewer", u"00:00", None))
     # retranslateUi
 

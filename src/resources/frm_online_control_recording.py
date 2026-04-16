@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_recordingvbhOKY.ui'
+## Form generated from reading UI file 'frm_online_control_recordingxXzfkG.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -30,7 +30,7 @@ class Ui_FrmOnlineControlRecording(object):
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.groupBox = QGroupBox(FrmOnlineControlRecording)
         self.groupBox.setObjectName(u"groupBox")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())

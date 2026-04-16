@@ -32,13 +32,10 @@ class DisplaySignal(pg.PlotWidget):
         kwargs['axisItems'] = {'bottom': FormatterTimeAxisItem(orientation="bottom")}
         super().__init__(*args, **kwargs)
 
-        self._scale = None
-        self._timebase = None
-
         # настройка подписей к графику
         pen = pg.mkPen("k")
         font = QFont("Arial", 11)
-        self.setLabel("left", "ЭКГ", units="V", pen=pg.mkPen(color='k'), font=font)
+        self.setLabel("left", "Амплитуда", units="V", pen=pg.mkPen(color='k'), font=font)
         self.setLabel("bottom", "Время", pen=pg.mkPen(color='k'), font=font)
         for ax in ["bottom", "left"]:
             self.getAxis(ax).label.setFont(font)
@@ -56,8 +53,6 @@ class DisplaySignal(pg.PlotWidget):
         self.plot_signal.setData(x, y)
         self.setXRange(x[0], x[-1], padding=0)
 
-    def set_timebase(self, value):
-        self._timebase = value
 
 
 class RecordViewer(QDialog, Ui_frmRecordViewer):
@@ -91,10 +86,12 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             self.comboBoxSpeed.addItem(v, userData=d)
         self.comboBoxSpeed.setCurrentIndex(0)
 
-        sens = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
-        for v, d in sens:
+        gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
+        for v, d in gain:
             self.comboBoxGain.addItem(v, userData=d)
         self.comboBoxGain.setCurrentIndex(1)
+        self.deflection = 10*1e-3
+        self.comboBoxGain.setDisabled(True)
 
         # signals
         self.comboBoxSpeed.activated.connect(self._on_speed_changed)
@@ -190,6 +187,9 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
     def _on_slider_changed(self, value: int):
         """ обработка движения полосы прокрутки """
         self.current_position = value
+
+        mm_ss_text = f"{value // 60:02d}:{value % 60:02d}"
+        self.labelCurrentTime.setText(f"{mm_ss_text}")
         self.update_display()
 
     def setup_slider(self):
@@ -223,9 +223,8 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
     def _on_gain_changed(self, index=None):
         """ обработка изменения амплитуды """
         sens = self.comboBoxGain.currentData()
-        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
-        height_mm = self.display_ecg.height() / pixels_per_mm
-        scale = sens / height_mm
+        self.deflection = sens
+
         self.update_display()
 
     def update_display(self):
@@ -240,6 +239,11 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         visible_time_array = self._buffer_time[idx_start:idx_finish]
         visible_signal = self._buffer_ecg[idx_start:idx_finish]
 
+        # масштабирование сигнала ЭКГ
+        # pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        # visible_signal = visible_signal * self.deflection * pixels_per_mm
+
+        # отображение сигнала
         self.display_ecg.set_data(x=visible_time_array, y=visible_signal)
 
     def resizeEvent(self, arg__1, /):

@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import numpy as np
 from PySide6.QtCore import Signal, QTimer, Qt
 from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, \
-    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame, QMessageBox
+    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame, QMessageBox, QApplication
 from PySide6 import QtCore
 
 from PySide6.QtGui import QFont
@@ -45,10 +45,16 @@ class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        timebases = [("1", 1), ("5", 5), ("10", 10), ("30", 30), ("60", 60),]
-        for t in timebases:
-            self.comboBoxTimebase.addItem(t[0], userData=t[1])
-        self.comboBoxTimebase.setCurrentIndex(2)
+        speed = [("12.5 мм/c", 12.5), ("25 мм/c", 25), ("50 мм/c", 50), ("100 мм/c", 100)]
+        for v, d in speed:
+            self.comboBoxSpeed.addItem(v, d)
+        self.comboBoxSpeed.setCurrentIndex(0)
+
+        gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("100 мм/c", 100*1e-3)]
+        for v, d in gain:
+            self.comboBoxGain.addItem(v, d)
+        self.comboBoxGain.setCurrentIndex(1)
+        self.comboBoxGain.setDisabled(True)
 
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
@@ -58,6 +64,7 @@ class DisplaySignal(PlotWidget):
 
         pen = mkPen("k")
         font = QFont("Arial", 11)
+        self.plot_signal = self.plot(pen=pg.mkPen(color=(255, 0, 0), width=1.5))
 
         # data
         self.fs = 500
@@ -70,7 +77,6 @@ class DisplaySignal(PlotWidget):
         self.buffer_filled = False  # флаг заполнения буфера
         self.current_position = 0  # текущая позиция для заполнения буфера
 
-        self.plot_signal = self.plot(pen=pg.mkPen(color=(255, 0, 0), width=1.5))
 
         self.setLabel("left", "ЭКГ", units="V", pen=mkPen(color='k'), font=font)
         self.setLabel("bottom", "Время", units="s", pen=mkPen(color='k'), font=font)
@@ -82,18 +88,24 @@ class DisplaySignal(PlotWidget):
             self.getAxis(ax).setTickFont(font)
 
         self._markers = []
-
         self.pending_update = False
-
         self._control_pane = ControlParamDisplay()
-        self._control_pane.comboBoxTimebase.activated.connect(self.set_timebase)
+        self._control_pane.comboBoxSpeed.activated.connect(self.set_timebase)
+        self.set_timebase()
 
     @property
     def control_panel(self):
         return self._control_pane
 
     def set_timebase(self):
-        self.timebase = self.control_panel.comboBoxTimebase.currentData()
+        speed = self._control_pane.comboBoxSpeed.currentData()
+
+        # расчёт масштаба времени
+        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        width_mm = self.width() / pixels_per_mm
+
+        self.timebase = int(width_mm / speed)
+        self.update_plot()
         logger.info(f"Изменен масштаб по оси времени: {self.timebase} секунд")
 
     def set_sampling_rate(self, sampling_rate: int):
@@ -325,7 +337,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.update_timer.start(16)
 
         self.setup_combobox()
-
 
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
@@ -720,6 +731,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         except Exception as e:
             logger.debug(f"Ошибка при отмене задач: {e}")
 
+    def resizeEvent(self, arg__1, /):
+        self.display.update_plot()
 
 class WaitingDialog(QDialog):
 

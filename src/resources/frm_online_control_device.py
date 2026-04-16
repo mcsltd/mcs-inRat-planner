@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_deviceDhQhyN.ui'
+## Form generated from reading UI file 'frm_online_control_deviceUGycXU.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -23,21 +23,23 @@ class Ui_FrmOnlineControlDevice(object):
     def setupUi(self, FrmOnlineControlDevice):
         if not FrmOnlineControlDevice.objectName():
             FrmOnlineControlDevice.setObjectName(u"FrmOnlineControlDevice")
-        FrmOnlineControlDevice.resize(359, 198)
+        FrmOnlineControlDevice.resize(317, 223)
         FrmOnlineControlDevice.setFrameShape(QFrame.Shape.Panel)
         FrmOnlineControlDevice.setFrameShadow(QFrame.Shadow.Raised)
         self.gridLayout = QGridLayout(FrmOnlineControlDevice)
         self.gridLayout.setObjectName(u"gridLayout")
         self.groupBox = QGroupBox(FrmOnlineControlDevice)
         self.groupBox.setObjectName(u"groupBox")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
         self.groupBox.setSizePolicy(sizePolicy)
         self.groupBox.setMinimumSize(QSize(100, 40))
         self.gridLayout_3 = QGridLayout(self.groupBox)
+        self.gridLayout_3.setSpacing(7)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.gridLayout_3.setContentsMargins(11, 11, 11, 11)
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.horizontalLayout_2 = QHBoxLayout()
