@@ -11,7 +11,7 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QApplication, QMessageBox
 
 from src.resources.record_viewer import Ui_frmRecordViewer
-from src.structure import RecordData
+from src.structure import RecordData, ScheduleData
 from src.resources.wdt_monitor import Ui_FormMonitor
 
 
@@ -67,7 +67,7 @@ class DisplaySignal(pg.PlotWidget):
 class RecordViewer(QDialog, Ui_frmRecordViewer):
     """ класс для просмотра сохраненных записей """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, schedule: ScheduleData, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowFlags(Qt.Window)
@@ -105,15 +105,16 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.comboBoxSens.activated.connect(self._on_sens_changed)
         self.horizontalSlider.valueChanged.connect(self._on_slider_moved)
 
-    def load_record(self, record: RecordData):
+    def load_record(self, record: RecordData) -> bool:
         """ загрузка записей """
-        # todo проверка существования файлов
-        # if (record.file_format == "WFDB" or
-        #         not (os.path.exists(f"{record.path}.hea") and os.path.exists(f"{record.path}.dat"))):
-        #     QMessageBox.critical(self, "Ошибка загрузки", f"Файл не найден: {record.path}")
+        if (record.file_format == "WFDB" and
+                not (os.path.exists(f"{record.path}.hea") and os.path.exists(f"{record.path}.dat"))):
+            QMessageBox.critical(self, "Ошибка загрузки", f"Файл не найден: {record.path}")
+            return False
 
-        # if record.file_format == "EDF" and not os.path.exists(record.path):
-        #     QMessageBox.critical(self, "Ошибка загрузки", f"Файл не найден: {record.path}")
+        if record.file_format == "EDF" and not os.path.exists(record.path):
+            QMessageBox.critical(self, "Ошибка загрузки", f"Файл не найден: {record.path}")
+            return False
 
         # чтение сигналов
         signal, header = None, None
@@ -123,21 +124,24 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             self._read_edf(file_path=record.path)
             signal, header = self._read_edf(file_path=record.path)
 
+        if signal is None or header is None:
+            QMessageBox.critical(self, "Ошибка загрузки", f"Не удалось загрузить данные из файла: {record.path}")
+
         # загрузка в буфер
-        if signal is not None and header is not None:
-            self._buffer_ecg = self._normalize_signal(signal.squeeze()) / 1e3
-            self._datetime_start = header["recording_date"]
-            self._sample_rate = header["sample_rate"]
-            self._duration = header["duration"]
-            self._buffer_time = np.arange(0, self._duration, 1 / self._sample_rate)
+        self._buffer_ecg = self._normalize_signal(signal.squeeze()) / 1e3
+        self._datetime_start = header["recording_date"]
+        self._sample_rate = header["sample_rate"]
+        self._duration = header["duration"]
+        self._buffer_time = np.arange(0, self._duration, 1 / self._sample_rate)
 
-            # настройка полосы прокрутки
-            self.setup_slider()
+        # настройка полосы прокрутки
+        self.setup_slider()
 
-            # вывод сигнала в пределах 0 до timebase
-            idx_start = 0
-            idx_finish = int(self._timebase * self._sample_rate)
-            self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
+        # вывод сигнала в пределах 0 до timebase
+        idx_start = 0
+        idx_finish = int(self._timebase * self._sample_rate)
+        self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
+        return True
 
     def _read_edf(self, file_path: str) -> (list[np.ndarray], dict):
         """ чтение edf файла """

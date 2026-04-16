@@ -18,6 +18,7 @@ from ble_manager import BleManager
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
+from src.ui.record_viewer import RecordViewer
 from tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
@@ -643,9 +644,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         schedule_data: ScheduleData = schedule.to_dataclass(session)
 
-        monitor = SignalMonitor(schedule_data=schedule_data)
-        monitor.load_record(record_data=record_data)
-        monitor.exec()
+        # monitor = SignalMonitor(schedule_data=schedule_data)
+        # monitor.load_record(record_data=record_data)
+        # monitor.exec()
+
+        monitor = RecordViewer(schedule=schedule_data)
+        if monitor.load_record(record=record_data):
+            monitor.exec()
 
     @connection
     def clicked_schedule(self, index, session):
