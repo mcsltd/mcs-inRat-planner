@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1271</width>
-    <height>604</height>
+    <width>1267</width>
+    <height>596</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,37 +25,66 @@
      </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="spacing">
+        <number>9</number>
+       </property>
        <property name="leftMargin">
-        <number>3</number>
+        <number>5</number>
        </property>
        <property name="topMargin">
-        <number>3</number>
+        <number>5</number>
        </property>
        <property name="rightMargin">
-        <number>3</number>
+        <number>5</number>
        </property>
        <property name="bottomMargin">
-        <number>3</number>
+        <number>5</number>
        </property>
        <item>
-        <widget class="QLabel" name="labelSpeed">
-         <property name="text">
-          <string>Скорость</string>
+        <widget class="QGroupBox" name="groupBoxTimescale">
+         <property name="title">
+          <string>Масштаб времени</string>
          </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLabel" name="labelSpeed">
+              <property name="text">
+               <string>Скорость:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBoxSpeed"/>
+            </item>
+           </layout>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBoxSpeed"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="labelSens">
-         <property name="text">
-          <string>Чувствительность</string>
+        <widget class="QGroupBox" name="groupBoxAmplitude">
+         <property name="title">
+          <string>Масштаб амплитуды</string>
          </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QLabel" name="labelSens">
+              <property name="text">
+               <string>Чувствительность:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBoxGain"/>
+            </item>
+           </layout>
+          </item>
+         </layout>
         </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBoxSens"/>
        </item>
        <item>
         <spacer name="horizontalSpacer">

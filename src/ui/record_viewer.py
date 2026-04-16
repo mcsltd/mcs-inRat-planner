@@ -8,7 +8,7 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
-from PySide6.QtWidgets import QDialog, QApplication, QMessageBox
+from PySide6.QtWidgets import QDialog, QApplication, QMessageBox, QMenuBar
 
 from src.resources.record_viewer import Ui_frmRecordViewer
 from src.structure import RecordData, ScheduleData
@@ -56,10 +56,6 @@ class DisplaySignal(pg.PlotWidget):
         self.plot_signal.setData(x, y)
         self.setXRange(x[0], x[-1], padding=0)
 
-    # def set_scale(self, value: float):
-    #     self._scale = value
-    #     self.setYRange(-self._scale, self._scale)
-
     def set_timebase(self, value):
         self._timebase = value
 
@@ -74,6 +70,7 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
 
         self.schedule: ScheduleData = schedule
 
+        self.current_position = 0
         self._buffer_ecg = np.array([])
         self._buffer_time = np.array([])
         self._datetime_start: None | datetime.datetime = None
@@ -88,8 +85,6 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.idx_finish = 0
         self._timebase = self.display_ecg.width() / 12.5  # in seconds
 
-        self.pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
-
         # настройка выпадающих списков
         speed = [("12.5 мм/c", 12.5), ("25 мм/c", 25.5), ("50 мм/c", 50), ("100 мм/c", 100)]
         for v, d in speed:
@@ -98,18 +93,16 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
 
         sens = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
         for v, d in sens:
-            self.comboBoxSens.addItem(v, userData=d)
-        self.comboBoxSens.setCurrentIndex(1)
+            self.comboBoxGain.addItem(v, userData=d)
+        self.comboBoxGain.setCurrentIndex(1)
 
         # signals
-        # self.ScrollBarWindow.valueChanged.connect(self._on_scrollbar_moved)
         self.comboBoxSpeed.activated.connect(self._on_speed_changed)
-        self.comboBoxSens.activated.connect(self._on_sens_changed)
-        self.horizontalSlider.valueChanged.connect(self._on_slider_moved)
+        self.comboBoxGain.activated.connect(self._on_gain_changed)
+        self.horizontalSlider.valueChanged.connect(self._on_slider_changed)
 
     def load_record(self, record: RecordData) -> bool:
         """ загрузка записей """
-        # todo добавить отображение информации о записи
         # todo добавить проверку заголовков файла
 
         if (record.file_format == "WFDB" and
@@ -164,7 +157,6 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         text = f"Запись c объекта \"{self.schedule.object.name}\" в эксперименте \"{self.schedule.experiment.name}\", длительность: {text_dur}, частота: {sr} Гц"
         self.setWindowTitle(text)
 
-
     def _read_edf(self, file_path: str) -> (list[np.ndarray], dict):
         """ чтение edf файла """
         with pyedflib.EdfReader(file_path) as file:
@@ -195,16 +187,10 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         }
         return signals, header
 
-    def _on_slider_moved(self, value_sec: int):
+    def _on_slider_changed(self, value: int):
         """ обработка движения полосы прокрутки """
-        idx_start = int(self._sample_rate * value_sec)
-        idx_finish = int(self._sample_rate * (value_sec + self._timebase))
-
-        if value_sec + self._timebase >= self._duration:
-            idx_start = int((self._duration - self._timebase) * self._sample_rate)
-            idx_finish = int(self._duration * self._sample_rate)
-
-        self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
+        self.current_position = value
+        self.update_display()
 
     def setup_slider(self):
         self.horizontalSlider.setMinimum(0)
@@ -224,29 +210,40 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
 
     def _on_speed_changed(self, index=None):
         """ обработка изменения скорости """
-        # print("_on_speed_changed")
         speed = self.comboBoxSpeed.currentData()
 
+        # расчёт масштаба времени
         pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
         width_mm = self.display_ecg.width() / pixels_per_mm
         self._timebase = int(width_mm / speed)
 
-        self.display_ecg.set_timebase(self._timebase)
-        self.display_ecg.set_data(x=self._buffer_time[0:int(self._timebase * self._sample_rate)],
-                                  y=self._buffer_ecg[0:int(self._timebase * self._sample_rate)])
+        # обновление графика
+        self.update_display()
 
-    def _on_sens_changed(self, index=None):
-        """ обработка изменения скорости """
-        # print("_on_sens_changed")
-        sens = self.comboBoxSens.currentData()
+    def _on_gain_changed(self, index=None):
+        """ обработка изменения амплитуды """
+        sens = self.comboBoxGain.currentData()
         pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
         height_mm = self.display_ecg.height() / pixels_per_mm
         scale = sens / height_mm
-        # self.display_ecg.set_scale(scale)
+        self.update_display()
+
+    def update_display(self):
+        """ обновить отображение сигнала в окне """
+        idx_start = int(self._sample_rate * self.current_position)
+        idx_finish = int(self._sample_rate * (self.current_position + self._timebase))
+
+        if self.current_position + self._timebase >= self._duration:
+            idx_start = int((self._duration - self._timebase) * self._sample_rate)
+            idx_finish = int(self._duration * self._sample_rate)
+
+        visible_time_array = self._buffer_time[idx_start:idx_finish]
+        visible_signal = self._buffer_ecg[idx_start:idx_finish]
+
+        self.display_ecg.set_data(x=visible_time_array, y=visible_signal)
 
     def resizeEvent(self, arg__1, /):
         self._on_speed_changed()
-        self._on_sens_changed()
 
 
 if __name__ == "__main__":

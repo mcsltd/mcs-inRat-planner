@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'record_vieweriHpyJv.ui'
+## Form generated from reading UI file 'record_viewerDxBFUN.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -15,16 +15,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QHBoxLayout,
-    QLabel, QSizePolicy, QSlider, QSpacerItem,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QGroupBox,
+    QHBoxLayout, QLabel, QSizePolicy, QSlider,
+    QSpacerItem, QVBoxLayout, QWidget)
 import src.resources.resources_rc
 
 class Ui_frmRecordViewer(object):
     def setupUi(self, frmRecordViewer):
         if not frmRecordViewer.objectName():
             frmRecordViewer.setObjectName(u"frmRecordViewer")
-        frmRecordViewer.resize(1271, 604)
+        frmRecordViewer.resize(1267, 596)
         icon = QIcon()
         icon.addFile(u":/images/icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         frmRecordViewer.setWindowIcon(icon)
@@ -34,27 +34,52 @@ class Ui_frmRecordViewer(object):
         self.verticalLayoutMonitor.setSpacing(0)
         self.verticalLayoutMonitor.setObjectName(u"verticalLayoutMonitor")
         self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setSpacing(9)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(3, 3, 3, 3)
-        self.labelSpeed = QLabel(frmRecordViewer)
+        self.horizontalLayout.setContentsMargins(5, 5, 5, 5)
+        self.groupBoxTimescale = QGroupBox(frmRecordViewer)
+        self.groupBoxTimescale.setObjectName(u"groupBoxTimescale")
+        self.gridLayout_2 = QGridLayout(self.groupBoxTimescale)
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.labelSpeed = QLabel(self.groupBoxTimescale)
         self.labelSpeed.setObjectName(u"labelSpeed")
 
-        self.horizontalLayout.addWidget(self.labelSpeed)
+        self.horizontalLayout_2.addWidget(self.labelSpeed)
 
-        self.comboBoxSpeed = QComboBox(frmRecordViewer)
+        self.comboBoxSpeed = QComboBox(self.groupBoxTimescale)
         self.comboBoxSpeed.setObjectName(u"comboBoxSpeed")
 
-        self.horizontalLayout.addWidget(self.comboBoxSpeed)
+        self.horizontalLayout_2.addWidget(self.comboBoxSpeed)
 
-        self.labelSens = QLabel(frmRecordViewer)
+
+        self.gridLayout_2.addLayout(self.horizontalLayout_2, 0, 0, 1, 1)
+
+
+        self.horizontalLayout.addWidget(self.groupBoxTimescale)
+
+        self.groupBoxAmplitude = QGroupBox(frmRecordViewer)
+        self.groupBoxAmplitude.setObjectName(u"groupBoxAmplitude")
+        self.gridLayout_3 = QGridLayout(self.groupBoxAmplitude)
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.labelSens = QLabel(self.groupBoxAmplitude)
         self.labelSens.setObjectName(u"labelSens")
 
-        self.horizontalLayout.addWidget(self.labelSens)
+        self.horizontalLayout_3.addWidget(self.labelSens)
 
-        self.comboBoxSens = QComboBox(frmRecordViewer)
-        self.comboBoxSens.setObjectName(u"comboBoxSens")
+        self.comboBoxGain = QComboBox(self.groupBoxAmplitude)
+        self.comboBoxGain.setObjectName(u"comboBoxGain")
 
-        self.horizontalLayout.addWidget(self.comboBoxSens)
+        self.horizontalLayout_3.addWidget(self.comboBoxGain)
+
+
+        self.gridLayout_3.addLayout(self.horizontalLayout_3, 0, 0, 1, 1)
+
+
+        self.horizontalLayout.addWidget(self.groupBoxAmplitude)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -80,7 +105,9 @@ class Ui_frmRecordViewer(object):
 
     def retranslateUi(self, frmRecordViewer):
         frmRecordViewer.setWindowTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u043e\u043d\u0438\u0442\u043e\u0440\u0438\u043d\u0433", None))
-        self.labelSpeed.setText(QCoreApplication.translate("frmRecordViewer", u"\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c", None))
-        self.labelSens.setText(QCoreApplication.translate("frmRecordViewer", u"\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c", None))
+        self.groupBoxTimescale.setTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u0430\u0441\u0448\u0442\u0430\u0431 \u0432\u0440\u0435\u043c\u0435\u043d\u0438", None))
+        self.labelSpeed.setText(QCoreApplication.translate("frmRecordViewer", u"\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c:", None))
+        self.groupBoxAmplitude.setTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u0430\u0441\u0448\u0442\u0430\u0431 \u0430\u043c\u043f\u043b\u0438\u0442\u0443\u0434\u044b", None))
+        self.labelSens.setText(QCoreApplication.translate("frmRecordViewer", u"\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c:", None))
     # retranslateUi
 
