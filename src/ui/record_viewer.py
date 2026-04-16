@@ -48,9 +48,9 @@ class DisplaySignal(pg.PlotWidget):
 
         self.plot_signal = self.plot(pen=pg.mkPen(color="r", width=1))
 
+        self.setEnabled(False)
         # self.showGrid(x=True, y=False)
         self.setBackground("w")
-        self.setMouseTracking(True)
 
     def set_data(self, x: np.ndarray, y: np.ndarray):
         self.plot_signal.setData(x, y)
@@ -71,6 +71,8 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowFlags(Qt.Window)
+
+        self.schedule: ScheduleData = schedule
 
         self._buffer_ecg = np.array([])
         self._buffer_time = np.array([])
@@ -107,6 +109,9 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
 
     def load_record(self, record: RecordData) -> bool:
         """ загрузка записей """
+        # todo добавить отображение информации о записи
+        # todo добавить проверку заголовков файла
+
         if (record.file_format == "WFDB" and
                 not (os.path.exists(f"{record.path}.hea") and os.path.exists(f"{record.path}.dat"))):
             QMessageBox.critical(self, "Ошибка загрузки", f"Файл не найден: {record.path}")
@@ -141,7 +146,24 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         idx_start = 0
         idx_finish = int(self._timebase * self._sample_rate)
         self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
+
+        self.set_title_to_record_info()
         return True
+
+    def set_title_to_record_info(self):
+        """ обновление заголовка с информацией о записи """
+        text_dur = None
+        if self._duration:
+            m = int(self._duration // 60)
+            m_text = f"{m} мин. " if m != 0 else ""
+            text_dur = m_text + f"{int(self._duration % 60)} c."
+
+        sr = None
+        if self._sample_rate:
+            sr = int(self._sample_rate)
+        text = f"Запись c объекта \"{self.schedule.object.name}\" в эксперименте \"{self.schedule.experiment.name}\", длительность: {text_dur}, частота: {sr} Гц"
+        self.setWindowTitle(text)
+
 
     def _read_edf(self, file_path: str) -> (list[np.ndarray], dict):
         """ чтение edf файла """
