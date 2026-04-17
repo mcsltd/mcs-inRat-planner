@@ -127,14 +127,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # загрузка настроек
         self.get_preferences()
+        self.setup_combobox_record_filter()
 
-    def debug_show_active_schedule_tasks(self):
-        DialogHelper.show_confirmation_dialog(
-            parent=self, title="Информация о количестве активных расписаний",
-            message=f"Всего активных расписаний: {len(self.scheduler.get_jobs())}",
-            yes_text="Да", no_text="Нет",
-            icon=QMessageBox.Icon.Information,
-        )
+
+    def setup_combobox_record_filter(self):
+        """ настройка и задание параметров фильтров для записей """
+        params = [("За все время", None),
+                  ("Последние 24 часа", datetime.timedelta(days=1)),
+                  ("Последние 3 дня", datetime.timedelta(days=3)),
+                  ("Последние 7 дней", datetime.timedelta(days=7)),
+                  ("Последний месяц", datetime.timedelta(days=30))]
+        for t, v in params:
+            self.comboBoxFilterParams.addItem(t, userData=v)
+        self.comboBoxFilterParams.activated.connect(self.update_content_table_history)
+
 
     def on_selection_changed(self):
         """ Обработка нажатия на строки в таблице Schedule """
@@ -444,7 +450,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tableModelSchedule.setData(description=DESCRIPTION_COLUMN_SCHEDULE, data=table_data)
         # update label Schedule
-        self.labelSchedule.setText(f"Расписание (всего: {len(table_data)})")
+        self.labelSchedule.setText(f"Расписания (всего: {len(table_data)})")
 
     def sort_records_by_schedule_id(self):
         """ Сортировка строк в таблице История по идентификатору расписания """
@@ -466,15 +472,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_content_table_history(schedule_id)
 
     @connection
-    def update_content_table_history(self, schedule_id: uuid.UUID | None = None, session: Session | None=None) -> None:
+    def update_content_table_history(self, schedule_id: uuid.UUID | int | None = None, session: Session | None=None) -> None:
         """ Обновить данные в таблице Записей """
         logger.info("Обновление всех данных в таблице \"Записи\"")
+        if isinstance(schedule_id, int):
+            schedule_id = None
+
+        # фильтрация записей по времени
+        rec_timedelta = self.comboBoxFilterParams.currentData()
+        if rec_timedelta:
+            records: list[Record] = Record.find_all([
+                datetime.datetime.now() - rec_timedelta <= Record.datetime_start
+            ], session)
+        else:
+            records: list[Record] = Record.fetch_all(session)
 
         table_data = []
-        records: list[Record] = Record.fetch_all(session)
         idx = 1
         for rec in records:
-
             rec = rec.to_dataclass()
             start_time = rec.datetime_start
             duration = self.convert_seconds_to_str(rec.sec_duration, mode="full")
@@ -490,11 +505,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # обновление
         if schedule_id is not None:
-            schedule = Schedule.find([schedule_id == Schedule.id], session).to_dataclass(session)
+            schedule = Schedule.find([schedule_id == Schedule.id,], session).to_dataclass(session)
             self.labelHistory.setText(f"Записи объекта \"{schedule.object.name}\" (всего: {len(table_data)})")
             return
 
-        self.labelHistory.setText(f"Записей (всего: {len(table_data)})")
+        self.labelHistory.setText(f"Записи (всего: {len(table_data)})")
 
     @connection
     def update_schedule(self, session) -> None:
@@ -877,6 +892,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return f"{minutes:02d}" if secs == 0 else f"{minutes:02d}:{secs:02d}"
             else:
                 return f"00:{secs:02d}"
+
+    def debug_show_active_schedule_tasks(self):
+        DialogHelper.show_confirmation_dialog(
+            parent=self, title="Информация о количестве активных расписаний",
+            message=f"Всего активных расписаний: {len(self.scheduler.get_jobs())}",
+            yes_text="Да", no_text="Нет",
+            icon=QMessageBox.Icon.Information,
+        )
 
 
 if __name__ == "__main__":
