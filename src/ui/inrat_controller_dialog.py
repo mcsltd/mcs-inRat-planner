@@ -98,14 +98,14 @@ class DisplaySignal(PlotWidget):
         return self._control_pane
 
     def set_timebase(self):
+        """ настройка масштаба времени """
         speed = self._control_pane.comboBoxSpeed.currentData()
-
         # расчёт масштаба времени
         pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
         width_mm = self.width() / pixels_per_mm
 
         self.timebase = int(width_mm / speed)
-        self.update_plot()
+        # self.update_plot()
         logger.info(f"Изменен масштаб по оси времени: {self.timebase} секунд")
 
     def set_sampling_rate(self, sampling_rate: int):
@@ -462,6 +462,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
                 logger.debug(f"{self.device.name} установлена частота {self.device.sampling_rate} Гц")
                 self.control_panel_device.set_state_connected()
+                self.display.control_panel.comboBoxSpeed.setEnabled(True)
+
             else:
                 self.control_panel_device.set_state_disconnected()
         except:
@@ -510,6 +512,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.control_panel_device.reset()
         self._set_default_sampling_rate()
         self.device = None
+        self.display.control_panel.comboBoxSpeed.setEnabled(False)
+
 
     # запуск устройства
     def _device_start_acquisition(self):
@@ -542,8 +546,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if await self.device.start_acquisition(data_queue=data_queue):
             self.start_acquisition_time = time.time()
             self.control_panel_device.set_state_acquisition()
+            self.display.control_panel.comboBoxSpeed.setEnabled(True)
 
             self.display.clear_plot()
+            self.display.set_timebase()
+
 
             self.is_running = True
             self.control_panel_recording.pushButtonStartRecording.setEnabled(True)
@@ -602,7 +609,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # активация при остановке получения данных
         self.control_panel_device.set_state_connected()
-
+        # self.display.control_panel.comboBoxSpeed.setEnabled(False)
         self.control_panel_recording.pushButtonStartRecording.setEnabled(False)
         self.control_panel_recording.pushButtonStopRecording.setEnabled(False)
 
@@ -732,7 +739,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
             logger.debug(f"Ошибка при отмене задач: {e}")
 
     def resizeEvent(self, arg__1, /):
-        self.display.update_plot()
+        self.display.set_timebase()
 
 class WaitingDialog(QDialog):
 

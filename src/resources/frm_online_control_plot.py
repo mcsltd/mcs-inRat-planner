@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_plotVgueEy.ui'
+## Form generated from reading UI file 'frm_online_control_plotvjsyBj.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -43,6 +43,7 @@ class Ui_FrmOnlineControlPane(object):
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.comboBoxSpeed = QComboBox(self.groupBox)
         self.comboBoxSpeed.setObjectName(u"comboBoxSpeed")
+        self.comboBoxSpeed.setEnabled(False)
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)

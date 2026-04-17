@@ -259,31 +259,31 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self._on_speed_changed()
 
 
-if __name__ == "__main__":
-    app = QApplication()
-
-    record_data_wfdb = RecordData(
-        sec_duration=1200,
-        file_format="WFDB",
-        datetime_start=datetime.datetime.now(),
-        schedule_id=uuid.uuid4(),
-        sampling_rate=2000,
-        status="Ok",
-        path=r"C:\Users\andmo\.inRat planner\data\inRat-1-1024\\\test_1024_2026-4-7_11-10-12",
-    )
-
-    record_data_edf = RecordData(
-        sec_duration=4,
-        file_format="EDF",
-        datetime_start=datetime.datetime.now(),
-        schedule_id=uuid.uuid4(),
-        sampling_rate=500,
-        status="Ok",
-        path=r"C:\Users\andmo\.inRat planner\data\inRat-1-1064\test_1064_2026-4-9_13-55-26.edf",
-    )
-
-    dlg = RecordViewer()
-    dlg.load_record(record=record_data_wfdb)
-    dlg.show()
-
-    app.exec()
+# if __name__ == "__main__":
+#     app = QApplication()
+#
+#     record_data_wfdb = RecordData(
+#         sec_duration=1200,
+#         file_format="WFDB",
+#         datetime_start=datetime.datetime.now(),
+#         schedule_id=uuid.uuid4(),
+#         sampling_rate=2000,
+#         status="Ok",
+#         path=r"C:\Users\andmo\.inRat planner\data\inRat-1-1024\\\test_1024_2026-4-7_11-10-12",
+#     )
+#
+#     record_data_edf = RecordData(
+#         sec_duration=4,
+#         file_format="EDF",
+#         datetime_start=datetime.datetime.now(),
+#         schedule_id=uuid.uuid4(),
+#         sampling_rate=500,
+#         status="Ok",
+#         path=r"C:\Users\andmo\.inRat planner\data\inRat-1-1064\test_1064_2026-4-9_13-55-26.edf",
+#     )
+#
+#     dlg = RecordViewer()
+#     dlg.load_record(record=record_data_wfdb)
+#     dlg.show()
+#
+#     app.exec()

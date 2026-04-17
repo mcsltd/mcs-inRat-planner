@@ -9,11 +9,13 @@ from uuid import UUID
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QDialog, QWidget, QSpinBox, QLabel, QHBoxLayout
+from PySide6.QtWidgets import QDialog, QWidget, QSpinBox, QLabel, QHBoxLayout, QFrame, QApplication
 from pyqtgraph import PlotWidget, mkPen
 
 from structure import ScheduleData
 from resources.wdt_monitor import Ui_FormMonitor
+
+from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
 
 logger = logging.getLogger(__name__ )
 
@@ -33,47 +35,17 @@ def format_duration(seconds: int) -> str:
         return f"{hours} ч. {minutes} мин. {remaining_seconds} с."
 
 
-class TimebaseControlWidget(QWidget):
-    """Виджет для управления timebase (окном отображения сигнала)"""
+class OnlineControlDisplay(Ui_FrmOnlineControlPane, QFrame):
 
-    timebase_changed = Signal(float)  # Сигнал при изменении timebase
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setupUi(self)
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QHBoxLayout()
-
-        # Метка
-        label = QLabel("Окно отображения:")
-        label.setFont(QFont("Arial", 10))
-
-        # Спинбокс для выбора timebase
-        self.timebase_spinbox = QSpinBox()
-        self.timebase_spinbox.setRange(2, 10)  # от 1 до 10 секунд
-        self.timebase_spinbox.setValue(10)  # значение по умолчанию
-        self.timebase_spinbox.setSuffix(" с")
-        self.timebase_spinbox.setFont(QFont("Arial", 10))
-        self.timebase_spinbox.valueChanged.connect(self._on_timebase_changed)
-
-        # Добавляем все в layout
-        layout.addWidget(label)
-        layout.addWidget(self.timebase_spinbox)
-
-        self.setLayout(layout)
-
-    def set_timebase(self, timebase_s: float):
-        """Установить значение timebase"""
-        self.timebase_spinbox.setValue(int(timebase_s))
-
-    def get_timebase(self) -> float:
-        """Получить текущее значение timebase"""
-        return float(self.timebase_spinbox.value())
-
-    def _on_timebase_changed(self, value: int):
-        """Обработчик изменения значения в спинбоксе"""
-        self.timebase_changed.emit(float(value))
+        speed = [("12.5 мм/c", 12.5), ("25 мм/c", 25), ("50 мм/c", 50), ("100 мм/c", 100)]
+        for v, d in speed:
+            self.comboBoxSpeed.addItem(v, d)
+        self.comboBoxSpeed.setCurrentIndex(0)
+        self.comboBoxSpeed.setEnabled(True)
 
 
 class PlotSignal(PlotWidget):
@@ -118,9 +90,9 @@ class PlotSignal(PlotWidget):
         self.plot_signal.setData(self.time, self.ecg, antialias=False, clipToView=True)
 
         if self.time[-1] < self.timebase_s:
-            self.setXRange(self.time[0], self.timebase_s)
+            self.setXRange(self.time[0], self.timebase_s, padding=0)
         else:
-            self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
+            self.setXRange(self.time[-1] - self.timebase_s, self.time[-1], padding=0)
 
     def set_timebase(self, timebase_s: float):
         """Установить новое значение timebase"""
@@ -146,6 +118,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self.setupUi(self)
         self.setWindowTitle(f"Регистрация ЭКГ сигнала объекта \"{schedule_data.object.name}\"")
         self.setWindowModality(Qt.WindowModality.NonModal)
+        self.setWindowFlags(Qt.Window)
 
         self.schedule_data = schedule_data
 
@@ -157,13 +130,13 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
 
         # Создаем график и виджет управления timebase
         self.plot = PlotSignal(parent=self, fs=self.fs)
-        self.timebase_control = TimebaseControlWidget()
+        self.control_display = OnlineControlDisplay()
 
         # Подключаем сигнал изменения timebase
-        self.timebase_control.timebase_changed.connect(self.plot.set_timebase)
+        self.control_display.comboBoxSpeed.activated.connect(self._on_speed_changed)
 
         # Добавляем виджеты в layout
-        self.verticalLayoutInfo.addWidget(self.timebase_control)
+        self.verticalLayoutInfo.addWidget(self.control_display)
         self.verticalLayoutInfo.addStretch()
         self.verticalLayoutMonitor.addWidget(self.plot)
 
@@ -222,4 +195,16 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self.formLayout_5.removeWidget(self.labelFormatValue)
         self.labelFormatValue.setText(self.schedule_data.file_format)
 
+    def _on_speed_changed(self):
+        """ обработка установки масштаба времени """
+        speed = self.control_display.comboBoxSpeed.currentData()
 
+        # расчёт масштаба времени
+        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        width_mm = self.plot.width() / pixels_per_mm
+        timebase = int(width_mm / speed)
+
+        self.plot.set_timebase(timebase)
+
+    def resizeEvent(self, arg__1, /):
+        self._on_speed_changed()
