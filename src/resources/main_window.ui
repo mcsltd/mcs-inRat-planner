@@ -40,7 +40,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Архив записей</string>
+           <string>Записи</string>
           </property>
          </widget>
         </item>
@@ -93,7 +93,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Расписание</string>
+           <string>Расписания</string>
           </property>
          </widget>
         </item>

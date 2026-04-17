@@ -86,16 +86,17 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             self.comboBoxSpeed.addItem(v, userData=d)
         self.comboBoxSpeed.setCurrentIndex(0)
 
-        gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
-        for v, d in gain:
-            self.comboBoxGain.addItem(v, userData=d)
-        self.comboBoxGain.setCurrentIndex(1)
-        self.deflection = 10*1e-3
-        self.comboBoxGain.setDisabled(True)
+        # gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
+        # for v, d in gain:
+        #     self.comboBoxGain.addItem(v, userData=d)
+        # self.comboBoxGain.setCurrentIndex(1)
+        # self.deflection = 10*1e-3
+        # self.comboBoxGain.setDisabled(True)
+        self.groupBoxAmplitude.hide()
 
         # signals
         self.comboBoxSpeed.activated.connect(self._on_speed_changed)
-        self.comboBoxGain.activated.connect(self._on_gain_changed)
+        # self.comboBoxGain.activated.connect(self._on_gain_changed)
         self.horizontalSlider.valueChanged.connect(self._on_slider_changed)
 
     def load_record(self, record: RecordData) -> bool:

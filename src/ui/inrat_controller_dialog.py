@@ -50,11 +50,11 @@ class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
             self.comboBoxSpeed.addItem(v, d)
         self.comboBoxSpeed.setCurrentIndex(0)
 
-        gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("100 мм/c", 100*1e-3)]
-        for v, d in gain:
-            self.comboBoxGain.addItem(v, d)
-        self.comboBoxGain.setCurrentIndex(1)
-        self.comboBoxGain.setDisabled(True)
+        # gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("100 мм/c", 100*1e-3)]
+        # for v, d in gain:
+        #     self.comboBoxGain.addItem(v, d)
+        # self.comboBoxGain.setCurrentIndex(1)
+        # self.comboBoxGain.setDisabled(True)
 
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
@@ -327,8 +327,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.control_panel_recording.pushButtonStopRecording.clicked.connect(self._stop_recording)
 
         self.verticalLayout.insertWidget(2, self.control_panel_device)
-        self.verticalLayout.insertWidget(3, self.control_panel_recording)
-        self.verticalLayout.insertWidget(4, self.display.control_panel)
+        self.verticalLayout.insertWidget(3, self.display.control_panel)
+        self.verticalLayout.insertWidget(4, self.control_panel_recording)
         self.verticalLayout.addStretch()
 
         # установка таймера для обновления графика

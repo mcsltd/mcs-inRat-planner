@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_deviceUGycXU.ui'
+## Form generated from reading UI file 'frm_online_control_devicewHvxKh.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -126,7 +126,7 @@ class Ui_FrmOnlineControlDevice(object):
         self.pushButtonStart.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"\u0421\u0442\u0430\u0440\u0442", None))
         self.pushButtonDisconnect.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c", None))
         self.pushButtonStop.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"\u0421\u0442\u043e\u043f", None))
-        self.labelSampleFreq.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438", None))
+        self.labelSampleFreq.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"\u0427\u0430\u0441\u0442\u043e\u0442\u0430 \u043e\u0446\u0438\u0444\u0440\u043e\u0432\u043a\u0438:", None))
         self.labelActivated.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u043d\u043e", None))
         self.checkBoxActivated.setText("")
         self.labelDimHz.setText(QCoreApplication.translate("FrmOnlineControlDevice", u"/\u0413\u0446", None))

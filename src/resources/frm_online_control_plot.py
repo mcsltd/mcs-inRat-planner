@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_plotaRaZYb.ui'
+## Form generated from reading UI file 'frm_online_control_plotVgueEy.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -22,7 +22,7 @@ class Ui_FrmOnlineControlPane(object):
     def setupUi(self, FrmOnlineControlPane):
         if not FrmOnlineControlPane.objectName():
             FrmOnlineControlPane.setObjectName(u"FrmOnlineControlPane")
-        FrmOnlineControlPane.resize(321, 152)
+        FrmOnlineControlPane.resize(321, 91)
         FrmOnlineControlPane.setFrameShape(QFrame.Shape.Panel)
         FrmOnlineControlPane.setFrameShadow(QFrame.Shadow.Raised)
         self.gridLayout_2 = QGridLayout(FrmOnlineControlPane)
@@ -57,18 +57,6 @@ class Ui_FrmOnlineControlPane(object):
 
         self.gridLayout_3.addWidget(self.label, 0, 0, 1, 1)
 
-        self.label_2 = QLabel(self.groupBox)
-        self.label_2.setObjectName(u"label_2")
-
-        self.gridLayout_3.addWidget(self.label_2, 1, 0, 1, 1)
-
-        self.comboBoxGain = QComboBox(self.groupBox)
-        self.comboBoxGain.setObjectName(u"comboBoxGain")
-        sizePolicy1.setHeightForWidth(self.comboBoxGain.sizePolicy().hasHeightForWidth())
-        self.comboBoxGain.setSizePolicy(sizePolicy1)
-
-        self.gridLayout_3.addWidget(self.comboBoxGain, 1, 1, 1, 1)
-
 
         self.gridLayout.addLayout(self.gridLayout_3, 0, 0, 1, 1)
 
@@ -85,6 +73,5 @@ class Ui_FrmOnlineControlPane(object):
         FrmOnlineControlPane.setWindowTitle(QCoreApplication.translate("FrmOnlineControlPane", u"Frame", None))
         self.groupBox.setTitle(QCoreApplication.translate("FrmOnlineControlPane", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u0430", None))
         self.label.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0412\u0440\u0435\u043c\u044f:", None))
-        self.label_2.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0410\u043c\u043f\u043b\u0438\u0442\u0443\u0434\u0430:", None))
     # retranslateUi
 
