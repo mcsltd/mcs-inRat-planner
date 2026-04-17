@@ -15,7 +15,7 @@ from pyqtgraph import PlotWidget, mkPen
 from structure import ScheduleData
 from resources.wdt_monitor import Ui_FormMonitor
 
-from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
 
 logger = logging.getLogger(__name__ )
 

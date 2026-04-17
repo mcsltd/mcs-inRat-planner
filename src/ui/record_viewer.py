@@ -10,9 +10,9 @@ from PySide6.QtGui import QFont
 
 from PySide6.QtWidgets import QDialog, QApplication, QMessageBox, QMenuBar
 
-from src.resources.record_viewer import Ui_frmRecordViewer
-from src.structure import RecordData, ScheduleData
-from src.resources.wdt_monitor import Ui_FormMonitor
+from resources.record_viewer import Ui_frmRecordViewer
+from structure import RecordData, ScheduleData
+from resources.wdt_monitor import Ui_FormMonitor
 
 
 class FormatterTimeAxisItem(pg.AxisItem):

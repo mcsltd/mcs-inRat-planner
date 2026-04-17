@@ -18,7 +18,7 @@ from ble_manager import BleManager
 from constants import DESCRIPTION_COLUMN_HISTORY, DESCRIPTION_COLUMN_SCHEDULE, ScheduleState, RecordStatus, Devices
 from db.database import connection
 from db.models import Schedule, Object, Device, Record
-from src.ui.record_viewer import RecordViewer
+from ui.record_viewer import RecordViewer
 from tools.check_bluetooth import is_bluetooth_enabled
 from structure import ScheduleData, RecordData, RecordingTaskData
 
@@ -44,7 +44,7 @@ from ui.settings_dialog import DlgMainConfig
 from ui.monitor_dialog import SignalMonitor
 from ui.stream_dialog import BLESignalViewer
 
-__version__ = "v1.0.0"
+__version__ = "v1.1.0"
 logger = logging.getLogger(__name__)
 
 
