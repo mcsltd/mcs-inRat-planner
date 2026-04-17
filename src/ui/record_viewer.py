@@ -43,8 +43,8 @@ class DisplaySignal(pg.PlotWidget):
         # настройка подписей к графику
         pen = pg.mkPen("k")
         font = QFont("Arial", 11)
-        self.setLabel("left", "Амплитуда", units="V", pen=pg.mkPen(color='k'), font=font)
-        self.setLabel("bottom", "Время", pen=pg.mkPen(color='k'), font=font)
+        self.setLabel("left", "ЭКГ", units="V", pen=pg.mkPen(color='k'), font=font)
+        self.setLabel("bottom", "Время (mm:ss)", pen=pg.mkPen(color='k'), font=font)
         for ax in ["bottom", "left"]:
             self.getAxis(ax).label.setFont(font)
             self.getAxis(ax).setPen(pen)
