@@ -23,7 +23,7 @@
 1. Перейдите на страницу [**Releases**](https://github.com/mcsltd/mcs-inRat-planner/releases) этого репозитория
 2. Найдите **последний релиз** (самый верхний)
 3. В разделе **Assets** (внизу описания релиза) скачайте архив:  
-   `inRat-planner-v1.0.0.rar`
+   `inRat-planner-v1.1.0.rar`
 4. Распакуйте архив и перейдите в директорию, найдите и запустите `inRat-planner-setup.exe`
 5. Следуйте инструкциям установщика (Python и все зависимости установятся автоматически)
 
@@ -41,7 +41,7 @@
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/ВАШ_АККАУНТ/inrat-planner.git
+git clone git@github.com:mcsltd/mcs-inRat-planner.git
 cd inrat-planner
 ```
 
