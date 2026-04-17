@@ -17,13 +17,21 @@ from src.resources.wdt_monitor import Ui_FormMonitor
 
 class FormatterTimeAxisItem(pg.AxisItem):
     """ формат mm:ss по оси x """
-    # todo: разобраться с ошибкой обозначения интервала внутри секунд
     def tickStrings(self, values, scale, spacing) -> list[str]:
+        """ форматирование строки по оси времени """
         strings = []
+        last_value = None
         for value in values:
-            minutes = int(value // 60)
-            seconds = int(value % 60)
-            strings.append(f"{minutes:02d}:{seconds:02d}")
+            is_whole_second = abs(value - round(value)) < 1e-9  # для float
+            if is_whole_second:
+                minutes = int(value // 60)
+                seconds = int(value % 60)
+                tick_str = f"{minutes:02d}:{seconds:02d}"
+                if tick_str != last_value:
+                    strings.append(tick_str)
+                    last_value = tick_str
+            else:
+                strings.append("")
         return strings
 
 class DisplaySignal(pg.PlotWidget):
