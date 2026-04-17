@@ -63,6 +63,12 @@ class Base(DeclarativeBase):
         return result.scalars().first()
 
     @classmethod
+    def find_all(cls, where_conditions: list[Any], session: Session, is_deleted=False):
+        stmt = select(cls).where(*where_conditions, cls.is_deleted == is_deleted)
+        result = session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
     def find_archived(cls, where_conditions: list[Any], session: Session):
         stmt = select(cls).where(*where_conditions, cls.is_deleted == True)
         result = session.execute(stmt)

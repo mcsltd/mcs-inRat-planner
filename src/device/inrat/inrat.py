@@ -10,10 +10,10 @@ from uuid import UUID
 from bleak import BLEDevice, BleakClient
 from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
 
-from src.config import BLE_KEY_IN_RAT
-from src.device.inrat.decoder import decode_ecg
-from src.device.inrat.enums import Command, EnabledChannels, EventType, SamplingRate, ScaleAccelerometer
-from src.device.inrat.structures import Settings, Event, Status
+from config import BLE_KEY_IN_RAT
+from device.inrat.decoder import decode_ecg
+from device.inrat.enums import Command, EnabledChannels, EventType, SamplingRate, ScaleAccelerometer
+from device.inrat.structures import Settings, Event, Status
 
 BLE_KEY = BLE_KEY_IN_RAT
 

@@ -10,8 +10,8 @@ from threading import Lock, Thread
 from PySide6.QtCore import QObject, Signal
 from bleak import BLEDevice
 
-from src.device.inrat.constants import Pkt
-from src.device.inrat.inrat import inRat
+from device.inrat.constants import Pkt
+from device.inrat.inrat import inRat
 
 logger = logging.getLogger(__name__)
 

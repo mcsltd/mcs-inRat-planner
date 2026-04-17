@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import numpy as np
 from PySide6.QtCore import Signal, QTimer, Qt
 from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, \
-    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame, QMessageBox
+    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame, QMessageBox, QApplication
 from PySide6 import QtCore
 
 from PySide6.QtGui import QFont
@@ -17,19 +17,19 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from src.device.inrat.constants import Pkt
-from src.device.inrat.inrat import inRat
-from src.resources.dlg_inrat_controller import Ui_DlgInRatController
-from src.resources.frm_online_control_device import Ui_FrmOnlineControlDevice
-from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
-from src.resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
-from src.structure import ScheduleData
-from src.tools.inrat_storage import InRatStorage
-from src.util import seconds_to_label_time
+from device.inrat.constants import Pkt
+from device.inrat.inrat import inRat
+from resources.dlg_inrat_controller import Ui_DlgInRatController
+from resources.frm_online_control_device import Ui_FrmOnlineControlDevice
+from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
+from structure import ScheduleData
+from tools.inrat_storage import InRatStorage
+from util import seconds_to_label_time
 
-from src.structure import RecordData
+from structure import RecordData
 
-from src.config import app_data
+from config import app_data
 
 SAMPLE_RATES = [("500", 500),
                 ("1000", 1000),
@@ -45,10 +45,16 @@ class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        timebases = [("1", 1), ("5", 5), ("10", 10), ("30", 30), ("60", 60),]
-        for t in timebases:
-            self.comboBoxTimebase.addItem(t[0], userData=t[1])
-        self.comboBoxTimebase.setCurrentIndex(2)
+        speed = [("12.5 мм/c", 12.5), ("25 мм/c", 25), ("50 мм/c", 50), ("100 мм/c", 100)]
+        for v, d in speed:
+            self.comboBoxSpeed.addItem(v, d)
+        self.comboBoxSpeed.setCurrentIndex(0)
+
+        # gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("100 мм/c", 100*1e-3)]
+        # for v, d in gain:
+        #     self.comboBoxGain.addItem(v, d)
+        # self.comboBoxGain.setCurrentIndex(1)
+        # self.comboBoxGain.setDisabled(True)
 
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
@@ -58,6 +64,7 @@ class DisplaySignal(PlotWidget):
 
         pen = mkPen("k")
         font = QFont("Arial", 11)
+        self.plot_signal = self.plot(pen=pg.mkPen(color=(255, 0, 0), width=1.5))
 
         # data
         self.fs = 500
@@ -70,7 +77,6 @@ class DisplaySignal(PlotWidget):
         self.buffer_filled = False  # флаг заполнения буфера
         self.current_position = 0  # текущая позиция для заполнения буфера
 
-        self.plot_signal = self.plot(pen=pg.mkPen(color=(255, 0, 0), width=1.5))
 
         self.setLabel("left", "ЭКГ", units="V", pen=mkPen(color='k'), font=font)
         self.setLabel("bottom", "Время", units="s", pen=mkPen(color='k'), font=font)
@@ -82,18 +88,24 @@ class DisplaySignal(PlotWidget):
             self.getAxis(ax).setTickFont(font)
 
         self._markers = []
-
         self.pending_update = False
-
         self._control_pane = ControlParamDisplay()
-        self._control_pane.comboBoxTimebase.activated.connect(self.set_timebase)
+        self._control_pane.comboBoxSpeed.activated.connect(self.set_timebase)
+        self.set_timebase()
 
     @property
     def control_panel(self):
         return self._control_pane
 
     def set_timebase(self):
-        self.timebase = self.control_panel.comboBoxTimebase.currentData()
+        """ настройка масштаба времени """
+        speed = self._control_pane.comboBoxSpeed.currentData()
+        # расчёт масштаба времени
+        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        width_mm = self.width() / pixels_per_mm
+
+        self.timebase = int(width_mm / speed)
+        # self.update_plot()
         logger.info(f"Изменен масштаб по оси времени: {self.timebase} секунд")
 
     def set_sampling_rate(self, sampling_rate: int):
@@ -254,6 +266,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     def __init__(self, schedule_data: ScheduleData, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setWindowFlags(Qt.Window)
         self.setupUi(self)
 
         # backend
@@ -314,8 +327,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.control_panel_recording.pushButtonStopRecording.clicked.connect(self._stop_recording)
 
         self.verticalLayout.insertWidget(2, self.control_panel_device)
-        self.verticalLayout.insertWidget(3, self.control_panel_recording)
-        self.verticalLayout.insertWidget(4, self.display.control_panel)
+        self.verticalLayout.insertWidget(3, self.display.control_panel)
+        self.verticalLayout.insertWidget(4, self.control_panel_recording)
         self.verticalLayout.addStretch()
 
         # установка таймера для обновления графика
@@ -324,7 +337,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.update_timer.start(16)
 
         self.setup_combobox()
-
 
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
@@ -450,6 +462,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
                 logger.debug(f"{self.device.name} установлена частота {self.device.sampling_rate} Гц")
                 self.control_panel_device.set_state_connected()
+                self.display.control_panel.comboBoxSpeed.setEnabled(True)
+
             else:
                 self.control_panel_device.set_state_disconnected()
         except:
@@ -498,6 +512,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.control_panel_device.reset()
         self._set_default_sampling_rate()
         self.device = None
+        self.display.control_panel.comboBoxSpeed.setEnabled(False)
+
 
     # запуск устройства
     def _device_start_acquisition(self):
@@ -530,8 +546,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if await self.device.start_acquisition(data_queue=data_queue):
             self.start_acquisition_time = time.time()
             self.control_panel_device.set_state_acquisition()
+            self.display.control_panel.comboBoxSpeed.setEnabled(True)
 
             self.display.clear_plot()
+            self.display.set_timebase()
+
 
             self.is_running = True
             self.control_panel_recording.pushButtonStartRecording.setEnabled(True)
@@ -590,7 +609,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
         # активация при остановке получения данных
         self.control_panel_device.set_state_connected()
-
+        # self.display.control_panel.comboBoxSpeed.setEnabled(False)
         self.control_panel_recording.pushButtonStartRecording.setEnabled(False)
         self.control_panel_recording.pushButtonStopRecording.setEnabled(False)
 
@@ -719,6 +738,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         except Exception as e:
             logger.debug(f"Ошибка при отмене задач: {e}")
 
+    def resizeEvent(self, arg__1, /):
+        self.display.set_timebase()
 
 class WaitingDialog(QDialog):
 

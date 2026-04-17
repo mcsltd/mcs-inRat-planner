@@ -17,7 +17,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFormLayout, QFrame, QGridLayout,
     QLabel, QSizePolicy, QVBoxLayout, QWidget)
-import resources.resources_rc
+import src.resources.resources_rc
 
 class Ui_FormMonitor(object):
     def setupUi(self, FormMonitor):

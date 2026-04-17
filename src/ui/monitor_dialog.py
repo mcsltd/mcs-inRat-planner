@@ -49,6 +49,7 @@ class SignalMonitor(QDialog, Ui_FormMonitor):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.setWindowModality(Qt.WindowModality.NonModal)
+        self.setWindowFlags(Qt.Window)
 
         title=f"Сигнал ЭКГ с объекта \"{schedule_data.object.name}\""
         self.setWindowTitle(title)
