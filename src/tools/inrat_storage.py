@@ -105,8 +105,9 @@ class InRatStorage(QObject):
     def save_to_wfdb(self, filename: str, write_dir: str):
         """ Сохранение полученного сигнала в WFDB формате """
         try:
+            wfdb_signal = np.round(self.signal[np.newaxis].T * 1e6, decimals=2)
             wfdb.io.wrsamp(
-                record_name=filename, fs=self._fs, units=["uV"], p_signal=self.signal[np.newaxis].T,
+                record_name=filename, fs=self._fs, units=["uV"], p_signal=wfdb_signal,
                 sig_name=["ECG"], write_dir=write_dir, base_datetime=datetime.datetime.fromtimestamp(self.start_time)
             )
         except Exception as exc:
@@ -121,7 +122,7 @@ class InRatStorage(QObject):
                 n_channels=1,
                 file_name=filename,
             )
-            edf_signal = np.round(self.signal, decimals=5)
+            edf_signal = np.round(self.signal * 1e6, decimals=2)
 
             margin = 0.15
             signal_max = np.max(edf_signal)

@@ -132,7 +132,12 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             QMessageBox.critical(self, "Ошибка загрузки", f"Не удалось загрузить данные из файла: {record.path}")
 
         # загрузка в буфер
-        self._buffer_ecg = self._normalize_signal(signal.squeeze()) / 1e3
+        # self._buffer_ecg = self._normalize_signal(signal.squeeze()) / 1e3
+        self._buffer_ecg = signal.squeeze()
+        units = header.get("units")
+        if units == "uV":
+            self._buffer_ecg /= 1e6
+
         self._datetime_start = header["recording_date"]
         self._sample_rate = header["sample_rate"]
         self._duration = header["duration"]
@@ -169,7 +174,9 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             # чтение заголовков
             header = {"patient_name": file.getPatientName(), "recording_date": file.getStartdatetime(),
                       "duration": file.getFileDuration(), "signals_count": file.signals_in_file,
-                      "sample_rate": file.getSampleFrequency(0)}
+                      "sample_rate": file.getSampleFrequency(0),
+                      "units": file.getPhysicalDimension(0)
+                      }
             # чтение сигнала
             signal_data = file.readSignal(0)
         return signal_data, header
@@ -189,7 +196,8 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             'recording_date': getattr(record, 'base_datetime', 'Неизвестно'),
             'duration': record.sig_len / record.fs if record.fs > 0 else 0,
             'signals_count': record.n_sig,
-            'sample_rate': record.fs
+            'sample_rate': record.fs,
+            'units': record.units[0]
         }
         return signals, header
 
