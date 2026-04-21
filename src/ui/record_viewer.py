@@ -212,7 +212,6 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
     def _on_slider_changed(self, value: int):
         """ обработка движения полосы прокрутки """
         self.current_position = value
-        print(f"{self.current_position}")
         mm_ss_text = f"{value // 60:02d}:{value % 60:02d}"
         self.labelCurrentTime.setText(f"{mm_ss_text}")
         self.update_display()
