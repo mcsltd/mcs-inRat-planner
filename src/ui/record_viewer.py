@@ -143,15 +143,10 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self._duration = header["duration"]
         self._buffer_time = np.arange(0, self._duration, 1 / self._sample_rate)
 
-        # Установка начальной позиции
         self.current_position = 0
-
-        # настройка полосы прокрутки
         self.update_slider()
 
-        # вывод сигнала - корректная обработка коротких сигналов
         if self._duration <= self._timebase:
-            # Показываем весь сигнал
             idx_start = 0
             idx_finish = len(self._buffer_ecg)
         else:
@@ -217,26 +212,21 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
     def _on_slider_changed(self, value: int):
         """ обработка движения полосы прокрутки """
         self.current_position = value
-
+        print(f"{self.current_position}")
         mm_ss_text = f"{value // 60:02d}:{value % 60:02d}"
         self.labelCurrentTime.setText(f"{mm_ss_text}")
         self.update_display()
-
-        # Обновляем метку общего времени
-        if self._duration:
-            total_mm_ss = f"{int(self._duration // 60):02d}:{int(self._duration % 60):02d}"
-            # Если есть лейбл для отображения общего времени, обновите его
 
     def update_slider(self):
         self.horizontalSlider.setMinimum(0)
 
         step = 10
         if self._duration <= self._timebase:
-            # Если сигнал короче видимой области
-            self.horizontalSlider.setMaximum(0)  # Только одно положение
-            self.horizontalSlider.setEnabled(False)  # Отключаем полосу прокрутки
+            self.horizontalSlider.setMaximum(0)
+            self.horizontalSlider.setEnabled(False)
             self.current_position = 0
             step = 1
+            self.horizontalSlider.setPageStep(step)
         else:
             self.horizontalSlider.setMaximum(int(self._duration - self._timebase))
             self.horizontalSlider.setEnabled(True)
@@ -269,7 +259,6 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
     def update_display(self):
         """ обновить отображение сигнала в окне """
 
-        # Проверка на случай, если сигнал короче timebase
         if self._duration <= self._timebase:
             idx_start = 0
             idx_finish = int(self._duration * self._sample_rate)
@@ -277,7 +266,6 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
             idx_start = int(self._sample_rate * self.current_position)
             idx_finish = int(self._sample_rate * (self.current_position + self._timebase))
 
-            # Корректировка, если вышли за пределы
             if idx_finish > len(self._buffer_ecg):
                 idx_finish = len(self._buffer_ecg)
                 idx_start = max(0, idx_finish - int(self._timebase * self._sample_rate))
@@ -285,13 +273,11 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         visible_time_array = self._buffer_time[idx_start:idx_finish]
         visible_signal = self._buffer_ecg[idx_start:idx_finish]
 
-        # Отображение сигнала
         self.display_ecg.set_data(x=visible_time_array, y=visible_signal)
 
     def resizeEvent(self, event):
         """ обработка изменения размера окна """
         super().resizeEvent(event)
-        # Пересчитываем timebase при изменении размера
         if hasattr(self, '_sample_rate') and self._sample_rate:
             self._on_speed_changed()
 
