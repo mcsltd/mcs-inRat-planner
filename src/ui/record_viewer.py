@@ -43,8 +43,8 @@ class DisplaySignal(pg.PlotWidget):
         # настройка подписей к графику
         pen = pg.mkPen("k")
         font = QFont("Arial", 11)
-        self.setLabel("left", "ЭКГ", units="V", pen=pg.mkPen(color='k'), font=font)
-        self.setLabel("bottom", "Время (mm:ss)", pen=pg.mkPen(color='k'), font=font)
+        self.setLabel("left", units="V", pen=pg.mkPen(color='k'), font=font)
+        # self.setLabel("bottom", "Время (mm:ss)", pen=pg.mkPen(color='k'), font=font)
         for ax in ["bottom", "left"]:
             self.getAxis(ax).label.setFont(font)
             self.getAxis(ax).setPen(pen)
@@ -143,13 +143,26 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self._duration = header["duration"]
         self._buffer_time = np.arange(0, self._duration, 1 / self._sample_rate)
 
-        # настройка полосы прокрутки
-        self.setup_slider()
+        # Установка начальной позиции
+        self.current_position = 0
 
-        # вывод сигнала в пределах 0 до timebase
-        idx_start = 0
-        idx_finish = int(self._timebase * self._sample_rate)
-        self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish], y=self._buffer_ecg[idx_start:idx_finish])
+        # настройка полосы прокрутки
+        self.update_slider()
+
+        # вывод сигнала - корректная обработка коротких сигналов
+        if self._duration <= self._timebase:
+            # Показываем весь сигнал
+            idx_start = 0
+            idx_finish = len(self._buffer_ecg)
+        else:
+            idx_start = 0
+            idx_finish = int(self._timebase * self._sample_rate)
+
+        self.display_ecg.set_data(x=self._buffer_time[idx_start:idx_finish],
+                                  y=self._buffer_ecg[idx_start:idx_finish])
+
+        # Обновляем информацию о времени
+        self.labelCurrentTime.setText("00:00")
 
         self.set_title_to_record_info()
         return True
@@ -209,10 +222,25 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.labelCurrentTime.setText(f"{mm_ss_text}")
         self.update_display()
 
-    def setup_slider(self):
+        # Обновляем метку общего времени
+        if self._duration:
+            total_mm_ss = f"{int(self._duration // 60):02d}:{int(self._duration % 60):02d}"
+            # Если есть лейбл для отображения общего времени, обновите его
+
+    def update_slider(self):
         self.horizontalSlider.setMinimum(0)
-        self.horizontalSlider.setMaximum(self._duration)
-        self.horizontalSlider.setPageStep(10)
+
+        step = 10
+        if self._duration <= self._timebase:
+            # Если сигнал короче видимой области
+            self.horizontalSlider.setMaximum(0)  # Только одно положение
+            self.horizontalSlider.setEnabled(False)  # Отключаем полосу прокрутки
+            self.current_position = 0
+            step = 1
+        else:
+            self.horizontalSlider.setMaximum(int(self._duration - self._timebase))
+            self.horizontalSlider.setEnabled(True)
+            self.horizontalSlider.setPageStep(step)
 
     def _normalize_signal(self, signal: np.ndarray) -> np.ndarray:
         """ нормализация сигнала для отображения """
@@ -236,35 +264,36 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
 
         # обновление графика
         self.update_display()
-
-    def _on_gain_changed(self, index=None):
-        """ обработка изменения амплитуды """
-        sens = self.comboBoxGain.currentData()
-        self.deflection = sens
-
-        self.update_display()
+        self.update_slider()
 
     def update_display(self):
         """ обновить отображение сигнала в окне """
-        idx_start = int(self._sample_rate * self.current_position)
-        idx_finish = int(self._sample_rate * (self.current_position + self._timebase))
 
-        if self.current_position + self._timebase >= self._duration:
-            idx_start = int((self._duration - self._timebase) * self._sample_rate)
+        # Проверка на случай, если сигнал короче timebase
+        if self._duration <= self._timebase:
+            idx_start = 0
             idx_finish = int(self._duration * self._sample_rate)
+        else:
+            idx_start = int(self._sample_rate * self.current_position)
+            idx_finish = int(self._sample_rate * (self.current_position + self._timebase))
+
+            # Корректировка, если вышли за пределы
+            if idx_finish > len(self._buffer_ecg):
+                idx_finish = len(self._buffer_ecg)
+                idx_start = max(0, idx_finish - int(self._timebase * self._sample_rate))
 
         visible_time_array = self._buffer_time[idx_start:idx_finish]
         visible_signal = self._buffer_ecg[idx_start:idx_finish]
 
-        # масштабирование сигнала ЭКГ
-        # pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
-        # visible_signal = visible_signal * self.deflection * pixels_per_mm
-
-        # отображение сигнала
+        # Отображение сигнала
         self.display_ecg.set_data(x=visible_time_array, y=visible_signal)
 
-    def resizeEvent(self, arg__1, /):
-        self._on_speed_changed()
+    def resizeEvent(self, event):
+        """ обработка изменения размера окна """
+        super().resizeEvent(event)
+        # Пересчитываем timebase при изменении размера
+        if hasattr(self, '_sample_rate') and self._sample_rate:
+            self._on_speed_changed()
 
 
 # if __name__ == "__main__":
