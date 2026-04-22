@@ -17,7 +17,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QDialog, QFormLayout, QGridLayout,
     QLabel, QSizePolicy, QVBoxLayout, QWidget)
-import src.resources.resources_rc
+import resources.resources_rc
 
 class Ui_DlgInRatController(object):
     def setupUi(self, DlgInRatController):
