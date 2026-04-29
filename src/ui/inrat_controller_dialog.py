@@ -292,7 +292,6 @@ class FrmOnlineControlRecording(Ui_FrmOnlineControlRecording, QFrame):
         for f in ["WFDB", "EDF"]:
             self.comboBoxFormat.addItem(f)
 
-
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
     signal_start_recording = Signal()

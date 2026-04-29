@@ -12,10 +12,10 @@ from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QDialog, QWidget, QSpinBox, QLabel, QHBoxLayout, QFrame, QApplication
 from pyqtgraph import PlotWidget, mkPen
 
-from structure import ScheduleData
-from resources.wdt_monitor import Ui_FormMonitor
+from src.structure import ScheduleData
+from src.resources.wdt_monitor import Ui_FormMonitor
 
-from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
 
 logger = logging.getLogger(__name__ )
 
@@ -35,7 +35,7 @@ def format_duration(seconds: int) -> str:
         return f"{hours} ч. {minutes} мин. {remaining_seconds} с."
 
 
-class OnlineControlDisplay(Ui_FrmOnlineControlPane, QFrame):
+class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,7 +45,35 @@ class OnlineControlDisplay(Ui_FrmOnlineControlPane, QFrame):
         for v, d in speed:
             self.comboBoxSpeed.addItem(v, d)
         self.comboBoxSpeed.setCurrentIndex(0)
+
+        voltage = [("0.3 мВ", 0.3 * 1e-3), ("0.5 мВ", 0.5 * 1e-3), ("1 мВ", 1 * 1e-3), ("1.5 мВ", 1.5 * 1e-3), ("2 мВ", 2 * 1e-3)]
+        for v, d in voltage:
+            self.comboBoxEcgLimit.addItem(v, d)
+        self.comboBoxEcgLimit.setCurrentIndex(0)
+
+        self.checkBoxDynamicRange.setChecked(True)
+        self.checkBoxDynamicRange.clicked.connect(self.on_dynamic_range_clicked)
+
+    def on_dynamic_range_clicked(self, checked: bool):
+        """ обработка выбора динамического масштабирования """
+        if not checked:
+            self.comboBoxEcgLimit.setEnabled(True)
+            self.comboBoxEcgLimit.activated.emit(1)
+        else:
+            self.comboBoxEcgLimit.setEnabled(False)
+
+    def disable(self):
+        """ отключение интерфейса """
+        self.comboBoxEcgLimit.setDisabled(True)
+        self.comboBoxSpeed.setDisabled(True)
+        self.checkBoxDynamicRange.setDisabled(True)
+
+    def enable(self):
+        """ отключение интерфейса """
         self.comboBoxSpeed.setEnabled(True)
+        self.checkBoxDynamicRange.setEnabled(True)
+        if not self.checkBoxDynamicRange.isChecked():
+            self.comboBoxEcgLimit.setEnabled(True)
 
 
 class PlotSignal(PlotWidget):
@@ -60,6 +88,7 @@ class PlotSignal(PlotWidget):
         self.time = np.array([])
         self.ecg = np.array([])
         self.plot_signal = self.plot(pen=mkPen(color=(255, 0, 0), width=1.5))
+        self.y_max, self.y_min = None, None
 
         self.setLabel("left", "ЭКГ", units="V", pen=mkPen(color='k'), font=font)
         self.setLabel("bottom", "Время", units="s", pen=mkPen(color='k'), font=font)
@@ -70,8 +99,19 @@ class PlotSignal(PlotWidget):
             self.getAxis(ax).setTickPen(pen)
             self.getAxis(ax).setTickFont(font)
 
+        # виджет для контроля параметров графика
+        self._control_pane = ControlParamDisplay()
+        self._control_pane.comboBoxSpeed.activated.connect(self.set_speed)
+        self._control_pane.comboBoxEcgLimit.activated.connect(self.set_limit)
+        self._control_pane.checkBoxDynamicRange.clicked.connect(self.disable_limit)
+        self._control_pane.enable() # активация интерфейса
+
         self.timebase_s = 10      # окно отображения сигнала
         self.fs = fs
+
+    @property
+    def control_pane(self) -> ControlParamDisplay:
+        return self._control_pane
 
     def set_data(self, time: np.ndarray, ecg: np.ndarray):
         """ Отображение сигнала на графике """
@@ -94,15 +134,44 @@ class PlotSignal(PlotWidget):
         else:
             self.setXRange(self.time[-1] - self.timebase_s, self.time[-1], padding=0)
 
-    def set_timebase(self, timebase_s: float):
-        """Установить новое значение timebase"""
-        self.timebase_s = timebase_s
+        # отображение по оси напряжения
+        if not self.y_max and not self.y_min:
+            if len(self.ecg) > 0:
+                data_min = self.ecg.min()
+                data_max = self.ecg.max()
+                if data_max > data_min:
+                    padding = (data_max - data_min) * 0.05
+                    self.setYRange(data_min - padding, data_max + padding)
+        else:
+            self.setYRange(self.y_min, self.y_max)
+
+    def set_speed(self):
+        """ установка значения скорости прорисовки """
+        speed = self._control_pane.comboBoxSpeed.currentData()
+
+        # расчёт масштаба времени
+        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
+        width_mm = self.width() / pixels_per_mm
+        timebase = int(width_mm / speed)
+
+        self.timebase_s = timebase
         # Обновляем отображение с новым timebase
         if len(self.time) > 0:
             if self.time[-1] < self.timebase_s:
                 self.setXRange(self.time[0], self.timebase_s)
             else:
                 self.setXRange(self.time[-1] - self.timebase_s, self.time[-1])
+
+    def set_limit(self):
+        """ настройка отображаемого диапазона по оси Y """
+        value = self._control_pane.comboBoxEcgLimit.currentData()
+        self.y_max = value
+        self.y_min = -value
+
+    def disable_limit(self, state):
+        """ отключения лимита отображения сигнала """
+        if state:
+            self.y_max, self.y_min = None, None
 
     def clear_plot(self):
         """Очистка графика"""
@@ -130,13 +199,9 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
 
         # Создаем график и виджет управления timebase
         self.plot = PlotSignal(parent=self, fs=self.fs)
-        self.control_display = OnlineControlDisplay()
-
-        # Подключаем сигнал изменения timebase
-        self.control_display.comboBoxSpeed.activated.connect(self._on_speed_changed)
 
         # Добавляем виджеты в layout
-        self.verticalLayoutInfo.addWidget(self.control_display)
+        self.verticalLayoutInfo.addWidget(self.plot.control_pane)
         self.verticalLayoutInfo.addStretch()
         self.verticalLayoutMonitor.addWidget(self.plot)
 
@@ -180,6 +245,7 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
 
         self.plot.set_data(time_arr, signal)
 
+
     def _load_info(self):
         """ Отображение информации о записи """
         self.labelExperimentValue.setText(self.schedule_data.experiment.name)
@@ -195,16 +261,5 @@ class BLESignalViewer(QDialog, Ui_FormMonitor):
         self.formLayout_5.removeWidget(self.labelFormatValue)
         self.labelFormatValue.setText(self.schedule_data.file_format)
 
-    def _on_speed_changed(self):
-        """ обработка установки масштаба времени """
-        speed = self.control_display.comboBoxSpeed.currentData()
-
-        # расчёт масштаба времени
-        pixels_per_mm = QApplication.primaryScreen().physicalDotsPerInch() / 25.4
-        width_mm = self.plot.width() / pixels_per_mm
-        timebase = int(width_mm / speed)
-
-        self.plot.set_timebase(timebase)
-
     def resizeEvent(self, arg__1, /):
-        self._on_speed_changed()
+        self.plot.set_speed()
