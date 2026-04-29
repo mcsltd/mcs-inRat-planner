@@ -17,19 +17,19 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from device.inrat.constants import Pkt
-from device.inrat.inrat import inRat
-from resources.dlg_inrat_controller import Ui_DlgInRatController
-from resources.frm_online_control_device import Ui_FrmOnlineControlDevice
-from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
-from resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
-from structure import ScheduleData
-from tools.inrat_storage import InRatStorage
-from util import seconds_to_label_time
+from src.device.inrat.constants import Pkt
+from src.device.inrat.inrat import inRat
+from src.resources.dlg_inrat_controller import Ui_DlgInRatController
+from src.resources.frm_online_control_device import Ui_FrmOnlineControlDevice
+from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from src.resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
+from src.structure import ScheduleData
+from src.tools.inrat_storage import InRatStorage
+from src.util import seconds_to_label_time
 
-from structure import RecordData
+from src.structure import RecordData
 
-from config import app_data
+from src.config import app_data
 
 SAMPLE_RATES = [("500", 500),
                 ("1000", 1000),
@@ -50,11 +50,35 @@ class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
             self.comboBoxSpeed.addItem(v, d)
         self.comboBoxSpeed.setCurrentIndex(0)
 
-        # gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("100 мм/c", 100*1e-3)]
-        # for v, d in gain:
-        #     self.comboBoxGain.addItem(v, d)
-        # self.comboBoxGain.setCurrentIndex(1)
-        # self.comboBoxGain.setDisabled(True)
+        voltage = [("0.3 мВ", 0.3 * 1e-3), ("0.5 мВ", 0.5 * 1e-3), ("1 мВ", 1 * 1e-3), ("1.5 мВ", 1.5 * 1e-3), ("2 мВ", 2 * 1e-3)]
+        for v, d in voltage:
+            self.comboBoxEcgLimit.addItem(v, d)
+        self.comboBoxEcgLimit.setCurrentIndex(0)
+
+        self.checkBoxDynamicRange.setChecked(True)
+        self.checkBoxDynamicRange.clicked.connect(self.on_dynamic_range_clicked)
+
+    def on_dynamic_range_clicked(self, checked: bool):
+        """ обработка выбора динамического масштабирования """
+        if not checked:
+            self.comboBoxEcgLimit.setEnabled(True)
+            self.comboBoxEcgLimit.activated.emit(1)
+        else:
+            self.comboBoxEcgLimit.setEnabled(False)
+
+    def disable(self):
+        """ отключение интерфейса """
+        self.comboBoxEcgLimit.setDisabled(True)
+        self.comboBoxSpeed.setDisabled(True)
+        self.checkBoxDynamicRange.setDisabled(True)
+
+    def enable(self):
+        """ отключение интерфейса """
+        self.comboBoxSpeed.setEnabled(True)
+        self.checkBoxDynamicRange.setEnabled(True)
+        if not self.checkBoxDynamicRange.isChecked():
+            self.comboBoxEcgLimit.setEnabled(True)
+
 
 class DisplaySignal(PlotWidget):
     def __init__(self, parent=None, *args, **kwargs):
@@ -73,10 +97,11 @@ class DisplaySignal(PlotWidget):
         self.dt = 1 / self.fs
         self.ecg_buffer = np.zeros(int(self.max_timebase * self.fs))
         self.time_buffer = np.arange(0, self.max_timebase, self.dt)
+        self.y_max, self.y_min = None, None
+
         # переменные для управления отображением
         self.buffer_filled = False  # флаг заполнения буфера
         self.current_position = 0  # текущая позиция для заполнения буфера
-
 
         self.setLabel("left", "ЭКГ", units="V", pen=mkPen(color='k'), font=font)
         self.setLabel("bottom", "Время", units="s", pen=mkPen(color='k'), font=font)
@@ -91,6 +116,8 @@ class DisplaySignal(PlotWidget):
         self.pending_update = False
         self._control_pane = ControlParamDisplay()
         self._control_pane.comboBoxSpeed.activated.connect(self.set_timebase)
+        self._control_pane.comboBoxEcgLimit.activated.connect(self.set_limit)
+        self._control_pane.checkBoxDynamicRange.clicked.connect(self.disable_limit)
         self.set_timebase()
 
     @property
@@ -107,6 +134,17 @@ class DisplaySignal(PlotWidget):
         self.timebase = int(width_mm / speed)
         # self.update_plot()
         logger.info(f"Изменен масштаб по оси времени: {self.timebase} секунд")
+
+    def set_limit(self):
+        """ настройка отображаемого диапазона по оси Y """
+        value = self._control_pane.comboBoxEcgLimit.currentData()
+        self.y_max = value
+        self.y_min = -value
+
+    def disable_limit(self, state):
+        """ отключения лимита отображения сигнала """
+        if state:
+            self.y_max, self.y_min = None, None
 
     def set_sampling_rate(self, sampling_rate: int):
         """ Установка частоты оцифровки """
@@ -173,12 +211,15 @@ class DisplaySignal(PlotWidget):
             self.setXRange(current_time - self.timebase, current_time, padding=0)
 
         # отображение по оси напряжения
-        if len(visible_ecg) > 0:
-            data_min = visible_ecg.min()
-            data_max = visible_ecg.max()
-            if data_max > data_min:
-                padding = (data_max - data_min) * 0.05
-                self.setYRange(data_min - padding, data_max + padding)
+        if not self.y_max and not self.y_min:
+            if len(visible_ecg) > 0:
+                data_min = visible_ecg.min()
+                data_max = visible_ecg.max()
+                if data_max > data_min:
+                    padding = (data_max - data_min) * 0.05
+                    self.setYRange(data_min - padding, data_max + padding)
+        else:
+            self.setYRange(self.y_min, self.y_max)
 
         self.replot()
         self.pending_update = False
@@ -462,7 +503,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
                 logger.debug(f"{self.device.name} установлена частота {self.device.sampling_rate} Гц")
                 self.control_panel_device.set_state_connected()
-                self.display.control_panel.comboBoxSpeed.setEnabled(True)
+
+                self.display.control_panel.enable()
 
             else:
                 self.control_panel_device.set_state_disconnected()
@@ -612,6 +654,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         # self.display.control_panel.comboBoxSpeed.setEnabled(False)
         self.control_panel_recording.pushButtonStartRecording.setEnabled(False)
         self.control_panel_recording.pushButtonStopRecording.setEnabled(False)
+        self.display.control_panel.disable()
 
         logger.info(f"Остановлено получение данных с {self.schedule_data.device.ble_name}")
 

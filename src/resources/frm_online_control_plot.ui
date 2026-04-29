@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>321</width>
-    <height>91</height>
+    <width>340</width>
+    <height>148</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -55,6 +55,13 @@
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
        <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelTime">
+          <property name="text">
+           <string>Время, мм/c</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QComboBox" name="comboBoxSpeed">
           <property name="enabled">
@@ -74,10 +81,43 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
+        <item row="1" column="1">
+         <widget class="QComboBox" name="comboBoxEcgLimit">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelECG">
           <property name="text">
-           <string>Время:</string>
+           <string>Лимит ЭКГ, ±мВ</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QCheckBox" name="checkBoxDynamicRange">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="autoRepeat">
+           <bool>false</bool>
+          </property>
+          <property name="tristate">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="labelDynamicRange">
+          <property name="text">
+           <string>Динамический диапазон</string>
           </property>
          </widget>
         </item>
