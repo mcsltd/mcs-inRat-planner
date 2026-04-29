@@ -503,7 +503,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
 
                 logger.debug(f"{self.device.name} установлена частота {self.device.sampling_rate} Гц")
                 self.control_panel_device.set_state_connected()
-
                 self.display.control_panel.enable()
 
             else:
