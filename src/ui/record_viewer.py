@@ -272,7 +272,6 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         if data:
             y_min, y_max = -data, data
 
-        print(f"{y_min=}, {y_max=}")
         self.display_ecg.set_y_limit(y_min, y_max)
         self.update_display()
 
