@@ -10,9 +10,9 @@ from PySide6.QtGui import QFont
 
 from PySide6.QtWidgets import QDialog, QApplication, QMessageBox, QMenuBar
 
-from resources.record_viewer import Ui_frmRecordViewer
-from structure import RecordData, ScheduleData
-from resources.wdt_monitor import Ui_FormMonitor
+from src.resources.record_viewer import Ui_frmRecordViewer
+from src.structure import RecordData, ScheduleData
+from src.resources.wdt_monitor import Ui_FormMonitor
 
 
 class FormatterTimeAxisItem(pg.AxisItem):
@@ -34,6 +34,7 @@ class FormatterTimeAxisItem(pg.AxisItem):
                 strings.append("")
         return strings
 
+
 class DisplaySignal(pg.PlotWidget):
     """ класс для отображения сигналов """
     def __init__(self, *args, **kwargs):
@@ -52,6 +53,7 @@ class DisplaySignal(pg.PlotWidget):
             self.getAxis(ax).setTickFont(font)
 
         self.plot_signal = self.plot(pen=pg.mkPen(color="r", width=1))
+        self.y_max, self.y_min = None, None
 
         self.setEnabled(False)
         # self.showGrid(x=True, y=False)
@@ -61,6 +63,16 @@ class DisplaySignal(pg.PlotWidget):
         self.plot_signal.setData(x, y)
         self.setXRange(x[0], x[-1], padding=0)
 
+        if self.y_min and self.y_max:
+            self.setYRange(self.y_min, self.y_max)
+        else:
+            if len(y) >= 0:
+                self.setYRange(y.min(), y.max())
+
+    def set_y_limit(self, y_min: float | None, y_max: float | None):
+        """ установка видимого диапазона по оси y """
+        self.y_max = y_max
+        self.y_min = y_min
 
 
 class RecordViewer(QDialog, Ui_frmRecordViewer):
@@ -88,28 +100,26 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.idx_finish = 0
         self._timebase = self.display_ecg.width() / 12.5  # in seconds
 
-        # настройка выпадающих списков
+        # настройка окна управления отображением графика
         speed = [("12.5 мм/c", 12.5), ("25 мм/c", 25.5), ("50 мм/c", 50), ("100 мм/c", 100)]
         for v, d in speed:
             self.comboBoxSpeed.addItem(v, userData=d)
         self.comboBoxSpeed.setCurrentIndex(0)
 
-        # gain = [("5 мм/мВ", 5*1e-3), ("10 мм/мВ", 10*1e-3), ("20 мм/мВ", 20*1e-3), ("40 мм/мВ", 40*1e-3),]
-        # for v, d in gain:
-        #     self.comboBoxGain.addItem(v, userData=d)
-        # self.comboBoxGain.setCurrentIndex(1)
-        # self.deflection = 10*1e-3
-        # self.comboBoxGain.setDisabled(True)
-        self.groupBoxAmplitude.hide()
+        voltage = [("Динамический", None), ("0.3 мВ", 0.3 * 1e-3),
+                   ("0.5 мВ", 0.5 * 1e-3), ("1 мВ", 1 * 1e-3),
+                   ("1.5 мВ", 1.5 * 1e-3), ("2 мВ", 2 * 1e-3)]
+        for v, d in voltage:
+            self.comboBoxLimitEcg.addItem(v, userData=d)
+        self.comboBoxLimitEcg.setCurrentIndex(0)
 
         # signals
         self.comboBoxSpeed.activated.connect(self._on_speed_changed)
-        # self.comboBoxGain.activated.connect(self._on_gain_changed)
+        self.comboBoxLimitEcg.activated.connect(self._limit_ecg_changed)
         self.horizontalSlider.valueChanged.connect(self._on_slider_changed)
 
     def load_record(self, record: RecordData) -> bool:
         """ загрузка записей """
-        # todo добавить проверку заголовков файла
 
         if (record.file_format == "WFDB" and
                 not (os.path.exists(f"{record.path}.hea") and os.path.exists(f"{record.path}.dat"))):
@@ -255,6 +265,17 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         self.update_display()
         self.update_slider()
 
+    def _limit_ecg_changed(self):
+        """ обработка установки диапазона ЭГК """
+        data = self.comboBoxLimitEcg.currentData()
+        y_min, y_max = None, None
+        if data:
+            y_min, y_max = -data, data
+
+        print(f"{y_min=}, {y_max=}")
+        self.display_ecg.set_y_limit(y_min, y_max)
+        self.update_display()
+
     def update_display(self):
         """ обновить отображение сигнала в окне """
 
@@ -280,32 +301,3 @@ class RecordViewer(QDialog, Ui_frmRecordViewer):
         if hasattr(self, '_sample_rate') and self._sample_rate:
             self._on_speed_changed()
 
-
-# if __name__ == "__main__":
-#     app = QApplication()
-#
-#     record_data_wfdb = RecordData(
-#         sec_duration=1200,
-#         file_format="WFDB",
-#         datetime_start=datetime.datetime.now(),
-#         schedule_id=uuid.uuid4(),
-#         sampling_rate=2000,
-#         status="Ok",
-#         path=r"C:\Users\andmo\.inRat planner\data\inRat-1-1024\\\test_1024_2026-4-7_11-10-12",
-#     )
-#
-#     record_data_edf = RecordData(
-#         sec_duration=4,
-#         file_format="EDF",
-#         datetime_start=datetime.datetime.now(),
-#         schedule_id=uuid.uuid4(),
-#         sampling_rate=500,
-#         status="Ok",
-#         path=r"C:\Users\andmo\.inRat planner\data\inRat-1-1064\test_1064_2026-4-9_13-55-26.edf",
-#     )
-#
-#     dlg = RecordViewer()
-#     dlg.load_record(record=record_data_wfdb)
-#     dlg.show()
-#
-#     app.exec()
