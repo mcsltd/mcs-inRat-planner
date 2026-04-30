@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'record_viewerILJyLQ.ui'
+## Form generated from reading UI file 'record_viewerbRRFoK.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -18,7 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QSizePolicy,
     QSlider, QSpacerItem, QVBoxLayout, QWidget)
-import resources.resources_rc
+import src.resources.resources_rc
 
 class Ui_frmRecordViewer(object):
     def setupUi(self, frmRecordViewer):
@@ -41,45 +41,33 @@ class Ui_frmRecordViewer(object):
         self.groupBoxTimescale.setObjectName(u"groupBoxTimescale")
         self.gridLayout_2 = QGridLayout(self.groupBoxTimescale)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.labelSpeed = QLabel(self.groupBoxTimescale)
-        self.labelSpeed.setObjectName(u"labelSpeed")
-
-        self.horizontalLayout_2.addWidget(self.labelSpeed)
-
+        self.gridLayoutControlPlot = QGridLayout()
+        self.gridLayoutControlPlot.setObjectName(u"gridLayoutControlPlot")
         self.comboBoxSpeed = QComboBox(self.groupBoxTimescale)
         self.comboBoxSpeed.setObjectName(u"comboBoxSpeed")
 
-        self.horizontalLayout_2.addWidget(self.comboBoxSpeed)
+        self.gridLayoutControlPlot.addWidget(self.comboBoxSpeed, 1, 0, 1, 1)
+
+        self.labelLimitEcg = QLabel(self.groupBoxTimescale)
+        self.labelLimitEcg.setObjectName(u"labelLimitEcg")
+
+        self.gridLayoutControlPlot.addWidget(self.labelLimitEcg, 0, 1, 1, 1)
+
+        self.comboBoxLimitEcg = QComboBox(self.groupBoxTimescale)
+        self.comboBoxLimitEcg.setObjectName(u"comboBoxLimitEcg")
+
+        self.gridLayoutControlPlot.addWidget(self.comboBoxLimitEcg, 1, 1, 1, 1)
+
+        self.labelSpeed = QLabel(self.groupBoxTimescale)
+        self.labelSpeed.setObjectName(u"labelSpeed")
+
+        self.gridLayoutControlPlot.addWidget(self.labelSpeed, 0, 0, 1, 1)
 
 
-        self.gridLayout_2.addLayout(self.horizontalLayout_2, 0, 0, 1, 1)
+        self.gridLayout_2.addLayout(self.gridLayoutControlPlot, 0, 1, 1, 1)
 
 
         self.horizontalLayout.addWidget(self.groupBoxTimescale)
-
-        self.groupBoxAmplitude = QGroupBox(frmRecordViewer)
-        self.groupBoxAmplitude.setObjectName(u"groupBoxAmplitude")
-        self.gridLayout_3 = QGridLayout(self.groupBoxAmplitude)
-        self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.labelSens = QLabel(self.groupBoxAmplitude)
-        self.labelSens.setObjectName(u"labelSens")
-
-        self.horizontalLayout_3.addWidget(self.labelSens)
-
-        self.comboBoxGain = QComboBox(self.groupBoxAmplitude)
-        self.comboBoxGain.setObjectName(u"comboBoxGain")
-
-        self.horizontalLayout_3.addWidget(self.comboBoxGain)
-
-
-        self.gridLayout_3.addLayout(self.horizontalLayout_3, 0, 0, 1, 1)
-
-
-        self.horizontalLayout.addWidget(self.groupBoxAmplitude)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -123,10 +111,9 @@ class Ui_frmRecordViewer(object):
 
     def retranslateUi(self, frmRecordViewer):
         frmRecordViewer.setWindowTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u043e\u043d\u0438\u0442\u043e\u0440\u0438\u043d\u0433", None))
-        self.groupBoxTimescale.setTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u0430\u0441\u0448\u0442\u0430\u0431 \u0432\u0440\u0435\u043c\u0435\u043d\u0438", None))
-        self.labelSpeed.setText(QCoreApplication.translate("frmRecordViewer", u"\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c:", None))
-        self.groupBoxAmplitude.setTitle(QCoreApplication.translate("frmRecordViewer", u"\u041c\u0430\u0441\u0448\u0442\u0430\u0431 \u0430\u043c\u043f\u043b\u0438\u0442\u0443\u0434\u044b", None))
-        self.labelSens.setText(QCoreApplication.translate("frmRecordViewer", u"\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c:", None))
+        self.groupBoxTimescale.setTitle(QCoreApplication.translate("frmRecordViewer", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u044f", None))
+        self.labelLimitEcg.setText(QCoreApplication.translate("frmRecordViewer", u"\u0414\u0438\u0430\u043f\u0430\u0437\u043e\u043d \u042d\u041a\u0413, \u00b1\u043c\u0412", None))
+        self.labelSpeed.setText(QCoreApplication.translate("frmRecordViewer", u"\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c, \u043c\u043c/c", None))
         self.labelCurrentTime.setText(QCoreApplication.translate("frmRecordViewer", u"00:00", None))
     # retranslateUi
 

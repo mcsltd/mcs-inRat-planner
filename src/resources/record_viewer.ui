@@ -43,43 +43,30 @@
        <item>
         <widget class="QGroupBox" name="groupBoxTimescale">
          <property name="title">
-          <string>Масштаб времени</string>
+          <string>Настройка отображения</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <widget class="QLabel" name="labelSpeed">
-              <property name="text">
-               <string>Скорость:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
+          <item row="0" column="1">
+           <layout class="QGridLayout" name="gridLayoutControlPlot">
+            <item row="1" column="0">
              <widget class="QComboBox" name="comboBoxSpeed"/>
             </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBoxAmplitude">
-         <property name="title">
-          <string>Масштаб амплитуды</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_3">
-          <item row="0" column="0">
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QLabel" name="labelSens">
+            <item row="0" column="1">
+             <widget class="QLabel" name="labelLimitEcg">
               <property name="text">
-               <string>Чувствительность:</string>
+               <string>Диапазон ЭКГ, ±мВ</string>
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QComboBox" name="comboBoxGain"/>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="comboBoxLimitEcg"/>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="labelSpeed">
+              <property name="text">
+               <string>Скорость, мм/c</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
