@@ -31,7 +31,7 @@
 
 1. Перейдите на страницу [Releases](https://github.com/mcsltd/mcs-inRat-planner/releases) этого репозитория
 2. Найдите последний релиз (самый верхний)
-3. В разделе Assets скачайте архив: `inRat-planner-v1.1.0.rar`
+3. В разделе Assets скачайте архив: `inRat-planner-v1.1.1.rar`
 4. Распакуйте архив
 5. Запустите `inRat-planner-setup.exe`
 6. Следуйте инструкциям установщика
