@@ -788,7 +788,7 @@ class WaitingDialog(QDialog):
         font = QFont()
         font.setPointSize(10)
 
-        self.setFixedSize(300, 150)
+        self.setFixedSize(350, 150) # params: w,h
         layout = QVBoxLayout()
 
         self.label = QLabel(f"Идёт поиск {name}...")
