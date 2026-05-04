@@ -18,7 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QSizePolicy,
     QSlider, QSpacerItem, QVBoxLayout, QWidget)
-import src.resources.resources_rc
+import resources.resources_rc
 
 class Ui_frmRecordViewer(object):
     def setupUi(self, frmRecordViewer):

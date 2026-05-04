@@ -41,7 +41,6 @@ from db.queries import get_count_records, get_count_error_records, \
     get_object_by_schedule_id, get_experiment_by_schedule_id, \
     soft_delete_records, get_all_record_time, all_restore
 from ui.settings_dialog import DlgMainConfig
-from ui.monitor_dialog import SignalMonitor
 from ui.stream_dialog import BLESignalViewer
 
 __version__ = "v1.1.0"
@@ -658,10 +657,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             return
         schedule_data: ScheduleData = schedule.to_dataclass(session)
-
-        # monitor = SignalMonitor(schedule_data=schedule_data)
-        # monitor.load_record(record_data=record_data)
-        # monitor.exec()
 
         monitor = RecordViewer(schedule=schedule_data)
         if monitor.load_record(record=record_data):

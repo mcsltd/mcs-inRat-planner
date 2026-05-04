@@ -17,18 +17,18 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from src.device.inrat.constants import Pkt
-from src.device.inrat.inrat import inRat
-from src.resources.dlg_inrat_controller import Ui_DlgInRatController
-from src.resources.frm_online_control_device import Ui_FrmOnlineControlDevice
-from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
-from src.resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
-from src.structure import ScheduleData
-from src.tools.inrat_storage import InRatStorage
-from src.util import seconds_to_label_time
+from device.inrat.constants import Pkt
+from device.inrat.inrat import inRat
+from resources.dlg_inrat_controller import Ui_DlgInRatController
+from resources.frm_online_control_device import Ui_FrmOnlineControlDevice
+from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
+from structure import ScheduleData
+from tools.inrat_storage import InRatStorage
+from util import seconds_to_label_time
 
-from src.structure import RecordData
-from src.config import app_data
+from structure import RecordData
+from config import app_data
 
 SAMPLE_RATES = [("500 Гц", 500),
                 ("1000 Гц", 1000),

@@ -12,10 +12,10 @@ from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QDialog, QWidget, QSpinBox, QLabel, QHBoxLayout, QFrame, QApplication
 from pyqtgraph import PlotWidget, mkPen
 
-from src.structure import ScheduleData
-from src.resources.wdt_monitor import Ui_FormMonitor
+from structure import ScheduleData
+from resources.wdt_monitor import Ui_FormMonitor
 
-from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
 
 logger = logging.getLogger(__name__ )
 
