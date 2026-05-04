@@ -568,14 +568,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if not self.device.is_connected:
             logger.error(f"Устройство {self.device.name} не подключено")
             self._device_disconnection()
-            return
-
-        await self._start_data_acquisition()
-
-    async def _start_data_acquisition(self):
-        """ Остановка получения данных"""
-        if self.device is None or not self.device.is_connected:
-            logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено, либо не подключено")
+            self._device_connection()   # reconnect
             return
 
         data_queue = asyncio.Queue()
@@ -602,25 +595,24 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                         self.signal_accept_data.emit(signal)
 
                     data_queue.task_done()
-
                 except asyncio.TimeoutError:
+                    if not self.device.is_connected:
+
+                        if self.recording_timer.isActive(): # остановка записи сигнала
+                            self._stop_recording()
+
+                        self._device_stop_acquisition()
+                        self._device_disconnection()
+                        self._device_connection()
+                        return
                     continue
 
                 except Exception as exp:
                     logger.error(f"Ошибка обработки данных с устройства {self.schedule_data.device.ble_name}, {exp}")
-                    await self._stop_data_acquisition_impl()
+                    self._device_stop_acquisition()
+                    self._device_disconnection()
+                    self._device_connection()
                     break
-
-        if not self.device.is_connected:  # обрыв соединения (происходит после команды получения данных)
-            logger.error(f"Потеряно соединение с {self.device.name}!")
-            self.signal_info_dialog.emit(
-                f"Потеряно соединение с устройством {self.device.name}!\n"
-                f"Повторите попытку подключения."
-            )
-            self._device_stop_acquisition()
-            self._device_disconnection()
-            self.control_panel_device.set_state_disconnected()
-            return
 
     # остановка устройства
     def _device_stop_acquisition(self):
