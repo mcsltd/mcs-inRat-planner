@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import numpy as np
 from PySide6.QtCore import Signal, QTimer, Qt
 from PySide6.QtWidgets import QVBoxLayout, QProgressBar, QSizePolicy, QLabel, \
-    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame, QMessageBox, QApplication
+    QHBoxLayout, QSpacerItem, QDialogButtonBox, QFrame, QMessageBox, QApplication, QPushButton
 from PySide6 import QtCore
 
 from PySide6.QtGui import QFont
@@ -17,30 +17,29 @@ from PySide6.QtWidgets import QDialog
 from bleak import BleakScanner, BLEDevice
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine
 
-from src.device.inrat.constants import Pkt
-from src.device.inrat.inrat import inRat
-from src.resources.dlg_inrat_controller import Ui_DlgInRatController
-from src.resources.frm_online_control_device import Ui_FrmOnlineControlDevice
-from src.resources.frm_online_control_plot import Ui_FrmOnlineControlPane
-from src.resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
-from src.structure import ScheduleData
-from src.tools.inrat_storage import InRatStorage
-from src.util import seconds_to_label_time
+from device.inrat.constants import Pkt
+from device.inrat.inrat import inRat
+from resources.dlg_inrat_controller import Ui_DlgInRatController
+from resources.frm_online_control_device import Ui_FrmOnlineControlDevice
+from resources.frm_online_control_plot import Ui_FrmOnlineControlPane
+from resources.frm_online_control_recording import Ui_FrmOnlineControlRecording
+from structure import ScheduleData
+from tools.inrat_storage import InRatStorage
+from util import seconds_to_label_time
 
-from src.structure import RecordData
+from structure import RecordData
+from config import app_data
 
-from src.config import app_data
-
-SAMPLE_RATES = [("500", 500),
-                ("1000", 1000),
-                ("2000", 2000)]
+SAMPLE_RATES = [("500 Гц", 500),
+                ("1000 Гц", 1000),
+                ("2000 Гц", 2000)]
 
 
 logger = logging.getLogger(__name__)
 
 
 class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
-
+    """ Виджет для управления параметрами отображения сигнала на графике """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
@@ -79,8 +78,9 @@ class ControlParamDisplay(Ui_FrmOnlineControlPane, QFrame):
         if not self.checkBoxDynamicRange.isChecked():
             self.comboBoxEcgLimit.setEnabled(True)
 
-
 class DisplaySignal(PlotWidget):
+    """ Класс для накопления и отображения сигнала на графике """
+
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.setBackground("w")
@@ -244,19 +244,20 @@ class DisplaySignal(PlotWidget):
         self.buffer_filled = False  # флаг заполнения буфера
         self.current_position = 0  # текущая позиция для заполнения буфера
 
-
 class FrmOnlineControlDevice(QFrame, Ui_FrmOnlineControlDevice):
+    """ Виджет для запуска и остановки устройства """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        for sr in SAMPLE_RATES:
-            self.comboBoxSampleFreq.addItem(*sr)
+        for text, data in SAMPLE_RATES:
+            self.comboBoxSampleFreq.addItem(text, userData=data)
 
     def set_state_connected(self):
         """ ui для состояния остановки """
-        self.pushButtonConnect.setEnabled(False)
-        self.pushButtonDisconnect.setEnabled(True)
+        # self.pushButtonConnect.setEnabled(False)
+        # self.pushButtonDisconnect.setEnabled(True)
         self.pushButtonStart.setEnabled(True)
         self.pushButtonStop.setEnabled(False)
         self.comboBoxSampleFreq.setEnabled(True)
@@ -264,8 +265,8 @@ class FrmOnlineControlDevice(QFrame, Ui_FrmOnlineControlDevice):
 
     def set_state_disconnected(self):
         """ ui для состояния, когда устройство отсоединено """
-        self.pushButtonConnect.setEnabled(True)
-        self.pushButtonDisconnect.setEnabled(False)
+        # self.pushButtonConnect.setEnabled(True)
+        # self.pushButtonDisconnect.setEnabled(False)
         self.pushButtonStart.setEnabled(False)
         self.pushButtonStop.setEnabled(False)
         self.comboBoxSampleFreq.setEnabled(False)
@@ -273,8 +274,8 @@ class FrmOnlineControlDevice(QFrame, Ui_FrmOnlineControlDevice):
 
     def set_state_acquisition(self):
         """ ui для состояния, когда устройство старт """
-        self.pushButtonConnect.setEnabled(False)
-        self.pushButtonDisconnect.setEnabled(True)
+        # self.pushButtonConnect.setEnabled(False)
+        # self.pushButtonDisconnect.setEnabled(True)
         self.pushButtonStart.setEnabled(False)
         self.pushButtonStop.setEnabled(True)
         self.comboBoxSampleFreq.setEnabled(False)
@@ -285,6 +286,8 @@ class FrmOnlineControlDevice(QFrame, Ui_FrmOnlineControlDevice):
         self.checkBoxActivated.setChecked(False)
 
 class FrmOnlineControlRecording(Ui_FrmOnlineControlRecording, QFrame):
+    """ Виджет для управления записью сигнала с устройства """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
@@ -293,12 +296,15 @@ class FrmOnlineControlRecording(Ui_FrmOnlineControlRecording, QFrame):
             self.comboBoxFormat.addItem(f)
 
 class InRatControllerDialog(QDialog, Ui_DlgInRatController):
+    """ Диалоговое окно для ручного управления устройством, отображения сигнала и его сохранение """
 
     signal_start_recording = Signal()
     signal_stop_recording = Signal()
     signal_record_saved = Signal(object)
 
     signal_show_dialog = Signal()
+    signal_state_search = Signal(str)
+    signal_state_connect = Signal(str)
     signal_close_dialog = Signal()
 
     signal_info_dialog = Signal(str)
@@ -343,6 +349,8 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         # waiting dialog
         self.dlg_waiting_connection = WaitingDialog(name=self.schedule_data.device.ble_name, parent=self)
         self.signal_show_dialog.connect(self.dlg_waiting_connection.show)
+        self.signal_state_search.connect(self.dlg_waiting_connection.set_state_search)
+        self.signal_state_connect.connect(self.dlg_waiting_connection.set_state_connect)
         self.signal_close_dialog.connect(self.dlg_waiting_connection.close)
 
         # info dialog
@@ -354,8 +362,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.recording_timer.timeout.connect(self._on_timeout_expired)
 
         # управление устройством
-        self.control_panel_device.pushButtonConnect.clicked.connect(self._device_connection)
-        self.control_panel_device.pushButtonDisconnect.clicked.connect(self._device_disconnection)
         self.control_panel_device.pushButtonStart.clicked.connect(self._device_start_acquisition)
         self.control_panel_device.pushButtonStop.clicked.connect(self._device_stop_acquisition)
         self.control_panel_device.comboBoxSampleFreq.currentIndexChanged.connect(self._on_samplerate_changed)
@@ -377,6 +383,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.update_timer.start(16)
 
         self.setup_combobox()
+        self._device_connection()
 
     # настройка таймера обновления времени
     def _on_timeout_expired(self):
@@ -405,7 +412,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
     def _set_default_sampling_rate(self):
         """ Установка частоты по умолчанию из schedule_data """
         # установка частоты по умолчанию
-        text_sample_rate = f"{self.schedule_data.sampling_rate}"
+        text_sample_rate = f"{self.schedule_data.sampling_rate} Гц"
         idx = self.control_panel_device.comboBoxSampleFreq.findText(text_sample_rate)
         self.control_panel_device.comboBoxSampleFreq.setCurrentIndex(idx)
 
@@ -458,11 +465,11 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.storage.set_format(frmt)
         logger.info(f"Изменен формат записи на {frmt}")
 
-    # асинхронный цикл событий
+    # асинхронный цикл событий для управления устройством
     def _run_async_loop(self):
         """ Создание цикла событий для работы с устройством"""
         self._loop = asyncio.new_event_loop()
-        self._loop.set_debug(True)
+        # self._loop.set_debug(True)
         asyncio.set_event_loop(self._loop)
 
         self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
@@ -482,15 +489,15 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         """ Соединение с устройством  """
         self.signal_show_dialog.emit()
 
-        try:
-            self.control_panel_device.pushButtonConnect.setEnabled(False)
-            device = await self._find_device(timeout=5)
+        while not self.device or not self.device.is_connected:
+            self.signal_state_search.emit(self.schedule_data.device.ble_name)
+            device = await self._find_device(timeout=10)
 
             if device is None:
                 logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено")
-                self.control_panel_device.set_state_disconnected()
-                return
+                continue
 
+            self.signal_state_connect.emit(self.schedule_data.device.ble_name)
             # соединение с устройством
             if await self._connect_device(device):
                 self._set_state_activated(activated=self.device.is_activated)
@@ -504,16 +511,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                 self.control_panel_device.set_state_connected()
                 self.display.control_panel.enable()
 
-            else:
-                self.control_panel_device.set_state_disconnected()
-        except:
-            pass
-        finally:
-            self.signal_close_dialog.emit()
-
-            if not self.device or not self.device.is_connected:
-                self.signal_info_dialog.emit(f"Не удалось подключиться к {self.schedule_data.device.ble_name}.\n"
-                                             f"Повторите попытку подключения.")
+        self.signal_close_dialog.emit()
 
     async def _find_device(self, timeout: float):
         """ поиск устройства за время равное timeout """
@@ -554,7 +552,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.device = None
         self.display.control_panel.comboBoxSpeed.setEnabled(False)
 
-
     # запуск устройства
     def _device_start_acquisition(self):
         """ Запуск устройства для получения данных через асинхронную задачу"""
@@ -570,14 +567,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if not self.device.is_connected:
             logger.error(f"Устройство {self.device.name} не подключено")
             self._device_disconnection()
-            return
-
-        await self._start_data_acquisition()
-
-    async def _start_data_acquisition(self):
-        """ Остановка получения данных"""
-        if self.device is None or not self.device.is_connected:
-            logger.debug(f"Устройство {self.schedule_data.device.ble_name} не найдено, либо не подключено")
+            self._device_connection()   # reconnect
             return
 
         data_queue = asyncio.Queue()
@@ -586,11 +576,10 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         if await self.device.start_acquisition(data_queue=data_queue):
             self.start_acquisition_time = time.time()
             self.control_panel_device.set_state_acquisition()
-            self.display.control_panel.comboBoxSpeed.setEnabled(True)
+            self.display.control_panel.enable()
 
             self.display.clear_plot()
             self.display.set_timebase()
-
 
             self.is_running = True
             self.control_panel_recording.pushButtonStartRecording.setEnabled(True)
@@ -605,25 +594,24 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                         self.signal_accept_data.emit(signal)
 
                     data_queue.task_done()
-
                 except asyncio.TimeoutError:
+                    if not self.device.is_connected:
+                        if self.recording_timer.isActive(): # остановка записи сигнала
+                            self._stop_recording()
+
+                        self._device_stop_acquisition()
+                        self._device_disconnection()
+                        self._device_connection()
+                        return
+
                     continue
 
                 except Exception as exp:
                     logger.error(f"Ошибка обработки данных с устройства {self.schedule_data.device.ble_name}, {exp}")
-                    await self._stop_data_acquisition_impl()
+                    self._device_stop_acquisition()
+                    self._device_disconnection()
+                    self._device_connection()
                     break
-
-        if not self.device.is_connected:  # обрыв соединения (происходит после команды получения данных)
-            logger.error(f"Потеряно соединение с {self.device.name}!")
-            self.signal_info_dialog.emit(
-                f"Потеряно соединение с устройством {self.device.name}!\n"
-                f"Повторите попытку подключения."
-            )
-            self._device_stop_acquisition()
-            self._device_disconnection()
-            self.control_panel_device.set_state_disconnected()
-            return
 
     # остановка устройства
     def _device_stop_acquisition(self):
@@ -713,8 +701,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         try:
             # отключение устройства и завершение задач
             future = asyncio.run_coroutine_threadsafe(
-                self._safe_shutdown(),
-                self._loop
+                self._safe_shutdown(), self._loop
             )
             # завершения с таймаутом
             future.result(timeout=5.0)
@@ -783,7 +770,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
         self.display.set_timebase()
 
 class WaitingDialog(QDialog):
-
+    """ Окно ожидания выполнения задачи """
     def __init__(self, name: str, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Поиск и подключение к {name}")
@@ -792,26 +779,48 @@ class WaitingDialog(QDialog):
         font = QFont()
         font.setPointSize(10)
 
-        self.setFixedSize(300, 150)
+        self.setFixedSize(350, 150) # params: w,h
         layout = QVBoxLayout()
 
-        self.label = QLabel(f"Идёт поиск и подключение к {name}...")
-        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label = QLabel("...")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self.label.setFont(font)
 
         self.progress = QProgressBar()
         self.progress.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.progress.setRange(0, 0)
 
-        self.progress.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.pushBtnCancel = QPushButton("Отменить")
 
+        self._hlayout = QHBoxLayout()
+        self._hlayout.addStretch()
+        self._hlayout.addWidget(self.pushBtnCancel)
+
+        self.progress.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.label)
         layout.addWidget(self.progress)
+        layout.addLayout(self._hlayout)
 
+        self.pushBtnCancel.clicked.connect(self.on_cancel_clicked)
         self.setLayout(layout)
 
+    def on_cancel_clicked(self):
+        """ обработка нажатия кнопки отмены поиска и подключения к inRat """
+        self.close()
+        self.parent().close()
+
+    def set_state_search(self, name: str):
+        """ отображение информации о поиске устройства """
+        self.label.setText(f"Идёт поиск {name}...")
+        self.pushBtnCancel.setEnabled(True)
+
+    def set_state_connect(self, name: str):
+        """ отображение информации о соединении с устройством """
+        self.label.setText(f"Идёт подключение к {name}!\nПожалуйста, не прерывайте процесс.")
+        self.pushBtnCancel.setEnabled(False)
 
 class InfoConnectionDialog(QDialog):
+    """ Диалоговое окно отображения результата """
     def __init__(self, name, parent):
         super().__init__(parent=parent)
         self.setWindowTitle(f"Информация о соединении с {name}")
@@ -839,20 +848,8 @@ class InfoConnectionDialog(QDialog):
         self.label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         text_layout.addWidget(self.label)
-
         main_layout.addLayout(text_layout)
-
         main_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
-
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.accept)
-
-        self.button_box.setFixedHeight(30)
-
-        for button in self.button_box.buttons():
-            button.setMinimumSize(40, 30)
-
-        main_layout.addWidget(self.button_box)
 
     def show_dialog(self, text: None | str = None):
         if text:
