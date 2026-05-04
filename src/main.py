@@ -43,7 +43,7 @@ from db.queries import get_count_records, get_count_error_records, \
 from ui.settings_dialog import DlgMainConfig
 from ui.stream_dialog import BLESignalViewer
 
-__version__ = "v1.1.0"
+__version__ = "v1.1.1"
 logger = logging.getLogger(__name__)
 
 
