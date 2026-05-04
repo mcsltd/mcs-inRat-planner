@@ -25,7 +25,7 @@ from structure import ScheduleData, RecordData, RecordingTaskData
 # ui
 from resources.main_window import Ui_MainWindow
 from ui.about_dialog import AboutDialog, DialogLicenses
-from ui.helper_dialog import DialogHelper
+from ui.helper_dialog import DialogHelper, ConfirmManualModeDialog
 
 from ui.inrat_controller_dialog import InRatControllerDialog
 
@@ -687,6 +687,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # запуск просмотра стрима сигнала с устройства
         device_id = schedule_data.device.id
         device_status = self.ble_manager.get_device_status(device_id)
+
         if device_status == ScheduleState.ACQUISITION.value:
             dlg = BLESignalViewer(schedule_data=schedule_data)
             self.ble_manager.signal_data_received.connect(dlg.accept_signal)
@@ -722,6 +723,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if schedule_data.device.model == Devices.INRAT.value["InRat"]:
             text_message = ""
+
             if job is not None:
                 text_message = f"Регистрация ЭКГ для объекта \"{schedule_data.object.name}\" запланирована на {str_time}."
             elif schedule_data.datetime_start is None or schedule_data.datetime_finish is None:
@@ -729,7 +731,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             elif schedule_data.datetime_finish < datetime.datetime.now():
                 text_message = f"Расписание регистрации ЭКГ для объекта \"{schedule_data.object.name}\" истекло."
 
-            if DialogHelper.show_action_dialog(parent=self, title=f"Информация о расписании", message=text_message,):
+            if ConfirmManualModeDialog.show_action_dialog(parent=self, title="Информация о расписании", message=text_message):
                 if job is not None:
                     # постановка расписания на паузу, если пользователь выбрал ручной режим
                     job.pause()
