@@ -28,12 +28,11 @@ from src.tools.inrat_storage import InRatStorage
 from src.util import seconds_to_label_time
 
 from src.structure import RecordData
-
 from src.config import app_data
 
-SAMPLE_RATES = [("500", 500),
-                ("1000", 1000),
-                ("2000", 2000)]
+SAMPLE_RATES = [("500 Гц", 500),
+                ("1000 Гц", 1000),
+                ("2000 Гц", 2000)]
 
 
 logger = logging.getLogger(__name__)
@@ -252,8 +251,8 @@ class FrmOnlineControlDevice(QFrame, Ui_FrmOnlineControlDevice):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        for sr in SAMPLE_RATES:
-            self.comboBoxSampleFreq.addItem(*sr)
+        for text, data in SAMPLE_RATES:
+            self.comboBoxSampleFreq.addItem(text, userData=data)
 
     def set_state_connected(self):
         """ ui для состояния остановки """
@@ -413,7 +412,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
     def _set_default_sampling_rate(self):
         """ Установка частоты по умолчанию из schedule_data """
         # установка частоты по умолчанию
-        text_sample_rate = f"{self.schedule_data.sampling_rate}"
+        text_sample_rate = f"{self.schedule_data.sampling_rate} Гц"
         idx = self.control_panel_device.comboBoxSampleFreq.findText(text_sample_rate)
         self.control_panel_device.comboBoxSampleFreq.setCurrentIndex(idx)
 
@@ -597,7 +596,6 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                     data_queue.task_done()
                 except asyncio.TimeoutError:
                     if not self.device.is_connected:
-
                         if self.recording_timer.isActive(): # остановка записи сигнала
                             self._stop_recording()
 
@@ -605,6 +603,7 @@ class InRatControllerDialog(QDialog, Ui_DlgInRatController):
                         self._device_disconnection()
                         self._device_connection()
                         return
+
                     continue
 
                 except Exception as exp:
@@ -783,8 +782,8 @@ class WaitingDialog(QDialog):
         self.setFixedSize(350, 150) # params: w,h
         layout = QVBoxLayout()
 
-        self.label = QLabel(f"Идёт поиск {name}...")
-        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label = QLabel("...")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self.label.setFont(font)
 
         self.progress = QProgressBar()
@@ -817,7 +816,7 @@ class WaitingDialog(QDialog):
 
     def set_state_connect(self, name: str):
         """ отображение информации о соединении с устройством """
-        self.label.setText(f"Идёт подключение к {name}!\n Пожалуйста, подождите завершения подключения.")
+        self.label.setText(f"Идёт подключение к {name}!\nПожалуйста, не прерывайте процесс.")
         self.pushBtnCancel.setEnabled(False)
 
 class InfoConnectionDialog(QDialog):

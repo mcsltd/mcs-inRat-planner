@@ -81,27 +81,6 @@
         </item>
         <item>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelSampleFreq">
-            <property name="text">
-             <string>Частота оцифровки:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelActivated">
-            <property name="text">
-             <string>Активировано</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="comboBoxSampleFreq">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="1">
            <widget class="QCheckBox" name="checkBoxActivated">
             <property name="enabled">
@@ -112,10 +91,24 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="labelDimHz">
+          <item row="0" column="1">
+           <widget class="QComboBox" name="comboBoxSampleFreq">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelActivated">
             <property name="text">
-             <string>/Гц</string>
+             <string>Активировано</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelSampleFreq">
+            <property name="text">
+             <string>Частота оцифровки, Гц</string>
             </property>
            </widget>
           </item>

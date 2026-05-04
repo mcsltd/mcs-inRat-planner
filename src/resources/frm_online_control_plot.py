@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'frm_online_control_plotKjdFEE.ui'
+## Form generated from reading UI file 'frm_online_control_plotyxfcYZ.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -23,7 +23,7 @@ class Ui_FrmOnlineControlPane(object):
     def setupUi(self, FrmOnlineControlPane):
         if not FrmOnlineControlPane.objectName():
             FrmOnlineControlPane.setObjectName(u"FrmOnlineControlPane")
-        FrmOnlineControlPane.resize(340, 148)
+        FrmOnlineControlPane.resize(336, 140)
         FrmOnlineControlPane.setFrameShape(QFrame.Shape.Panel)
         FrmOnlineControlPane.setFrameShadow(QFrame.Shadow.Raised)
         self.gridLayout_2 = QGridLayout(FrmOnlineControlPane)
@@ -73,7 +73,9 @@ class Ui_FrmOnlineControlPane(object):
         self.checkBoxDynamicRange = QCheckBox(self.groupBox)
         self.checkBoxDynamicRange.setObjectName(u"checkBoxDynamicRange")
         self.checkBoxDynamicRange.setEnabled(False)
+        self.checkBoxDynamicRange.setAutoFillBackground(False)
         self.checkBoxDynamicRange.setAutoRepeat(False)
+        self.checkBoxDynamicRange.setTristate(False)
 
         self.gridLayout_3.addWidget(self.checkBoxDynamicRange, 2, 1, 1, 1)
 
@@ -98,7 +100,7 @@ class Ui_FrmOnlineControlPane(object):
         FrmOnlineControlPane.setWindowTitle(QCoreApplication.translate("FrmOnlineControlPane", u"Frame", None))
         self.groupBox.setTitle(QCoreApplication.translate("FrmOnlineControlPane", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u0430", None))
         self.labelTime.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0412\u0440\u0435\u043c\u044f, \u043c\u043c/c", None))
-        self.labelECG.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u041b\u0438\u043c\u0438\u0442 \u042d\u041a\u0413, \u00b1\u043c\u0412", None))
+        self.labelECG.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0414\u0438\u0430\u043f\u0430\u0437\u043e\u043d \u042d\u041a\u0413, \u00b1\u043c\u0412", None))
         self.checkBoxDynamicRange.setText("")
         self.labelDynamicRange.setText(QCoreApplication.translate("FrmOnlineControlPane", u"\u0414\u0438\u043d\u0430\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0434\u0438\u0430\u043f\u0430\u0437\u043e\u043d", None))
     # retranslateUi
